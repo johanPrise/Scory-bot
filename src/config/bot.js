@@ -2,87 +2,166 @@ import TelegramBot from 'node-telegram-bot-api';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { TELEGRAM_CONFIG, ENV_CONFIG } from './telegram.js';
+import { logCriticalError, logUserAction } from '../utils/logger.js';
 
 // Charger les variables d'environnement
 dotenv.config();
 
-const token = process.env.TELEGRAM_BOT_TOKEN;
+// Configuration basée sur l'environnement
+const env = process.env.NODE_ENV || 'development';
+const config = {
+  ...TELEGRAM_CONFIG,
+  ...(ENV_CONFIG[env] || ENV_CONFIG.development)
+};
 
+// Vérifier le token du bot
+const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
-  console.error('TELEGRAM_BOT_TOKEN is not set in the environment variables');
+  const errorMsg = '❌ ERREUR: TELEGRAM_BOT_TOKEN est manquant dans les variables d\'environnement';
+  console.error(errorMsg);
+  logCriticalError(new Error(errorMsg), { context: 'Initialisation du bot' });
   process.exit(1);
 }
 
-// Options du bot
+// Configuration du bot
 const botOptions = {
-  polling: true,
-  // Vous pouvez ajouter d'autres options ici si nécessaire
+  polling: config.polling ? config.POLLING_OPTIONS : false,
+  onlyFirstMatch: true,
+  request: {
+    proxy: process.env.HTTP_PROXY || null,
+    agentClass: process.env.HTTP_PROXY ? require('socks-proxy-agent').SocksProxyAgent : null,
+    agentOptions: process.env.HTTP_PROXY ? {
+      socksHost: 'your-proxy-host',
+      socksPort: 1080
+    } : null
+  }
 };
 
-// Créer le bot
+// Créer l'instance du bot
 export const bot = new TelegramBot(token, botOptions);
 
-// Définir les commandes du bot
-const commands = [
-  { command: '/start', description: 'Démarrer le bot' },
-  { command: '/createactivity', description: 'Créer une nouvelle activité' },
-  { command: '/addparticipant', description: 'Ajouter un participant à une activité' },
-  { command: '/addsubactivity', description: 'Ajouter une sous-activité' },
-  { command: '/score', description: 'Attribuer un score à une activité' },
-  { command: '/subscore', description: 'Attribuer un score à une sous-activité' },
-  { command: '/ranking', description: "Voir le classement d'une activité" },
-  { command: '/subranking', description: "Voir le classement d'une sous-activité" },
-  { command: '/activities', description: 'Lister toutes les activités' },
-  { command: '/createteam', description: 'Créer une équipe' },
-  { command: '/addtoteam', description: 'Ajouter un participant à une équipe' },
-  { command: '/teamranking', description: 'Voir le classement des équipes' },
-  { command: '/stats', description: 'Générer des statistiques sur une activité' },
-  { command: '/export', description: "Exporter les données d'une activité" },
-  { command: '/feedback', description: 'Donner un feedback sur une activité' },
-  { command: '/history', description: "Voir l'historique des activités terminées" },
-  { command: '/starttimer', description: 'Démarrer un minuteur pour une activité' },
-  { command: '/stoptimer', description: "Arrêter le minuteur d'une activité" },
-  { command: '/help', description: "Afficher l'aide" }
-];
+// Configuration des commandes du bot
+export const BOT_COMMANDS = config.COMMANDS;
 
-// Fonction pour configurer le bot
+/**
+ * Configure le bot avec les commandes et les paramètres
+ * @returns {Promise<Object>} Informations sur le bot
+ */
 export async function setupBot() {
   try {
+    // Vérifier la connexion à l'API Telegram
+    const botInfo = await bot.getMe();
+    
     // Définir les commandes du bot
-    await bot.setMyCommands(commands);
-    console.log('Bot commands set successfully');
-
-    // Configurer les gestionnaires d'erreurs
-    bot.on('polling_error', (error) => {
-      console.error('Polling error:', error);
+    await bot.setMyCommands(BOT_COMMANDS);
+    
+    // Enregistrer les commandes dans un fichier pour référence
+    await saveCommandsToFile();
+    
+    // Configurer le menu des commandes
+    await bot.setMyCommands(BOT_COMMANDS, { scope: { type: 'all_private_chats' } });
+    
+    // Afficher les informations de démarrage
+    const startTime = new Date().toISOString();
+    const botName = `${botInfo.first_name}${botInfo.last_name ? ' ' + botInfo.last_name : ''}`;
+    
+    console.log('\n' + '='.repeat(60));
+    console.log(`🤖 Bot démarré: @${botInfo.username}`);
+    console.log(`🆔 ID: ${botInfo.id}`);
+    console.log(`👤 Nom: ${botName}`);
+    console.log(`🌍 Mode: ${env.toUpperCase()}`);
+    console.log(`⏰ Démarrage: ${startTime}`);
+    console.log('='.repeat(60) + '\n');
+    
+    // Logger le démarrage du bot
+    logUserAction('system', 'Bot démarré', {
+      botId: botInfo.id,
+      botUsername: botInfo.username,
+      botName,
+      env,
+      startTime
     });
-
-    bot.on('error', (error) => {
-      console.error('Bot error:', error);
-    });
-
-    console.log('Bot setup completed successfully');
+    
+    return botInfo;
   } catch (error) {
-    console.error('Error setting up bot:', error);
-    throw error;
+    const errorMsg = `Échec de la configuration du bot: ${error.message}`;
+    console.error(`❌ ERREUR: ${errorMsg}`);
+    
+    logCriticalError(error, {
+      context: 'Configuration du bot',
+      response: error.response?.data,
+      stack: error.stack
+    });
+    
+    if (error.response) {
+      console.error('Détails de l\'erreur:', error.response.body);
+    }
+    
+    process.exit(1);
   }
 }
 
-// Fonction pour obtenir la liste des commandes
+/**
+ * Récupère la liste des commandes configurées
+ * @returns {Array} Liste des commandes
+ */
 export function getCommands() {
-  return commands;
+  return BOT_COMMANDS;
 }
 
-// Fonction pour sauvegarder les commandes dans un fichier JSON
-export function saveCommandsToFile() {
-  const commandsJson = JSON.stringify(commands, null, 2);
-  const filePath = path.join(process.cwd(), 'bot_commands.json');
-  
-  fs.writeFile(filePath, commandsJson, (err) => {
-    if (err) {
-      console.error('Error saving commands to file:', err);
-    } else {
-      console.log('Commands saved to bot_commands.json');
+/**
+ * Sauvegarde les commandes dans un fichier JSON pour référence
+ * @returns {Promise<void>}
+ */
+export async function saveCommandsToFile() {
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const commandsDir = path.join(__dirname, '..', 'logs');
+    const commandsPath = path.join(commandsDir, 'commands.json');
+    
+    // Créer le répertoire s'il n'existe pas
+    if (!fs.existsSync(commandsDir)) {
+      fs.mkdirSync(commandsDir, { recursive: true });
     }
-  });
+    
+    const commandsData = {
+      lastUpdated: new Date().toISOString(),
+      environment: env,
+      bot: (await bot.getMe()).username,
+      commands: BOT_COMMANDS.map(cmd => ({
+        command: cmd.command.replace(/^\//, ''),
+        description: cmd.description,
+        usage: `/${cmd.command} ${getCommandUsage(cmd.command)}`
+      }))
+    };
+    
+    await fs.promises.writeFile(commandsPath, JSON.stringify(commandsData, null, 2));
+    console.log(`📝 Commandes sauvegardées dans ${commandsPath}`);
+  } catch (error) {
+    console.error('❌ ERREUR: Échec de la sauvegarde des commandes:', error.message);
+  }
+}
+
+/**
+ * Génère un exemple d'utilisation pour une commande
+ * @param {string} command - La commande
+ * @returns {string} Exemple d'utilisation
+ */
+function getCommandUsage(command) {
+  const usages = {
+    start: '',
+    help: '[commande]',
+    link: '<code>',
+    createactivity: '<nom>',
+    addsubactivity: '<id_activité> <nom>',
+    score: '<id_activité> <participant> <points>',
+    ranking: '<id_activité>',
+    activities: ''
+  };
+  
+  const cmd = command.replace(/^\//, '');
+  return usages[cmd] || '';
 }
