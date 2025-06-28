@@ -27,7 +27,10 @@ if (!token) {
 
 // Configuration du bot
 const botOptions = {
-  polling: config.polling ? config.POLLING_OPTIONS : false,
+  polling: config.polling ? {
+    interval: config.POLLING_OPTIONS.interval,
+    params: config.POLLING_OPTIONS.params
+  } : false,
   onlyFirstMatch: true,
   request: {
     proxy: process.env.HTTP_PROXY || null,
@@ -138,8 +141,30 @@ export async function saveCommandsToFile() {
       }))
     };
     
-    await fs.promises.writeFile(commandsPath, JSON.stringify(commandsData, null, 2));
-    console.log(`📝 Commandes sauvegardées dans ${commandsPath}`);
+    // Vérifier si le fichier existe déjà et s'il est identique
+    let shouldSave = true;
+    if (fs.existsSync(commandsPath)) {
+      try {
+        const existingData = JSON.parse(await fs.promises.readFile(commandsPath, 'utf8'));
+        // Comparer sans la date de mise à jour
+        const { lastUpdated: _, ...existingCommands } = existingData;
+        const { lastUpdated: __, ...newCommands } = commandsData;
+        
+        if (JSON.stringify(existingCommands) === JSON.stringify(newCommands)) {
+          shouldSave = false;
+        }
+      } catch (error) {
+        // Si erreur de lecture, on sauvegarde
+        shouldSave = true;
+      }
+    }
+    
+    if (shouldSave) {
+      await fs.promises.writeFile(commandsPath, JSON.stringify(commandsData, null, 2));
+      console.log(`📝 Commandes sauvegardées dans ${commandsPath}`);
+    } else {
+      console.log(`📝 Les commandes sont à jour dans ${commandsPath}`);
+    }
   } catch (error) {
     console.error('❌ ERREUR: Échec de la sauvegarde des commandes:', error.message);
   }

@@ -1,0 +1,16 @@
+{
+  "watch": ["src/", "api-server.js", "server.js"],
+  "ignore": [
+    "src/logs/",
+    "logs/",
+    "*.log",
+    "*.json.backup",
+    "node_modules/",
+    ".git/",
+    "coverage/",
+    "dist/"
+  ],
+  "ext": "js,mjs,json",
+  "delay": 2000,
+  "verbose": true
+}

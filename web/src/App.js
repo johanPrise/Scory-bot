@@ -5,7 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { Snackbar, Alert } from '@mui/material';
 
 // Contexte d'authentification mis à jour
-import { AuthProvider, useAuth } from './context/AuthContext.new';
+import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Composants de protection des routes
 import ProtectedRoute, { PublicRoute, RoleBasedRoute } from './components/ProtectedRoute';
@@ -14,9 +14,9 @@ import ProtectedRoute, { PublicRoute, RoleBasedRoute } from './components/Protec
 import Layout from './components/Layout';
 
 // Pages principales
-import Login from './pages/Login.new';
-import Dashboard from './pages/Dashboard.new';
-import Teams from './pages/Teams.new';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Teams from './pages/Teams';
 import Activities from './pages/Activities';
 import Rankings from './pages/Rankings';
 import Settings from './pages/Settings';

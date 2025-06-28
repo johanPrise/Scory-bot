@@ -1,0 +1,121 @@
+{
+    "checksum": "07f080abac9d9dc688b38a77f6711f3708862eb7161245279863960c62751b56",
+    "data": {
+    "id": "1f3663d9-1062-477b-b09a-25cdb46ea9e3",
+    "createdAt": 1750349948173,
+    "updatedAt": 1750349948175,
+    "title": "2025-06-19 17:17:32 error: [CRITICAL] bot.catch...",
+    "messages": [
+        {
+            "id": "e1152361-bce2-4041-a5a6-0803aba5c5cd",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "2025-06-19 17:17:32 error: [CRITICAL] bot.catch is not a function"
+                },
+                {
+                    "type": "text",
+                    "text": "TypeError: bot.catch is not a function"
+                },
+                {
+                    "type": "text",
+                    "text": "    at setupEventHandlers (file:///C:/Users/johan/Scory-bot/src/app.js:94:12)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at startApp (file:///C:/Users/johan/Scory-bot/src/app.js:43:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "Impossible d'envoyer la notification d'erreur: TypeError: Cannot read properties of undefined (reading 'sendMessage')"
+                },
+                {
+                    "type": "text",
+                    "text": "    at startApp (file:///C:/Users/johan/Scory-bot/src/app.js:67:26)"
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "src\\app.js",
+                    "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\app.js",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "import dotenv from 'dotenv';\nimport { fileURLToPath } from 'url';\nimport path from 'path';\nimport { setupCommands } from './commands/index.js';\nimport { bot, setupBot } from './config/bot.js';\nimport { connectToDatabase } from './config/database.js';\nimport { TELEGRAM_CONFIG, ENV_CONFIG } from './config/telegram.js';\nimport logger, { logCriticalError, logUserAction } from './utils/logger.js';\n\n// Charger les variables d'environnement\ndotenv.config();\n\n// Configuration basée sur l'environnement\nconst env = process.env.NODE_ENV || 'development';\nconst config = {\n  ...TELEGRAM_CONFIG,\n  ...(ENV_CONFIG[env] || ENV_CONFIG.development)\n};\n\n// Obtenir le chemin du répertoire actuel\nconst __filename = fileURLToPath(import.meta.url);\nconst __dirname = path.dirname(__filename);\n\n/**\n * Fonction principale pour démarrer l'application\n */\nasync function startApp() {\n  try {\n    // 1. Connexion à la base de données\n    logger.info('Connexion à la base de données...');\n    await connectToDatabase();\n    logger.info('✅ Base de données connectée avec succès');\n\n    // 2. Configuration du bot\n    logger.info('Configuration du bot...');\n    await setupBot();\n    \n    // 3. Configuration des commandes\n    logger.info('Configuration des commandes...');\n    await setupCommands();\n    \n    // 4. Configuration des gestionnaires d'événements\n    setupEventHandlers();\n    \n    // 5. Démarrer le bot en mode polling ou webhook selon la configuration\n    if (config.polling) {\n      logger.info('Démarrage du bot en mode polling...');\n      await bot.startPolling(config.POLLING_OPTIONS);\n    } else if (config.webhook) {\n      logger.info('Démarrage du bot en mode webhook...');\n      await bot.launch({\n        webhook: config.WEBHOOK_OPTIONS\n      });\n    }\n    \n    logger.info(`🤖 Bot démarré avec succès en mode ${env.toUpperCase()}`);\n    \n  } catch (error) {\n    const errorMsg = `Échec du démarrage de l'application: ${error.message}`;\n    logCriticalError(error, { \n      context: 'Démarrage de l\\'application',\n      stack: error.stack \n    });\n    \n    // Essayer d'envoyer un message d'erreur avant de quitter\n    try {\n      await bot.telegram.sendMessage(\n        process.env.ADMIN_CHAT_ID, \n        `❌ Erreur critique: ${error.message}\\n\\nStack: ${error.stack}`.substring(0, 4000)\n      );\n    } catch (e) {\n      console.error('Impossible d\\'envoyer la notification d\\'erreur:', e);\n    }\n    \n    process.exit(1);\n  }\n}\n\n/**\n * Configure les gestionnaires d'événements du bot\n */\nfunction setupEventHandlers() {\n  // Gestion des erreurs de polling\n  bot.on('polling_error', (error) => {\n    logCriticalError(error, { context: 'Erreur de polling' });\n  });\n  \n  // Gestion des erreurs de webhook\n  bot.on('webhook_error', (error) => {\n    logCriticalError(error, { context: 'Erreur de webhook' });\n  });\n  \n  // Gestion des erreurs générales du bot\n  bot.catch((error) => {\n    logCriticalError(error, { context: 'Erreur non gérée du bot' });\n  });\n  \n  // Log des messages entrants (pour débogage)\n  if (env !== 'production') {\n    bot.on('message', (ctx) => {\n      const { from, chat, text } = ctx.message || {};\n      const userId = from?.id;\n      const userName = from?.username || `${from?.first_name || ''} ${from?.last_name || ''}`.trim();\n      const chatType = chat?.type || 'unknown';\n      \n      logger.debug(`[${chatType}] ${userName} (${userId}): ${text || '[sans texte]'}`);\n    });\n  }\n}\n\n/**\n * Gestion propre de l'arrêt de l'application\n */\nasync function shutdown(signal) {\n  logger.warn(`Signal ${signal} reçu. Arrêt en cours...`);\n  \n  try {\n    logger.info('Arrêt du bot...');\n    await bot.stop();\n    logger.info('✅ Bot arrêté avec succès');\n    \n    // Fermer les connexions à la base de données si nécessaire\n    // await mongoose.connection.close();\n    \n    logger.info('✅ Arrêt terminé');\n    process.exit(0);\n  } catch (error) {\n    logCriticalError(error, { context: 'Erreur lors de l\\'arrêt' });\n    process.exit(1);\n  }\n}\n\n// Gestion des signaux d'arrêt\nprocess.once('SIGINT', () => shutdown('SIGINT'));\nprocess.once('SIGTERM', () => shutdown('SIGTERM'));\n\n// Gestion des erreurs non capturées\nprocess.on('unhandledRejection', (reason, promise) => {\n  const errorMsg = 'UNHANDLED REJECTION';\n  logger.error(errorMsg, { \n    reason: reason?.message || reason, \n    stack: reason?.stack,\n    promise \n  });\n  \n  // En production, on peut notifier l'administrateur\n  if (process.env.NODE_ENV === 'production') {\n    bot.telegram.sendMessage(\n      process.env.ADMIN_CHAT_ID, \n      `${errorMsg}: ${reason?.message || 'Aucun détail'}`\n    ).catch(console.error);\n  }\n});\n\nprocess.on('uncaughtException', (error) => {\n  logCriticalError(error, { context: 'UNCAUGHT EXCEPTION' });\n  \n  // On laisse le processus se terminer après une erreur non capturée\n  // (selon les bonnes pratiques Node.js)\n  process.exit(1);\n});\n\n// Démarrer l'application\nstartApp();"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1750349948175,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "2025-06-19 17:17:32 error: [CRITICAL] bot.catch is not a function"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "TypeError: bot.catch is not a function"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at setupEventHandlers (file:///C:/Users/johan/Scory-bot/src/app.js:94:12)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at startApp (file:///C:/Users/johan/Scory-bot/src/app.js:43:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Impossible d'envoyer la notification d'erreur: TypeError: Cannot read properties of undefined (reading 'sendMessage')"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at startApp (file:///C:/Users/johan/Scory-bot/src/app.js:67:26)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph"
+                    }
+                ]
+            }
+        }
+    ],
+    "isAgent": true,
+    "isCustomAgent": false,
+    "isUnitTestsAgent": false,
+    "isE2EAgent": false,
+    "autoApply": false
+}
+}

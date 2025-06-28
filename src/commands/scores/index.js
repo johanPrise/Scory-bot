@@ -1,3 +1,6 @@
+// Import du bot
+import { bot } from '../../config/bot.js';
+
 // Commandes de base
 import addScore from './addScore.js';
 import addSubScore from './addSubScore.js';

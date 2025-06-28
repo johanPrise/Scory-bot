@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
 import { getRankingData } from '../../services/scoreService.js';
 import logger from '../../utils/logger.js';
-import { handleError } from './utils/helpers.js';
+import { handleError } from '../utils/helpers.js';
 
 /**
  * Formate un sous-classement pour l'affichage

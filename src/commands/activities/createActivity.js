@@ -1,19 +1,15 @@
 import { bot } from '../../config/bot.js';
-import { createActivity as createActivityService } from '../../services/activityService.js';
+import * as activityService from '../../services/activityService.js';
 import logger from '../../utils/logger.js';
-import { handleError } from '../utils/helpers.js';
 
 /**
  * Gère la commande /createactivity pour créer une nouvelle activité
  * Format: /createactivity nom_activité [description]
  */
-export default async (msg, match) => {
+export const createActivity = async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const activityInfo = match[1].trim();
-  
-  // Séparer le nom de la description (si fournie)
-  const [name, ...descriptionParts] = activityInfo.split(' ');
+  const [_, name, ...descriptionParts] = match;
   const description = descriptionParts.join(' ');
 
   try {
@@ -34,18 +30,21 @@ export default async (msg, match) => {
     );
 
     // Créer l'activité via le service
-    const activity = await createActivityService({
+    const activity = await activityService.createActivity({
       name,
-      description: description || null,
-      createdBy: userId,
-      chatId
+      description: description || '',
+      createdBy: userId.toString(),
+      chatId: chatId.toString()
     });
 
     // Réponse de succès
     await bot.editMessageText(
-      `✅ Activité créée avec succès !\n` +
+      `✅ Activité créée avec succès !\n\n` +
       `🏷 *${activity.name}*` +
-      (activity.description ? `\n📝 ${activity.description}` : ''),
+      (activity.description ? `\n📝 ${activity.description}` : '') +
+      `\n\nVous pouvez maintenant:\n` +
+      `- Ajouter des sous-activités avec /addsubactivity ${activity.name} nom_sous_activité [score_max]\n` +
+      `- Attribuer des scores avec /score @utilisateur ${activity.name} points`,
       {
         chat_id: chatId,
         message_id: loadingMsg.message_id,
@@ -53,9 +52,17 @@ export default async (msg, match) => {
       }
     );
 
-    logger.info(`Nouvelle activité créée: ${activity.name} (${activity.id})`);
+    logger.info(`Nouvelle activité créée: ${activity.name} (${activity._id})`);
 
   } catch (error) {
-    handleError(chatId, error, 'Erreur lors de la création de l\'activité');
+    logger.error(`Erreur lors de la création de l'activité: ${error.message}`, { error });
+    
+    // Gérer les erreurs
+    bot.sendMessage(
+      chatId,
+      `❌ Erreur lors de la création de l'activité: ${error.message}`
+    );
   }
 };
+
+export default createActivity;

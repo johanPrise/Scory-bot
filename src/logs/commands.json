@@ -1,0 +1,152 @@
+{
+  "lastUpdated": "2025-06-19T16:28:40.655Z",
+  "environment": "development",
+  "bot": "scory_fr_bot",
+  "commands": [
+    {
+      "command": "start",
+      "description": "Démarrer le bot et afficher le message de bienvenue",
+      "usage": "/start "
+    },
+    {
+      "command": "help",
+      "description": "Afficher l'aide et la liste des commandes disponibles",
+      "usage": "/help [commande]"
+    },
+    {
+      "command": "link",
+      "description": "Lier votre compte Telegram à votre compte Scory",
+      "usage": "/link <code>"
+    },
+    {
+      "command": "activities",
+      "description": "Lister toutes vos activités",
+      "usage": "/activities "
+    },
+    {
+      "command": "activity",
+      "description": "Gérer une activité spécifique",
+      "usage": "/activity "
+    },
+    {
+      "command": "create_activity",
+      "description": "Créer une nouvelle activité",
+      "usage": "/create_activity "
+    },
+    {
+      "command": "join_activity",
+      "description": "Rejoindre une activité existante",
+      "usage": "/join_activity "
+    },
+    {
+      "command": "score",
+      "description": "Enregistrer un score pour une activité",
+      "usage": "/score <id_activité> <participant> <points>"
+    },
+    {
+      "command": "scores",
+      "description": "Voir les scores d'une activité",
+      "usage": "/scores "
+    },
+    {
+      "command": "ranking",
+      "description": "Voir le classement d'une activité",
+      "usage": "/ranking <id_activité>"
+    },
+    {
+      "command": "leaderboard",
+      "description": "Voir le classement général",
+      "usage": "/leaderboard "
+    },
+    {
+      "command": "teams",
+      "description": "Lister les équipes",
+      "usage": "/teams "
+    },
+    {
+      "command": "create_team",
+      "description": "Créer une nouvelle équipe",
+      "usage": "/create_team "
+    },
+    {
+      "command": "join_team",
+      "description": "Rejoindre une équipe",
+      "usage": "/join_team "
+    },
+    {
+      "command": "team",
+      "description": "Gérer votre équipe",
+      "usage": "/team "
+    },
+    {
+      "command": "settings",
+      "description": "Afficher et modifier vos paramètres",
+      "usage": "/settings "
+    },
+    {
+      "command": "profile",
+      "description": "Afficher et modifier votre profil",
+      "usage": "/profile "
+    },
+    {
+      "command": "notifications",
+      "description": "Gérer vos préférences de notification",
+      "usage": "/notifications "
+    },
+    {
+      "command": "admin",
+      "description": "Commandes d'administration",
+      "usage": "/admin "
+    },
+    {
+      "command": "users",
+      "description": "Gérer les utilisateurs (admin)",
+      "usage": "/users "
+    },
+    {
+      "command": "broadcast",
+      "description": "Envoyer une annonce à tous les utilisateurs (admin)",
+      "usage": "/broadcast "
+    },
+    {
+      "command": "tutorial",
+      "description": "Voir le tutoriel d'utilisation",
+      "usage": "/tutorial "
+    },
+    {
+      "command": "support",
+      "description": "Contacter le support technique",
+      "usage": "/support "
+    },
+    {
+      "command": "feedback",
+      "description": "Donner votre avis sur le bot",
+      "usage": "/feedback "
+    },
+    {
+      "command": "report",
+      "description": "Signaler un problème ou un abus",
+      "usage": "/report "
+    },
+    {
+      "command": "status",
+      "description": "Voir l'état du bot",
+      "usage": "/status "
+    },
+    {
+      "command": "uptime",
+      "description": "Voir depuis combien de temps le bot est en ligne",
+      "usage": "/uptime "
+    },
+    {
+      "command": "version",
+      "description": "Afficher la version du bot",
+      "usage": "/version "
+    },
+    {
+      "command": "changelog",
+      "description": "Afficher les dernières modifications",
+      "usage": "/changelog "
+    }
+  ]
+}

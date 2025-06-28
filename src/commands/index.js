@@ -2,6 +2,7 @@ import { bot } from '../config/bot.js';
 
 // Import des utilitaires
 import { handleError, validateParams } from './utils/helpers.js';
+import { setupCallbackHandlers } from './utils/callbackHandler.js';
 
 // Import des commandes par catégorie
 import * as authCommands from './auth/index.js';
@@ -9,6 +10,8 @@ import * as activityCommands from './activities/index.js';
 import * as teamCommands from './teams/index.js';
 import * as scoreCommands from './scores/index.js';
 import * as utilityCommands from './utils/index.js';
+import * as webAppCommands from './utils/webAppCommands.js';
+import { createActivityWithButtons } from './activities/createActivityWithButtons.js';
 import logger from '../utils/logger.js';
 
 // Configuration des commandes
@@ -24,6 +27,7 @@ export const setupCommands = () => {
 
     // 2. Commandes d'activités
     bot.onText(/^\/createactivity\s+(.+)$/, activityCommands.createActivity);
+    bot.onText(/^\/create_activity$/, createActivityWithButtons);
     bot.onText(/^\/addsubactivity\s+(\S+)\s+(.+)$/, activityCommands.addSubActivity);
     bot.onText(/^\/activities$/, activityCommands.listActivities);
     bot.onText(/^\/history$/, activityCommands.history);
@@ -46,6 +50,17 @@ export const setupCommands = () => {
     bot.onText(/^\/starttimer\s+(\S+)\s+(\d+)$/, utilityCommands.startTimer);
     bot.onText(/^\/stoptimer\s+(\S+)$/, utilityCommands.stopTimer);
     logger.debug('Commandes utilitaires configurées');
+    
+    // 6. Commandes Web App
+    bot.onText(/^\/admin$/, webAppCommands.openAdminDashboard);
+    bot.onText(/^\/scoremanager$/, webAppCommands.openScoreManager);
+    bot.onText(/^\/teamdashboard$/, webAppCommands.openTeamDashboard);
+    bot.onText(/^\/dashboard$/, webAppCommands.openMainDashboard);
+    logger.debug('Commandes Web App configurées');
+    
+    // Configuration des gestionnaires de callbacks
+    setupCallbackHandlers();
+    logger.debug('Gestionnaires de callbacks configurés');
 
     // Gestion des erreurs globales
     bot.on('polling_error', (error) => {

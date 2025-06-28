@@ -148,3 +148,73 @@ export const getDashboardStats = async () => {
 export const getStatsData = async (timeRange) => {
   return fetchAPI(`/stats?range=${timeRange}`, { method: 'GET' });
 };
+
+// Tableau de bord
+export const dashboard = {
+  getStats: (period = 'month') => fetchAPI(`/dashboard/stats?period=${period}`),
+  getRecentActivity: (limit = 10) => fetchAPI(`/dashboard/activity?limit=${limit}`),
+  getTopPerformers: (options = {}) => {
+    const { period = 'month', scope = 'individual', limit = 5 } = options;
+    return fetchAPI(`/dashboard/top-performers?period=${period}&scope=${scope}&limit=${limit}`);
+  }
+};
+
+// Scores
+export const scores = {
+  getAll: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    return fetchAPI(`/scores?${queryParams.toString()}`);
+  },
+  getPersonal: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    return fetchAPI(`/scores/personal?${queryParams.toString()}`);
+  },
+  getTeam: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    return fetchAPI(`/scores/team?${queryParams.toString()}`);
+  },
+  getPending: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    return fetchAPI(`/scores/pending?${queryParams.toString()}`);
+  },
+  approve: (scoreId) => fetchAPI(`/scores/${scoreId}/approve`, { method: 'PUT' }),
+  reject: (scoreId, reason) => fetchAPI(`/scores/${scoreId}/reject`, { 
+    method: 'PUT',
+    body: JSON.stringify({ reason })
+  }),
+  create: (scoreData) => fetchAPI('/scores', {
+    method: 'POST',
+    body: JSON.stringify(scoreData)
+  }),
+  update: (scoreId, scoreData) => fetchAPI(`/scores/${scoreId}`, {
+    method: 'PUT',
+    body: JSON.stringify(scoreData)
+  }),
+  delete: (scoreId) => fetchAPI(`/scores/${scoreId}`, { method: 'DELETE' })
+};
+
+// Activités
+export const fetchActivities = () => fetchAPI('/activities');
+export const createActivity = (activity) => fetchAPI('/activities', {
+  method: 'POST',
+  body: JSON.stringify(activity)
+});
+export const updateActivity = (activityId, activity) => fetchAPI(`/activities/${activityId}`, {
+  method: 'PUT',
+  body: JSON.stringify(activity)
+});
+export const deleteActivity = (activityId) => fetchAPI(`/activities/${activityId}`, {
+  method: 'DELETE'
+});

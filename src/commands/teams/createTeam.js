@@ -1,13 +1,12 @@
 import { bot } from '../../config/bot.js';
-import { createTeam as createTeamService } from '../../services/teamService.js';
+import * as teamService from '../../services/teamService.js';
 import logger from '../../utils/logger.js';
-import { handleError } from '../utils/helpers.js';
 
 /**
  * Gère la commande /createteam
  * Format: /createteam <nom_équipe> [description]
  */
-export default async (msg, match) => {
+export const createTeam = async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const [_, teamName, ...descriptionParts] = match;
@@ -19,7 +18,7 @@ export default async (msg, match) => {
       return bot.sendMessage(
         chatId,
         '❌ Veuillez spécifier un nom pour l\'équipe.\n' +
-        'Exemple: /createteam ÉquipeA',
+        'Exemple: /createteam ÉquipeA Une super équipe',
         { parse_mode: 'Markdown' }
       );
     }
@@ -32,11 +31,8 @@ export default async (msg, match) => {
     );
 
     // Appeler le service pour créer l'équipe
-    const team = await createTeamService({
-      name: teamName,
-      description,
-      createdBy: userId,
-      chatId
+    const team = await teamService.createTeam(teamName, chatId.toString(), userId.toString(), {
+      description: description || undefined
     });
 
     // Envoyer le message de confirmation
@@ -45,8 +41,8 @@ export default async (msg, match) => {
     if (team.description) {
       message += `📝 *Description*: ${team.description}\n`;
     }
-    message += `👥 *Membres*: Aucun membre pour le moment\n`;
-    message += `\nUtilisez /addtoteam pour ajouter des membres à cette équipe.`;
+    message += `👥 *Membres*: 1 (vous)\n`;
+    message += `\nUtilisez /addtoteam @utilisateur ${team.name} pour ajouter des membres à cette équipe.`;
 
     await bot.editMessageText(message, {
       chat_id: chatId,
@@ -54,8 +50,16 @@ export default async (msg, match) => {
       parse_mode: 'Markdown'
     });
 
-    logger.info(`Team created: ${team.name} by ${userId} in chat ${chatId}`);
+    logger.info(`Équipe créée: ${team.name} par ${userId} dans le chat ${chatId}`);
   } catch (error) {
-    handleError(chatId, error, `Erreur lors de la création de l'équipe '${teamName}'`);
+    logger.error(`Erreur lors de la création de l'équipe: ${error.message}`, { error });
+    
+    // Gérer les erreurs
+    bot.sendMessage(
+      chatId,
+      `❌ Erreur lors de la création de l'équipe: ${error.message}`
+    );
   }
 };
+
+export default createTeam;

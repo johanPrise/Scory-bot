@@ -1,0 +1,503 @@
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:03:08"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:03:11","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:03:11"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:03:11"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:03:12.469Z","timestamp":"2025-06-19 17:03:12","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:03:17"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:03:19","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:03:19"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:03:19"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:03:20.939Z","timestamp":"2025-06-19 17:03:20","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:03:33"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:03:38","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:03:39"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:03:39"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:03:42.490Z","timestamp":"2025-06-19 17:03:42","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:03:47"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:03:48","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:03:48"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:03:48"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:03:49.941Z","timestamp":"2025-06-19 17:03:49","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:04:04"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:04:06","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:04:06"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:04:06"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:04:07.808Z","timestamp":"2025-06-19 17:04:07","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:04:15"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:04:17","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:04:17"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:04:17"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:04:34"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:04:38","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:04:38"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:04:38"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:04:47"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:04:48","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:04:48"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:04:48"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:04:49.962Z","timestamp":"2025-06-19 17:04:49","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:05:06"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:05:08","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:05:08"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:05:08"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:05:10.685Z","timestamp":"2025-06-19 17:05:10","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:05:16"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:05:19","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:05:19"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:05:19"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:05:20.958Z","timestamp":"2025-06-19 17:05:20","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:05:35"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:05:45","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:05:45"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:05:45"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:05:46.845Z","timestamp":"2025-06-19 17:05:46","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:06:02"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:06:04","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:06:04"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:06:04"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:06:06.257Z","timestamp":"2025-06-19 17:06:06","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:06:11"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:06:12","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:06:12"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:06:12"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:06:18"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:06:21","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:06:21"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:06:21"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:06:28"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:06:29","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:06:29"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:06:29"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:06:30.837Z","timestamp":"2025-06-19 17:06:30","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:06:36"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:06:37","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:06:37"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:06:37"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:06:38.605Z","timestamp":"2025-06-19 17:06:38","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:06:43"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:06:45","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:06:45"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:06:45"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:06:46.626Z","timestamp":"2025-06-19 17:06:46","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:06:51"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:06:52","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:06:52"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:06:52"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:06:58"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:07:00","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:07:00"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:07:00"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:07:06"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:07:07","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:07:07"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:07:07"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:07:08.903Z","timestamp":"2025-06-19 17:07:08","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:07:13"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:07:14","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:07:14"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:07:14"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:07:15.954Z","timestamp":"2025-06-19 17:07:15","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:07:22"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:07:24","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:07:24"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:07:24"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:07:25.646Z","timestamp":"2025-06-19 17:07:25","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:07:37"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:07:38","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:07:38"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:07:38"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:07:39.763Z","timestamp":"2025-06-19 17:07:39","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:07:47"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:07:50","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:07:50"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:07:50"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:07:52.018Z","timestamp":"2025-06-19 17:07:52","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:07:57"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:07:58","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:07:58"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:07:58"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:08:00.630Z","timestamp":"2025-06-19 17:08:03","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:08:11"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:08:13","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:08:13"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:08:13"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:08:14.438Z","timestamp":"2025-06-19 17:08:14","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:08:25"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:08:27","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:08:27"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:08:27"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:08:28.218Z","timestamp":"2025-06-19 17:08:28","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:08:38"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:08:40","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:08:40"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:08:40"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:08:51"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:08:54","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:08:54"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:08:54"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:09:02"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:09:05","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:09:05"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:09:05"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:09:06.125Z","timestamp":"2025-06-19 17:09:06","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:09:11"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:09:13","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:09:13"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:09:13"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:09:25"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:09:27","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:09:27"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:09:27"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:09:28.472Z","timestamp":"2025-06-19 17:09:28","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:09:38"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:09:41","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:09:41"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:09:41"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:09:52"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:09:55","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:09:55"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:09:55"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:10:06"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:10:07","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:10:07"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:10:07"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:10:13"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:10:15","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:10:15"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:10:15"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:10:22"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:10:24","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:10:24"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:10:24"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:10:25.719Z","timestamp":"2025-06-19 17:10:25","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:10:33"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:10:35","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:10:35"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:10:35"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:10:37.348Z","timestamp":"2025-06-19 17:10:37","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:10:48"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:10:50","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:10:50"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:10:50"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:10:52.088Z","timestamp":"2025-06-19 17:10:52","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:11:04"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:11:06","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:11:06"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:11:06"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:11:07.057Z","timestamp":"2025-06-19 17:11:07","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:11:17"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:11:19","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:11:19"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:11:19"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:11:20.898Z","timestamp":"2025-06-19 17:11:20","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:11:32"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:11:35","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:11:35"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:11:35"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:11:42"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:11:43","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:11:43"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:11:43"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:11:50"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:11:52","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:11:52"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:11:52"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:11:55.657Z","timestamp":"2025-06-19 17:11:55","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:12:04"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:12:06","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:12:06"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:12:06"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:12:08.166Z","timestamp":"2025-06-19 17:12:08","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:12:18"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:12:20","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:12:20"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:12:20"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:12:33"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:12:35","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:12:35"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:12:35"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:12:48"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:12:50","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:12:50"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:12:50"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:12:51.087Z","timestamp":"2025-06-19 17:12:51","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:12:57"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:12:59","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:12:59"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:12:59"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:13:00.485Z","timestamp":"2025-06-19 17:13:00","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:13:06"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:13:07","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:13:08"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:13:08"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:13:09.829Z","timestamp":"2025-06-19 17:13:10","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:13:18"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:13:20","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:13:20"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:13:20"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:13:21.465Z","timestamp":"2025-06-19 17:13:21","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:13:34"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:13:36","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:13:36"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:13:36"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:13:37.665Z","timestamp":"2025-06-19 17:13:37","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:13:47"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:13:49","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:13:49"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:13:49"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:13:56"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:13:59","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:13:59"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:13:59"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:14:06"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:14:08","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:14:08"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:14:08"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:14:09.839Z","timestamp":"2025-06-19 17:14:09","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:14:16"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:14:18","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:14:18"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:14:18"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:14:19.094Z","timestamp":"2025-06-19 17:14:19","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:14:30"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:14:31","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:14:31"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:14:31"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:14:37"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:14:40","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:14:40"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:14:40"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:14:47"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:14:49","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:14:49"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:14:49"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:14:55"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:14:59","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:14:59"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:14:59"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:15:05"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:15:08","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:15:08"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:15:08"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:15:15"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:15:18","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:15:18"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:15:18"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:15:26"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:15:29","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:15:29"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:15:29"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:15:36"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:15:38","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:15:38"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:15:38"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:15:44"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:15:46","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:15:46"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:15:46"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:15:56"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:15:58","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:15:58"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:15:58"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:16:05"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:16:07","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:16:07"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:16:07"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:16:08.631Z","timestamp":"2025-06-19 17:16:08","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:16:13"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:16:17","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:16:17"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:16:17"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:16:24"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:16:27","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:16:27"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:16:27"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:16:33"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:16:34","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:16:34"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:16:34"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:16:40"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:16:43","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:16:43"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:16:43"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:16:49"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:16:50","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:16:50"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:16:50"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:16:57"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:16:59","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:16:59"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:16:59"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:17:07"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:17:08","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:17:08"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:17:08"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:17:15"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:17:17","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:17:17"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:17:17"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:17:18.391Z","timestamp":"2025-06-19 17:17:18","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:17:29"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:17:30","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:17:30"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:17:30"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:17:32.278Z","timestamp":"2025-06-19 17:17:32","userId":"system"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:25:23"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:25:25","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:25:25"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:25:25"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:25:26.155Z","timestamp":"2025-06-19 17:25:26","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:25:26"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:25:26"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-19 17:25:26"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-19 17:25:26"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:25:26"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:25:26"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:25:26"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:25:31"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:25:33","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:25:33"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:25:33"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:25:40"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:25:41","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:25:41"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:25:41"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:25:48"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:25:49","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:25:49"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:25:49"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:25:56"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:25:58","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:25:58"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:25:58"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:25:59.842Z","timestamp":"2025-06-19 17:25:59","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:25:59"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:25:59"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-19 17:25:59"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-19 17:25:59"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:25:59"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:25:59"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:25:59"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:26:04"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:26:06","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:26:06"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:26:06"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:26:12"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:26:15","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:26:15"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:26:15"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:26:29"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:26:32","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:26:32"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:26:32"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:26:34.924Z","timestamp":"2025-06-19 17:26:34","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:26:34"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:26:34"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-19 17:26:34"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-19 17:26:34"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:26:34"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:26:34"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:26:34"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:26:41"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:26:47","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:26:48"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:26:48"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:26:49.548Z","timestamp":"2025-06-19 17:26:49","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:26:49"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:26:49"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-19 17:26:49"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-19 17:26:49"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:26:49"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:26:49"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:26:49"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:26:55"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:26:56","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:26:56"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:26:56"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:26:58.115Z","timestamp":"2025-06-19 17:26:58","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:26:58"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:26:58"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-19 17:26:58"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-19 17:26:58"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:26:58"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:26:58"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:26:58"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:27:03"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:27:04","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:27:04"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:27:04"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:27:11"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:27:13","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:27:13"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:27:13"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:27:14.077Z","timestamp":"2025-06-19 17:27:14","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:27:14"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:27:14"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-19 17:27:14"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-19 17:27:14"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:27:14"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:27:14"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:27:14"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:27:19"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:27:21","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:27:21"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:27:21"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:27:22.540Z","timestamp":"2025-06-19 17:27:22","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:27:22"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:27:22"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-19 17:27:22"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-19 17:27:22"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:27:22"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:27:22"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:27:22"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:27:29"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:27:31","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:27:31"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:27:31"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:27:38"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:27:40","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:27:40"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:27:40"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:27:41.833Z","timestamp":"2025-06-19 17:27:41","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:27:41"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:27:41"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-19 17:27:41"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-19 17:27:41"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:27:41"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:27:41"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:27:41"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:27:47"}
+{"level":"warn","message":"Signal SIGINT reçu. Arrêt en cours...","service":"scory-bot","timestamp":"2025-06-19 17:27:47"}
+{"level":"info","message":"Arrêt du bot...","service":"scory-bot","timestamp":"2025-06-19 17:27:47"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:28:05"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:28:06","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:28:06"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:28:06"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:28:13"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:28:15","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:28:15"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:28:15"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:28:22"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:28:24","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:28:24"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:28:24"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:28:30"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:28:32","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:28:32"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:28:32"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:28:38"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:28:39","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:28:39"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:28:39"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-19 17:33:56"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-19 17:33:58","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-19 17:33:58"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-19 17:33:58"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-19T16:33:59.474Z","timestamp":"2025-06-19 17:33:59","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
