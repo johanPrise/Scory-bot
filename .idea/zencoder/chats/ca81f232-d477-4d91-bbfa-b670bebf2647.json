@@ -1,0 +1,1164 @@
+{
+    "checksum": "ee6d4e6814f6cfa8f2f77efed6774b7c673b18c2ef0c1e17565e30206468f000",
+    "data": {
+    "id": "ca81f232-d477-4d91-bbfa-b670bebf2647",
+    "createdAt": 1750348231464,
+    "updatedAt": 1750349893410,
+    "title": "Module Import Error Resolution",
+    "messages": [
+        {
+            "id": "4801de33-72da-4dc8-92c5-bd25804e307c",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "import { getScoreHistory } from '../../services/scoreService.js';"
+                },
+                {
+                    "type": "text",
+                    "text": "         ^^^^^^^^^^^^^^^"
+                },
+                {
+                    "type": "text",
+                    "text": "SyntaxError: The requested module '../../services/scoreService.js' does not provide an export named 'getScoreHistory'"
+                },
+                {
+                    "type": "text",
+                    "text": "    at ModuleJob._instantiate (node:internal/modules/esm/module_job:182:21)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at async ModuleJob.run (node:internal/modules/esm/module_job:266:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "Node.js v22.15.0"
+                },
+                {
+                    "type": "text",
+                    "text": "[nodemon] app crashed - waiting for file changes before starting..."
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "src\\commands\\scores\\scoreHistory.js",
+                    "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\commands\\scores\\scoreHistory.js",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "import { bot } from '../../config/bot.js';\nimport { MESSAGES } from '../../config/messages.js';\nimport logger from '../../utils/logger.js';\nimport { getScoreHistory } from '../../services/scoreService.js';\n\n/**\n * Affiche l'historique des scores d'un utilisateur\n * @param {Object} ctx - Contexte du message\n * @param {Array} match - Résultats de la correspondance d'expression régulière\n */\nconst scoreHistory = async (ctx, match) => {\n  const chatId = ctx.chat.id;\n  const userId = ctx.from.id;\n  const [_, period = 'month', activityId] = match || [];\n\n  try {\n    // Afficher un message de chargement\n    const loadingMsg = await bot.sendMessage(chatId, '🔄 Chargement de l\\'historique...');\n\n    // Récupérer l'historique des scores\n    const historyData = await getScoreHistory({\n      userId,\n      period,\n      activityId,\n      limit: 10 // Limiter à 10 entrées par défaut\n    });\n\n    // Formater et envoyer l'historique\n    const formattedHistory = formatHistory(historyData, period);\n    \n    await bot.editMessageText(formattedHistory, {\n      chat_id: chatId,\n      message_id: loadingMsg.message_id,\n      parse_mode: 'Markdown',\n      disable_web_page_preview: true\n    });\n\n    // Envoyer les options de filtre\n    await sendFilterOptions(chatId, userId);\n\n  } catch (error) {\n    logger.error('Erreur dans scoreHistory:', error);\n    await bot.sendMessage(\n      chatId,\n      '❌ Une erreur est survenue lors de la récupération de l\\'historique.'\n    );\n  }\n};\n\n/**\n * Formate les données d'historique en message Markdown\n * @param {Array} historyData - Données d'historique\n * @param {string} period - Période de l'historique\n * @returns {string} Message formaté\n */\nfunction formatHistory(historyData, period) {\n  if (!historyData || historyData.length === 0) {\n    return 'Aucun historique de score disponible pour cette période.';\n  }\n\n  const periodLabel = getPeriodLabel(period);\n  let message = `📊 *Historique des scores ${periodLabel}*\\n\\n`;\n  let totalScore = 0;\n  let activityCount = 0;\n\n  historyData.forEach((entry, index) => {\n    const date = new Date(entry.timestamp).toLocaleDateString('fr-FR', {\n      day: '2-digit',\n      month: '2-digit',\n      year: 'numeric',\n      hour: '2-digit',\n      minute: '2-digit'\n    });\n    \n    message += `📅 *${date}*\\n`;\n    message += `🏷️ Activité: *${entry.activityName}*\\n`;\n    message += `🎯 Score: *${entry.value} pts*\\n`;\n    \n    if (entry.comments) {\n      message += `💬 Commentaire: ${entry.comments}\\n`;\n    }\n    \n    message += '\\n';\n    \n    totalScore += entry.value;\n    activityCount++;\n  });\n\n  // Ajouter un résumé\n  message += `\\n📈 *Résumé*\\n`;\n  message += `• Nombre d'activités: *${activityCount}*\\n`;\n  message += `• Score total: *${totalScore} pts*\\n`;\n  message += `• Moyenne: *${activityCount > 0 ? (totalScore / activityCount).toFixed(1) : 0} pts/activité*`;\n\n  return message;\n}\n\n/**\n * Envoie les options de filtre pour l'historique\n * @param {number} chatId - ID du chat\n * @param {number} userId - ID de l'utilisateur\n */\nasync function sendFilterOptions(chatId, userId) {\n  await bot.sendMessage(\n    chatId,\n    'Filtrer l\\'historique :',\n    {\n      reply_markup: {\n        inline_keyboard: [\n          [\n            { text: '📅 7 derniers jours', callback_data: `history_week_${userId}` },\n            { text: '📆 30 derniers jours', callback_data: `history_month_${userId}` }\n          ],\n          [\n            { text: '📅 3 derniers mois', callback_data: `history_3months_${userId}` },\n            { text: '⭐ Tous les temps', callback_data: `history_all_${userId}` }\n          ],\n          [\n            { text: '📊 Statistiques détaillées', callback_data: `history_stats_${userId}` },\n            { text: '📤 Exporter en CSV', callback_data: `history_export_${userId}` }\n          ]\n        ]\n      }\n    }\n  );\n}\n\n/**\n * Gère les actions du clavier en ligne pour l'historique\n * @param {Object} ctx - Contexte du callback\n */\nconst handleHistoryActions = async (ctx) => {\n  const callbackData = ctx.update.callback_query.data;\n  const chatId = ctx.chat?.id || ctx.update.callback_query.message.chat.id;\n  \n  try {\n    if (callbackData.startsWith('history_')) {\n      const [_, period, userId] = callbackData.split('_');\n      \n      if (period === 'export') {\n        await handleExportHistory(chatId, userId);\n        return;\n      }\n      \n      if (period === 'stats') {\n        await showDetailedStats(chatId, userId);\n        return;\n      }\n      \n      // Réutiliser la logique d'historique avec la nouvelle période\n      await scoreHistory(\n        { \n          ...ctx, \n          chat: { id: chatId },\n          from: { id: parseInt(userId) }\n        }, \n        [null, period]\n      );\n      \n      // Supprimer le clavier après sélection\n      await bot.answerCallbackQuery(ctx.update.callback_query.id);\n    }\n  } catch (error) {\n    logger.error('Erreur dans handleHistoryActions:', error);\n    await bot.sendMessage(chatId, '❌ Une erreur est survenue lors du traitement de votre demande.');\n  }\n};\n\n/**\n * Gère l'export de l'historique\n */\nasync function handleExportHistory(chatId, userId) {\n  try {\n    // Ici, vous pourriez générer un fichier CSV et l'envoyer\n    // Pour l'instant, on simule l'export\n    await bot.sendMessage(\n      chatId,\n      '📤 Export de votre historique en cours de préparation...',\n      { parse_mode: 'Markdown' }\n    );\n    \n    // Simuler un délai de génération\n    setTimeout(async () => {\n      await bot.sendDocument(\n        chatId,\n        'https://example.com/exports/scores-export.csv', // À remplacer par l'URL réelle\n        {\n          caption: '📥 Voici votre export CSV des scores',\n          parse_mode: 'Markdown'\n        }\n      );\n    }, 2000);\n    \n  } catch (error) {\n    logger.error('Erreur lors de l\\'export de l\\'historique:', error);\n    await bot.sendMessage(\n      chatId,\n      '❌ Une erreur est survenue lors de l\\'export de votre historique.'\n    );\n  }\n}\n\n/**\n * Affiche des statistiques détaillées\n */\nasync function showDetailedStats(chatId, userId) {\n  try {\n    // Ici, vous pourriez récupérer des statistiques avancées\n    // Pour l'instant, on simule des données\n    const stats = {\n      totalActivities: 42,\n      totalScore: 1250,\n      averageScore: 29.8,\n      bestActivity: 'Course à pied',\n      bestScore: 150,\n      activityDistribution: [\n        { name: 'Course', percentage: 40 },\n        { name: 'Vélo', percentage: 30 },\n        { name: 'Natation', percentage: 20 },\n        { name: 'Autre', percentage: 10 }\n      ]\n    };\n    \n    let message = '📊 *Statistiques détaillées*\\n\\n';\n    message += `🎯 Activités totales: *${stats.totalActivities}*\\n`;\n    message += `🏆 Score total: *${stats.totalScore} pts*\\n`;\n    message += `📈 Moyenne: *${stats.averageScore} pts/activité*\\n`;\n    message += `🌟 Meilleure activité: *${stats.bestActivity}* (${stats.bestScore} pts)\\n\\n`;\n    \n    message += '📊 Répartition des activités:\\n';\n    stats.activityDistribution.forEach(item => {\n      message += `• ${item.name}: ${item.percentage}%\\n`;\n    });\n    \n    await bot.sendMessage(\n      chatId,\n      message,\n      { parse_mode: 'Markdown' }\n    );\n    \n  } catch (error) {\n    logger.error('Erreur lors de l\\'affichage des statistiques:', error);\n    await bot.sendMessage(\n      chatId,\n      '❌ Une erreur est survenue lors de la récupération des statistiques.'\n    );\n  }\n}\n\n// Fonctions utilitaires\nfunction getPeriodLabel(period) {\n  const periods = {\n    'week': 'des 7 derniers jours',\n    'month': 'des 30 derniers jours',\n    '3months': 'des 3 derniers mois',\n    'all': 'complet'\n  };\n  return periods[period] || '';\n}\n\n// Enregistrer le gestionnaire de callback\nbot.on('callback_query', handleHistoryActions);\n\nexport default scoreHistory;\n"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1750348231504,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "import { getScoreHistory } from '../../services/scoreService.js';"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "         ^^^^^^^^^^^^^^^"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "SyntaxError: The requested module '../../services/scoreService.js' does not provide an export named 'getScoreHistory'"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at ModuleJob._instantiate (node:internal/modules/esm/module_job:182:21)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at async ModuleJob.run (node:internal/modules/esm/module_job:266:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Node.js v22.15.0"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "[nodemon] app crashed - waiting for file changes before starting..."
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "c22dd1c8-8dac-4538-9bb0-ae25e95255a0",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I can see the issue - the `scoreHistory.js` file is trying to import `getScoreHistory` from `../../services/scoreService.js`, but that export doesn't exist in the module. Let me check what's actually available in the scoreService file."
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01W3wYSGagsNzd6Ex6nAgM1W",
+                    "statusText": "Viewed file",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/services/scoreService.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\scoreService.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "I can see the `scoreService.js` file has many functions exported, but I don't see `getScoreHistory` in the visible portion. Let me search for all exports in this file to find the right function name:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_011oyHK1Hboc7i2mW96bKo3C",
+                    "title": "Fulltext search",
+                    "statusText": "Failed",
+                    "status": "ERROR",
+                    "isHidden": false
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01EGd1yTyFWCLywNUZjY27rP",
+                    "title": "Fulltext search",
+                    "statusText": "Done",
+                    "status": "SUCCESS",
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "Let me search for functions that might be related to history in the scoreService file:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01SUth3z89SUjc2p4R3s9VtV",
+                    "title": "Fulltext search",
+                    "statusText": "Done",
+                    "status": "SUCCESS",
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "Now let me look at all the exports in the scoreService.js file to see what functions are available:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01HHLzPeSNmdxTxneuRq1g1z",
+                    "title": "Fulltext search",
+                    "statusText": "Failed",
+                    "status": "ERROR",
+                    "isHidden": false
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01Uk3J1AvhiWxTU2bYsTBWqZ",
+                    "title": "Fulltext search",
+                    "statusText": "Done",
+                    "status": "SUCCESS",
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "Let me view the end of the scoreService.js file to see all the exports:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01W5eqNVdQCAAswtyGiycQyY",
+                    "statusText": "Viewed file",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/services/scoreService.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\scoreService.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "I can see that there's no `getScoreHistory` function exported from the scoreService.js file. Let me check the score service more carefully to see if there are any functions that might retrieve score history. Let me search for a function that might handle score history:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01DXkNQVc1H1G9YjNrwWiia9",
+                    "title": "Fulltext search",
+                    "statusText": "Done",
+                    "status": "SUCCESS",
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "It looks like the `getScoreHistory` function doesn't exist. I can see that `getRankingData` is exported from the scoreService, and it might be what's needed. Let me check if that function can be used for history purposes, or if we need to create a new `getScoreHistory` function.\n\nLooking at the code, I can see that the `scoreHistory.js` file expects a `getScoreHistory` function that returns historical score data. Let me create this function in the scoreService.js file:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01Jb3Et3smHbxtg3suyo8z13",
+                    "statusText": "Change generated",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/services/scoreService.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\scoreService.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "codeHunk",
+                    "lineBasedDiff": "--- src/services/scoreService.js\n+++ src/services/scoreService.js\n@@ -843,5 +843,82 @@\n   }\n };\n \n+/**\n+ * Récupère l'historique des scores d'un utilisateur\n+ * @param {Object} options - Options de filtrage\n+ * @param {string} options.userId - ID de l'utilisateur\n+ * @param {string} [options.period='month'] - Période ('week', 'month', '3months', 'all')\n+ * @param {string} [options.activityId] - ID de l'activité pour filtrer\n+ * @param {number} [options.limit=10] - Nombre maximum d'entrées\n+ * @returns {Promise<Array>} Liste des scores historiques\n+ */\n+export const getScoreHistory = async ({ userId, period = 'month', activityId, limit = 10 }) => {\n+  try {\n+    if (!userId) {\n+      throw new Error('L\\'ID de l\\'utilisateur est requis');\n+    }\n+\n+    // Construire le filtre de base\n+    const filter = { \n+      user: userId,\n+      status: SCORE_STATUS.APPROVED \n+    };\n+\n+    if (activityId) {\n+      filter.activity = activityId;\n+    }\n+\n+    // Filtrer par période\n+    if (period !== 'all') {\n+      const now = new Date();\n+      let startDate;\n+\n+      switch (period) {\n+        case 'week':\n+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n+          break;\n+        case 'month':\n+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n+          break;\n+        case '3months':\n+          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);\n+          break;\n+      }\n+\n+      if (startDate) {\n+        filter.createdAt = { $gte: startDate };\n+      }\n+    }\n+\n+    // Récupérer les scores avec les informations de l'activité\n+    const scores = await Score.find(filter)\n+      .populate('activity', 'name description')\n+      .sort({ createdAt: -1 })\n+      .limit(limit)\n+      .lean();\n+\n+    // Formater les données pour l'affichage\n+    const historyData = scores.map(score => ({\n+      timestamp: score.createdAt,\n+      activityName: score.activity?.name || 'Activité inconnue',\n+      value: score.value,\n+      comments: score.metadata?.comments || '',\n+      proofUrl: score.metadata?.evidence || '',\n+      maxPossible: score.maxPossible || 100,\n+      normalizedScore: score.normalizedScore || score.value\n+    }));\n+\n+    logger.info(`Historique récupéré pour l'utilisateur ${userId}: ${historyData.length} entrées`);\n+    return historyData;\n+\n+  } catch (error) {\n+    return handleScoreError(\n+      error,\n+      'Erreur lors de la récupération de l\\'historique des scores',\n+      { userId, period, activityId, limit }\n+    );\n+  }\n+};\n+\n export default scoreService;\n export { SCORE_TYPES, SCORE_STATUS, STATS_PERIODS };",
+                    "refToolCallId": "toolu_01Jb3Et3smHbxtg3suyo8z13"
+                },
+                {
+                    "type": "text",
+                    "text": "Perfect! I've added the missing `getScoreHistory` function to the scoreService.js file. This function:\n\n1. **Takes the expected parameters**: `userId`, `period`, `activityId`, and `limit`\n2. **Filters scores appropriately**: by user, status (approved only), activity (if specified), and time period\n3. **Supports all the periods** used in scoreHistory.js: 'week', 'month', '3months', 'all'\n4. **Populates activity information** to get activity names\n5. **Returns formatted data** that matches what the scoreHistory.js file expects\n6. **Includes proper error handling** using the existing handleScoreError function\n\nNow let's test the application to see if the import error is resolved:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01PBnpmPDXzutzDQ1XVWz1ua",
+                    "status": "IN_PROGRESS",
+                    "isHidden": true
+                },
+                {
+                    "type": "codePatch",
+                    "diffs": [
+                        {
+                            "path": "src/services/scoreService.js",
+                            "patch": "@@ -25298,16 +25298,2377 @@\n   %7D%0A%7D;%0A%0A\n+/**%0A * R%C3%A9cup%C3%A8re l'historique des scores d'un utilisateur%0A * @param %7BObject%7D options - Options de filtrage%0A * @param %7Bstring%7D options.userId - ID de l'utilisateur%0A * @param %7Bstring%7D %5Boptions.period='month'%5D - P%C3%A9riode ('week', 'month', '3months', 'all')%0A * @param %7Bstring%7D %5Boptions.activityId%5D - ID de l'activit%C3%A9 pour filtrer%0A * @param %7Bnumber%7D %5Boptions.limit=10%5D - Nombre maximum d'entr%C3%A9es%0A * @returns %7BPromise%3CArray%3E%7D Liste des scores historiques%0A */%0Aexport const getScoreHistory = async (%7B userId, period = 'month', activityId, limit = 10 %7D) =%3E %7B%0A  try %7B%0A    if (!userId) %7B%0A      throw new Error('L%5C'ID de l%5C'utilisateur est requis');%0A    %7D%0A%0A    // Construire le filtre de base%0A    const filter = %7B %0A      user: userId,%0A      status: SCORE_STATUS.APPROVED %0A    %7D;%0A%0A    if (activityId) %7B%0A      filter.activity = activityId;%0A    %7D%0A%0A    // Filtrer par p%C3%A9riode%0A    if (period !== 'all') %7B%0A      const now = new Date();%0A      let startDate;%0A%0A      switch (period) %7B%0A        case 'week':%0A          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);%0A          break;%0A        case 'month':%0A          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);%0A          break;%0A        case '3months':%0A          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);%0A          break;%0A      %7D%0A%0A      if (startDate) %7B%0A        filter.createdAt = %7B $gte: startDate %7D;%0A      %7D%0A    %7D%0A%0A    // R%C3%A9cup%C3%A9rer les scores avec les informations de l'activit%C3%A9%0A    const scores = await Score.find(filter)%0A      .populate('activity', 'name description')%0A      .sort(%7B createdAt: -1 %7D)%0A      .limit(limit)%0A      .lean();%0A%0A    // Formater les donn%C3%A9es pour l'affichage%0A    const historyData = scores.map(score =%3E (%7B%0A      timestamp: score.createdAt,%0A      activityName: score.activity?.name %7C%7C 'Activit%C3%A9 inconnue',%0A      value: score.value,%0A      comments: score.metadata?.comments %7C%7C '',%0A      proofUrl: score.metadata?.evidence %7C%7C '',%0A      maxPossible: score.maxPossible %7C%7C 100,%0A      normalizedScore: score.normalizedScore %7C%7C score.value%0A    %7D));%0A%0A    logger.info(%60Historique r%C3%A9cup%C3%A9r%C3%A9 pour l'utilisateur $%7BuserId%7D: $%7BhistoryData.length%7D entr%C3%A9es%60);%0A    return historyData;%0A%0A  %7D catch (error) %7B%0A    return handleScoreError(%0A      error,%0A      'Erreur lors de la r%C3%A9cup%C3%A9ration de l%5C'historique des scores',%0A      %7B userId, period, activityId, limit %7D%0A    );%0A  %7D%0A%7D;%0A%0A\n export d\n",
+                            "isNew": false,
+                            "isApplied": true
+                        }
+                    ]
+                },
+                {
+                    "type": "shellCommand",
+                    "command": "cd C:/Users/johan/Scory-bot; npm start",
+                    "id": "81e2ec18-f6d1-41d0-9109-b5a9e7189030",
+                    "status": "CONFIRMATION",
+                    "toolCallId": "toolu_01PBnpmPDXzutzDQ1XVWz1ua",
+                    "commandsRequiringConfirmation": [
+                        {
+                            "name": "npm",
+                            "arguments": [
+                                "start"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "context": {
+                "author": "Coding Agent",
+                "operationId": "78669682-c600-483c-91ea-a48f44c9272b"
+            },
+            "createdAt": 1750348245411,
+            "isInternal": false
+        },
+        {
+            "id": "fd747409-9487-4fd8-a8a7-0130d00cfcfe",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "import { getDashboardData } from '../../services/scoreService.js';"
+                },
+                {
+                    "type": "text",
+                    "text": "         ^^^^^^^^^^^^^^^^"
+                },
+                {
+                    "type": "text",
+                    "text": "SyntaxError: The requested module '../../services/scoreService.js' does not provide an export named 'getDashboardData'"
+                },
+                {
+                    "type": "text",
+                    "text": "    at ModuleJob._instantiate (node:internal/modules/esm/module_job:182:21)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at async ModuleJob.run (node:internal/modules/esm/module_job:266:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "Node.js v22.15.0"
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "src\\services\\scoreService.js",
+                    "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\scoreService.js",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "import Score from '../models/Score.js';\nimport User from '../models/User.js';\nimport Team from '../models/Team.js';\nimport { Activity } from '../models/activity.js';\nimport logger from '../utils/logger.js';\n\n// Types de scores\nconst SCORE_TYPES = {\n  INDIVIDUAL: 'individual',\n  TEAM: 'team',\n  SUB_ACTIVITY: 'sub_activity'\n};\n\n// Statuts de validation des scores\nconst SCORE_STATUS = {\n  PENDING: 'pending',\n  APPROVED: 'approved',\n  REJECTED: 'rejected',\n  DISPUTED: 'disputed'\n};\n\n// Périodes disponibles pour les statistiques\nconst STATS_PERIODS = {\n  DAY: 'day',\n  WEEK: 'week',\n  MONTH: 'month',\n  YEAR: 'year',\n  ALL: 'all'\n};\n\n/**\n * Gestion des erreurs pour le service de scores\n */\nconst handleScoreError = (error, customMessage, context = {}) => {\n  const errorDetails = {\n    message: error.message,\n    status: error.status || 500,\n    code: error.code || 'SCORE_SERVICE_ERROR',\n    context,\n    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined\n  };\n\n  logger.error(`${customMessage}: ${error.message}`, { \n    error: errorDetails,\n    context \n  });\n  \n  const errorToThrow = new Error(customMessage);\n  errorToThrow.status = error.status || 500;\n  errorToThrow.details = errorDetails;\n  throw errorToThrow;\n};\n\n/**\n * Ajoute un score pour un utilisateur ou une équipe\n * @param {string} userId - ID de l'utilisateur (obligatoire pour les scores individuels)\n * @param {string} activityId - ID de l'activité\n * @param {number} points - Nombre de points\n * @param {Object} options - Options supplémentaires\n * @param {string} [options.teamId] - ID de l'équipe (pour les scores d'équipe)\n * @param {string} [options.subActivity] - Nom de la sous-activité\n * @param {string} [options.awardedBy] - ID de l'utilisateur qui attribue le score\n * @param {string} [options.chatId] - ID du chat\n * @param {string} [options.messageId] - ID du message\n * @param {string} [options.comments] - Commentaires sur le score\n * @param {string} [options.proofUrl] - URL de preuve\n * @param {number} [options.maxPossible=100] - Score maximum possible\n * @param {string} [options.status=SCORE_STATUS.APPROVED] - Statut du score\n * @returns {Promise<Object>} Le score créé\n */\nexport const addScore = async (userId, activityId, points, options = {}) => {\n  try {\n    // Validation des paramètres obligatoires\n    if (!activityId) {\n      throw new Error('L\\'ID de l\\'activité est requis');\n    }\n    \n    if (isNaN(points) || points < 0) {\n      throw new Error('Les points doivent être un nombre positif');\n    }\n    \n    // Vérifier que l'activité existe\n    const activity = await Activity.findById(activityId);\n    if (!activity) {\n      throw new Error(`Activité non trouvée avec l'ID: ${activityId}`);\n    }\n    \n    // Déterminer le type de score et le contexte\n    let scoreType, context;\n    \n    if (options.teamId) {\n      // Score d'équipe\n      scoreType = SCORE_TYPES.TEAM;\n      context = 'team';\n      \n      // Vérifier que l'équipe existe\n      const team = await Team.findById(options.teamId);\n      if (!team) {\n        throw new Error(`Équipe non trouvée avec l'ID: ${options.teamId}`);\n      }\n    } else if (userId) {\n      // Score individuel\n      scoreType = SCORE_TYPES.INDIVIDUAL;\n      context = 'individual';\n      \n      // Vérifier que l'utilisateur existe\n      const user = await User.findById(userId);\n      if (!user) {\n        throw new Error(`Utilisateur non trouvé avec l'ID: ${userId}`);\n      }\n    } else {\n      throw new Error('Soit userId soit teamId doit être fourni');\n    }\n    \n    // Vérifier si un score existe déjà pour cette combinaison\n    const existingScoreFilter = {\n      activity: activityId,\n      ...(userId && { user: userId }),\n      ...(options.teamId && { team: options.teamId }),\n      ...(options.subActivity && { subActivity: options.subActivity })\n    };\n    \n    const existingScore = await Score.findOne(existingScoreFilter);\n    \n    if (existingScore) {\n      // Mettre à jour le score existant\n      existingScore.value = points;\n      existingScore.maxPossible = options.maxPossible || 100;\n      \n      if (options.comments) {\n        existingScore.metadata.comments = options.comments;\n      }\n      \n      if (options.proofUrl) {\n        existingScore.metadata.evidence = options.proofUrl;\n      }\n      \n      await existingScore.save();\n      \n      logger.info(`Score mis à jour: ${points} points pour ${scoreType === SCORE_TYPES.INDIVIDUAL ? 'utilisateur' : 'équipe'} ${userId || options.teamId}`);\n      \n      return existingScore;\n    }\n    \n    // Créer un nouveau score\n    const newScore = new Score({\n      user: userId || undefined,\n      team: options.teamId || undefined,\n      activity: activityId,\n      subActivity: options.subActivity || undefined,\n      value: points,\n      maxPossible: options.maxPossible || 100,\n      context,\n      awardedBy: options.awardedBy || userId,\n      status: options.status || SCORE_STATUS.APPROVED,\n      metadata: {\n        chatId: options.chatId || '',\n        messageId: options.messageId || '',\n        comments: options.comments || '',\n        evidence: options.proofUrl || ''\n      }\n    });\n    \n    await newScore.save();\n    \n    // Mettre à jour les statistiques de l'utilisateur ou de l'équipe\n    if (userId && scoreType === SCORE_TYPES.INDIVIDUAL) {\n      const user = await User.findById(userId);\n      await user.updateScore(points, activityId);\n    }\n    \n    if (options.teamId && scoreType === SCORE_TYPES.TEAM) {\n      const team = await Team.findById(options.teamId);\n      await team.updateScore(points);\n    }\n    \n    // Mettre à jour les statistiques de l'activité\n    activity.stats.totalSubmissions = (activity.stats.totalSubmissions || 0) + 1;\n    activity.stats.lastSubmission = new Date();\n    \n    // Calculer la moyenne des scores\n    const currentAverage = activity.stats.averageScore || 0;\n    const totalSubmissions = activity.stats.totalSubmissions;\n    activity.stats.averageScore = ((currentAverage * (totalSubmissions - 1)) + points) / totalSubmissions;\n    \n    await activity.save();\n    \n    logger.info(`Nouveau score ajouté: ${points} points pour ${scoreType === SCORE_TYPES.INDIVIDUAL ? 'utilisateur' : 'équipe'} ${userId || options.teamId}`);\n    \n    return newScore;\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de l\\'ajout du score',\n      { userId, activityId, points, options }\n    );\n  }\n};\n\n/**\n * Récupère le classement des scores\n * @param {string} activityId - ID de l'activité\n * @param {Object} options - Options de filtrage et de pagination\n * @param {string} [options.scope='individual'] - Type de classement ('individual' ou 'team')\n * @param {string} [options.period=STATS_PERIODS.MONTH] - Période de temps\n * @param {string} [options.teamId] - ID de l'équipe pour filtrer\n * @param {string} [options.userId] - ID de l'utilisateur pour filtrer\n * @param {string} [options.subActivity] - Nom de la sous-activité pour filtrer\n * @param {number} [options.limit=10] - Nombre de résultats\n * @param {number} [options.offset=0] - Décalage pour la pagination\n * @returns {Promise<Object>} Classement des scores\n */\nexport const getScoreRanking = async (activityId, options = {}) => {\n  try {\n    if (!activityId) {\n      throw new Error('L\\'ID de l\\'activité est requis');\n    }\n    \n    const {\n      scope = 'individual',\n      period = STATS_PERIODS.MONTH,\n      teamId,\n      userId,\n      subActivity,\n      limit = 10,\n      offset = 0\n    } = options;\n    \n    // Construire le filtre de base\n    const match = { \n      activity: activityId,\n      status: SCORE_STATUS.APPROVED \n    };\n    \n    if (teamId) match.team = teamId;\n    if (userId) match.user = userId;\n    if (subActivity) match.subActivity = subActivity;\n    \n    // Filtrer par période\n    if (period !== STATS_PERIODS.ALL) {\n      const now = new Date();\n      let startDate;\n      \n      switch (period) {\n        case STATS_PERIODS.DAY:\n          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n          break;\n        case STATS_PERIODS.WEEK:\n          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n          break;\n        case STATS_PERIODS.MONTH:\n          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n          break;\n        case STATS_PERIODS.YEAR:\n          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);\n          break;\n      }\n      \n      if (startDate) {\n        match.createdAt = { $gte: startDate };\n      }\n    }\n    \n    let pipeline;\n    \n    if (scope === 'individual') {\n      match.context = 'individual';\n      match.user = { $exists: true };\n      \n      pipeline = [\n        { $match: match },\n        {\n          $group: {\n            _id: '$user',\n            totalScore: { $sum: '$value' },\n            totalNormalizedScore: { $sum: '$normalizedScore' },\n            scoreCount: { $sum: 1 },\n            averageScore: { $avg: '$normalizedScore' },\n            lastScore: { $max: '$createdAt' }\n          }\n        },\n        { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n        { $skip: offset },\n        { $limit: limit },\n        {\n          $lookup: {\n            from: 'users',\n            localField: '_id',\n            foreignField: '_id',\n            as: 'user'\n          }\n        },\n        { $unwind: '$user' },\n        {\n          $project: {\n            userId: '$_id',\n            username: '$user.username',\n            firstName: '$user.firstName',\n            lastName: '$user.lastName',\n            avatar: '$user.avatar',\n            totalScore: 1,\n            totalNormalizedScore: 1,\n            scoreCount: 1,\n            averageScore: { $round: ['$averageScore', 2] },\n            lastScore: 1\n          }\n        }\n      ];\n    } else if (scope === 'team') {\n      match.context = 'team';\n      match.team = { $exists: true };\n      \n      pipeline = [\n        { $match: match },\n        {\n          $group: {\n            _id: '$team',\n            totalScore: { $sum: '$value' },\n            totalNormalizedScore: { $sum: '$normalizedScore' },\n            scoreCount: { $sum: 1 },\n            averageScore: { $avg: '$normalizedScore' },\n            lastScore: { $max: '$createdAt' }\n          }\n        },\n        { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n        { $skip: offset },\n        { $limit: limit },\n        {\n          $lookup: {\n            from: 'teams',\n            localField: '_id',\n            foreignField: '_id',\n            as: 'team'\n          }\n        },\n        { $unwind: '$team' },\n        {\n          $project: {\n            teamId: '$_id',\n            name: '$team.name',\n            description: '$team.description',\n            memberCount: { $size: '$team.members' },\n            totalScore: 1,\n            totalNormalizedScore: 1,\n            scoreCount: 1,\n            averageScore: { $round: ['$averageScore', 2] },\n            lastScore: 1\n          }\n        }\n      ];\n    } else {\n      throw new Error('Scope invalide. Doit être \"individual\" ou \"team\"');\n    }\n    \n    const rankings = await Score.aggregate(pipeline);\n    \n    // Compter le total pour la pagination\n    const totalPipeline = pipeline.slice(0, -3); // Enlever skip, limit et lookup\n    totalPipeline.push({ $count: 'total' });\n    const totalResult = await Score.aggregate(totalPipeline);\n    const total = totalResult.length > 0 ? totalResult[0].total : 0;\n    \n    return {\n      items: rankings,\n      total,\n      stats: {\n        scope,\n        period,\n        activityId,\n        teamId,\n        subActivity,\n        limit,\n        offset\n      }\n    };\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération du classement',\n      { activityId, options }\n    );\n  }\n};\n\n/**\n * Récupère les données de classement pour l'affichage\n * @param {Object} options - Options de filtrage\n * @param {string} [options.activityId] - ID de l'activité\n * @param {string} [options.chatId] - ID du chat\n * @param {string} [options.period='month'] - Période ('day', 'week', 'month', 'year', 'all')\n * @param {number} [options.limit=10] - Nombre maximum d'entrées\n * @param {string} [options.subActivityId] - ID de la sous-activité\n * @returns {Promise<Array>} Liste des utilisateurs classés par score\n */\nexport const getRankingData = async ({ \n  activityId, \n  chatId, \n  period = 'month', \n  limit = 10,\n  subActivityId\n}) => {\n  try {\n    logger.info('Récupération des données de classement', { activityId, chatId, period, limit, subActivityId });\n    \n    // Construire le filtre de base\n    const filter = { status: SCORE_STATUS.APPROVED };\n    \n    if (activityId) filter.activity = activityId;\n    if (chatId) filter.metadata = { chatId };\n    if (subActivityId) filter.subActivity = subActivityId;\n    \n    // Filtrer par période\n    if (period !== 'all') {\n      const now = new Date();\n      let startDate;\n      \n      switch (period) {\n        case 'day':\n          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n          break;\n        case 'week':\n          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n          break;\n        case 'month':\n          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n          break;\n        case 'year':\n          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);\n          break;\n      }\n      \n      if (startDate) {\n        filter.createdAt = { $gte: startDate };\n      }\n    }\n    \n    // Agréger les scores par utilisateur\n    const aggregation = [\n      { $match: filter },\n      {\n        $group: {\n          _id: '$user',\n          totalPoints: { $sum: '$value' },\n          scoreCount: { $sum: 1 },\n          lastScore: { $max: '$createdAt' }\n        }\n      },\n      { $sort: { totalPoints: -1, lastScore: 1 } },\n      { $limit: limit },\n      {\n        $lookup: {\n          from: 'users',\n          localField: '_id',\n          foreignField: '_id',\n          as: 'userDetails'\n        }\n      },\n      { $unwind: '$userDetails' },\n      {\n        $project: {\n          _id: 1,\n          userId: '$_id',\n          username: '$userDetails.username',\n          firstName: '$userDetails.firstName',\n          lastName: '$userDetails.lastName',\n          totalPoints: 1,\n          scoreCount: 1,\n          lastScore: 1\n        }\n      }\n    ];\n    \n    const rankings = await Score.aggregate(aggregation);\n    \n    // Récupérer le classement précédent pour calculer les changements de position\n    // (Simplifié pour l'exemple - dans une implémentation réelle, cela nécessiterait\n    // de stocker les classements précédents dans une collection séparée)\n    \n    logger.info(`Récupéré ${rankings.length} entrées pour le classement`);\n    return rankings;\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération des données de classement',\n      { activityId, chatId, period, limit, subActivityId }\n    );\n  }\n};\n\n/**\n * Service principal de gestion des scores - Version MongoDB directe\n */\nconst scoreService = {\n  /**\n   * Récupère les données de classement avec support des équipes\n   */\n  async getRankings({\n    scope = 'individual',\n    period = STATS_PERIODS.MONTH,\n    activityId,\n    teamId,\n    userId,\n    limit = 50,\n    offset = 0\n  } = {}) {\n    try {\n      // Construire le filtre de base\n      const match = { status: 'approved' };\n      \n      if (activityId) match.activity = activityId;\n      if (teamId) match.team = teamId;\n      if (userId) match.user = userId;\n\n      // Filtrer par période\n      if (period !== STATS_PERIODS.ALL) {\n        const now = new Date();\n        let startDate;\n        \n        switch (period) {\n          case STATS_PERIODS.DAY:\n            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n            break;\n          case STATS_PERIODS.WEEK:\n            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n            break;\n          case STATS_PERIODS.MONTH:\n            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n            break;\n          case STATS_PERIODS.YEAR:\n            startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);\n            break;\n        }\n        \n        if (startDate) {\n          match.createdAt = { $gte: startDate };\n        }\n      }\n\n      let pipeline;\n\n      if (scope === 'individual') {\n        match.context = 'individual';\n        match.user = { $exists: true };\n        \n        pipeline = [\n          { $match: match },\n          {\n            $group: {\n              _id: '$user',\n              totalScore: { $sum: '$value' },\n              totalNormalizedScore: { $sum: '$normalizedScore' },\n              scoreCount: { $sum: 1 },\n              averageScore: { $avg: '$normalizedScore' },\n              lastScore: { $max: '$createdAt' }\n            }\n          },\n          { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n          { $skip: offset },\n          { $limit: limit },\n          {\n            $lookup: {\n              from: 'users',\n              localField: '_id',\n              foreignField: '_id',\n              as: 'user'\n            }\n          },\n          { $unwind: '$user' },\n          {\n            $project: {\n              userId: '$_id',\n              username: '$user.username',\n              firstName: '$user.firstName',\n              lastName: '$user.lastName',\n              avatar: '$user.avatar',\n              totalScore: 1,\n              totalNormalizedScore: 1,\n              scoreCount: 1,\n              averageScore: { $round: ['$averageScore', 2] },\n              lastScore: 1\n            }\n          }\n        ];\n      } else if (scope === 'team') {\n        match.context = 'team';\n        match.team = { $exists: true };\n        \n        pipeline = [\n          { $match: match },\n          {\n            $group: {\n              _id: '$team',\n              totalScore: { $sum: '$value' },\n              totalNormalizedScore: { $sum: '$normalizedScore' },\n              scoreCount: { $sum: 1 },\n              averageScore: { $avg: '$normalizedScore' },\n              lastScore: { $max: '$createdAt' }\n            }\n          },\n          { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n          { $skip: offset },\n          { $limit: limit },\n          {\n            $lookup: {\n              from: 'teams',\n              localField: '_id',\n              foreignField: '_id',\n              as: 'team'\n            }\n          },\n          { $unwind: '$team' },\n          {\n            $project: {\n              teamId: '$_id',\n              name: '$team.name',\n              description: '$team.description',\n              memberCount: { $size: '$team.members' },\n              totalScore: 1,\n              totalNormalizedScore: 1,\n              scoreCount: 1,\n              averageScore: { $round: ['$averageScore', 2] },\n              lastScore: 1\n            }\n          }\n        ];\n      } else {\n        throw new Error('Scope invalide. Doit être \"individual\" ou \"team\"');\n      }\n\n      const rankings = await Score.aggregate(pipeline);\n      \n      // Compter le total pour la pagination\n      const totalPipeline = pipeline.slice(0, -3); // Enlever skip, limit et lookup\n      totalPipeline.push({ $count: 'total' });\n      const totalResult = await Score.aggregate(totalPipeline);\n      const total = totalResult.length > 0 ? totalResult[0].total : 0;\n\n      return {\n        items: rankings,\n        total,\n        stats: {\n          scope,\n          period,\n          activityId,\n          teamId,\n          limit,\n          offset\n        }\n      };\n    } catch (error) {\n      return handleScoreError(\n        error,\n        'Erreur lors de la récupération du classement',\n        { scope, period, activityId, teamId, limit }\n      );\n    }\n  },\n\n  /**\n   * Ajoute un nouveau score (individuel ou d'équipe)\n   */\n  async addScore(scoreData) {\n    try {\n      const requiredFields = ['type', 'entityId', 'activityId', 'value'];\n      const missingFields = requiredFields.filter(field => !(field in scoreData));\n      \n      if (missingFields.length > 0) {\n        throw new Error(`Champs manquants: ${missingFields.join(', ')}`);\n      }\n\n      // Validation du type de score\n      if (!Object.values(SCORE_TYPES).includes(scoreData.type)) {\n        throw new Error(`Type de score invalide. Doit être l'un des suivants: ${Object.values(SCORE_TYPES).join(', ')}`);\n      }\n\n      // Vérifier que l'activité existe\n      const activity = await Activity.findById(scoreData.activityId);\n      if (!activity) {\n        throw new Error('Activité non trouvée');\n      }\n\n      // Déterminer le contexte et les entités\n      let context, userId, teamId;\n      \n      if (scoreData.type === SCORE_TYPES.INDIVIDUAL) {\n        context = 'individual';\n        userId = scoreData.entityId;\n        \n        // Vérifier que l'utilisateur existe\n        const user = await User.findById(userId);\n        if (!user) {\n          throw new Error('Utilisateur non trouvé');\n        }\n      } else if (scoreData.type === SCORE_TYPES.TEAM) {\n        context = 'team';\n        teamId = scoreData.entityId;\n        \n        // Vérifier que l'équipe existe\n        const team = await Team.findById(teamId);\n        if (!team) {\n          throw new Error('Équipe non trouvée');\n        }\n      }\n\n      // Vérifier si un score existe déjà\n      const existingScore = await Score.findOne({\n        ...(userId && { user: userId }),\n        ...(teamId && { team: teamId }),\n        activity: scoreData.activityId,\n        ...(scoreData.subActivityId && { subActivity: scoreData.subActivityId })\n      });\n\n      if (existingScore) {\n        throw new Error('Un score existe déjà pour cette combinaison');\n      }\n\n      // Créer le score\n      const score = new Score({\n        user: userId,\n        team: teamId,\n        activity: scoreData.activityId,\n        subActivity: scoreData.subActivityId,\n        value: scoreData.value,\n        maxPossible: scoreData.maxPossible || 100,\n        context,\n        awardedBy: scoreData.awardedBy,\n        status: scoreData.status || SCORE_STATUS.APPROVED,\n        metadata: {\n          chatId: scoreData.chatId,\n          messageId: scoreData.messageId,\n          comments: scoreData.comments,\n          evidence: scoreData.proofUrl\n        }\n      });\n\n      await score.save();\n\n      // Mettre à jour les statistiques\n      if (userId) {\n        const user = await User.findById(userId);\n        await user.updateScore(scoreData.value, scoreData.activityId);\n      }\n\n      if (teamId) {\n        const team = await Team.findById(teamId);\n        await team.updateScore(scoreData.value);\n      }\n\n      logger.info(`Nouveau score ajouté: ${scoreData.value} points pour ${scoreData.type} ${scoreData.entityId}`);\n      \n      return score;\n    } catch (error) {\n      return handleScoreError(\n        error,\n        'Erreur lors de l\\'ajout du score',\n        { type: scoreData?.type, entityId: scoreData?.entityId, activityId: scoreData?.activityId }\n      );\n    }\n  },\n\n  /**\n   * Met à jour un score existant\n   */\n  async updateScore(scoreId, updates) {\n    try {\n      if (!scoreId) {\n        throw new Error('ID du score manquant');\n      }\n\n      const score = await Score.findById(scoreId);\n      if (!score) {\n        throw new Error('Score non trouvé');\n      }\n\n      // Validation des mises à jour\n      const allowedUpdates = ['value', 'maxPossible', 'status', 'comments', 'rejectionReason'];\n      const invalidUpdates = Object.keys(updates).filter(key => !allowedUpdates.includes(key));\n      \n      if (invalidUpdates.length > 0) {\n        throw new Error(`Mises à jour non autorisées: ${invalidUpdates.join(', ')}`);\n      }\n\n      // Appliquer les mises à jour\n      Object.assign(score, updates);\n      \n      if (updates.status) {\n        score.reviewedAt = new Date();\n      }\n\n      await score.save();\n\n      logger.info(`Score ${scoreId} mis à jour`, { updates: Object.keys(updates) });\n      return score;\n    } catch (error) {\n      return handleScoreError(\n        error,\n        `Erreur lors de la mise à jour du score ${scoreId}`,\n        { scoreId, updates: Object.keys(updates) }\n      );\n    }\n  },\n\n  /**\n   * Supprime un score\n   */\n  async deleteScore(scoreId, deletedBy) {\n    try {\n      if (!scoreId || !deletedBy) {\n        throw new Error('ID du score ou de l\\'utilisateur manquant');\n      }\n\n      const score = await Score.findById(scoreId);\n      if (!score) {\n        throw new Error('Score non trouvé');\n      }\n\n      // Mettre à jour les statistiques avant suppression\n      if (score.user && score.status === 'approved') {\n        const user = await User.findById(score.user);\n        if (user) {\n          await user.updateScore(-score.value);\n        }\n      }\n\n      if (score.team && score.status === 'approved') {\n        const team = await Team.findById(score.team);\n        if (team) {\n          await team.updateScore(-score.value);\n        }\n      }\n\n      await Score.findByIdAndDelete(scoreId);\n      \n      logger.info(`Score ${scoreId} supprimé par ${deletedBy}`);\n      return true;\n    } catch (error) {\n      return handleScoreError(\n        error,\n        `Erreur lors de la suppression du score ${scoreId}`,\n        { scoreId, deletedBy }\n      );\n    }\n  }\n};\n\n/**\n * Récupère l'historique des scores d'un utilisateur\n * @param {Object} options - Options de filtrage\n * @param {string} options.userId - ID de l'utilisateur\n * @param {string} [options.period='month'] - Période ('week', 'month', '3months', 'all')\n * @param {string} [options.activityId] - ID de l'activité pour filtrer\n * @param {number} [options.limit=10] - Nombre maximum d'entrées\n * @returns {Promise<Array>} Liste des scores historiques\n */\nexport const getScoreHistory = async ({ userId, period = 'month', activityId, limit = 10 }) => {\n  try {\n    if (!userId) {\n      throw new Error('L\\'ID de l\\'utilisateur est requis');\n    }\n\n    // Construire le filtre de base\n    const filter = { \n      user: userId,\n      status: SCORE_STATUS.APPROVED \n    };\n\n    if (activityId) {\n      filter.activity = activityId;\n    }\n\n    // Filtrer par période\n    if (period !== 'all') {\n      const now = new Date();\n      let startDate;\n\n      switch (period) {\n        case 'week':\n          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n          break;\n        case 'month':\n          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n          break;\n        case '3months':\n          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);\n          break;\n      }\n\n      if (startDate) {\n        filter.createdAt = { $gte: startDate };\n      }\n    }\n\n    // Récupérer les scores avec les informations de l'activité\n    const scores = await Score.find(filter)\n      .populate('activity', 'name description')\n      .sort({ createdAt: -1 })\n      .limit(limit)\n      .lean();\n\n    // Formater les données pour l'affichage\n    const historyData = scores.map(score => ({\n      timestamp: score.createdAt,\n      activityName: score.activity?.name || 'Activité inconnue',\n      value: score.value,\n      comments: score.metadata?.comments || '',\n      proofUrl: score.metadata?.evidence || '',\n      maxPossible: score.maxPossible || 100,\n      normalizedScore: score.normalizedScore || score.value\n    }));\n\n    logger.info(`Historique récupéré pour l'utilisateur ${userId}: ${historyData.length} entrées`);\n    return historyData;\n\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération de l\\'historique des scores',\n      { userId, period, activityId, limit }\n    );\n  }\n};\n\nexport default scoreService;\nexport { SCORE_TYPES, SCORE_STATUS, STATS_PERIODS };"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1750348429412,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "import { getDashboardData } from '../../services/scoreService.js';"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "         ^^^^^^^^^^^^^^^^"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "SyntaxError: The requested module '../../services/scoreService.js' does not provide an export named 'getDashboardData'"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at ModuleJob._instantiate (node:internal/modules/esm/module_job:182:21)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at async ModuleJob.run (node:internal/modules/esm/module_job:266:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Node.js v22.15.0"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "b34f8bbe-bdb9-4bc1-af10-de38f0099dc6",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "import { getDashboardData } from '../../services/scoreService.js';"
+                },
+                {
+                    "type": "text",
+                    "text": "^^^^^^^^^^^^^^^^"
+                },
+                {
+                    "type": "text",
+                    "text": "SyntaxError: The requested module '../../services/scoreService.js' does not provide an export named 'getDashboardData'"
+                },
+                {
+                    "type": "text",
+                    "text": "at ModuleJob._instantiate (node:internal/modules/esm/module_job:182:21)"
+                },
+                {
+                    "type": "text",
+                    "text": "at async ModuleJob.run (node:internal/modules/esm/module_job:266:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)"
+                },
+                {
+                    "type": "text",
+                    "text": "at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "Node.js v22.15.0"
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "src\\services\\scoreService.js",
+                    "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\scoreService.js",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "import Score from '../models/Score.js';\nimport User from '../models/User.js';\nimport Team from '../models/Team.js';\nimport { Activity } from '../models/activity.js';\nimport logger from '../utils/logger.js';\n\n// Types de scores\nconst SCORE_TYPES = {\n  INDIVIDUAL: 'individual',\n  TEAM: 'team',\n  SUB_ACTIVITY: 'sub_activity'\n};\n\n// Statuts de validation des scores\nconst SCORE_STATUS = {\n  PENDING: 'pending',\n  APPROVED: 'approved',\n  REJECTED: 'rejected',\n  DISPUTED: 'disputed'\n};\n\n// Périodes disponibles pour les statistiques\nconst STATS_PERIODS = {\n  DAY: 'day',\n  WEEK: 'week',\n  MONTH: 'month',\n  YEAR: 'year',\n  ALL: 'all'\n};\n\n/**\n * Gestion des erreurs pour le service de scores\n */\nconst handleScoreError = (error, customMessage, context = {}) => {\n  const errorDetails = {\n    message: error.message,\n    status: error.status || 500,\n    code: error.code || 'SCORE_SERVICE_ERROR',\n    context,\n    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined\n  };\n\n  logger.error(`${customMessage}: ${error.message}`, { \n    error: errorDetails,\n    context \n  });\n  \n  const errorToThrow = new Error(customMessage);\n  errorToThrow.status = error.status || 500;\n  errorToThrow.details = errorDetails;\n  throw errorToThrow;\n};\n\n/**\n * Ajoute un score pour un utilisateur ou une équipe\n * @param {string} userId - ID de l'utilisateur (obligatoire pour les scores individuels)\n * @param {string} activityId - ID de l'activité\n * @param {number} points - Nombre de points\n * @param {Object} options - Options supplémentaires\n * @param {string} [options.teamId] - ID de l'équipe (pour les scores d'équipe)\n * @param {string} [options.subActivity] - Nom de la sous-activité\n * @param {string} [options.awardedBy] - ID de l'utilisateur qui attribue le score\n * @param {string} [options.chatId] - ID du chat\n * @param {string} [options.messageId] - ID du message\n * @param {string} [options.comments] - Commentaires sur le score\n * @param {string} [options.proofUrl] - URL de preuve\n * @param {number} [options.maxPossible=100] - Score maximum possible\n * @param {string} [options.status=SCORE_STATUS.APPROVED] - Statut du score\n * @returns {Promise<Object>} Le score créé\n */\nexport const addScore = async (userId, activityId, points, options = {}) => {\n  try {\n    // Validation des paramètres obligatoires\n    if (!activityId) {\n      throw new Error('L\\'ID de l\\'activité est requis');\n    }\n    \n    if (isNaN(points) || points < 0) {\n      throw new Error('Les points doivent être un nombre positif');\n    }\n    \n    // Vérifier que l'activité existe\n    const activity = await Activity.findById(activityId);\n    if (!activity) {\n      throw new Error(`Activité non trouvée avec l'ID: ${activityId}`);\n    }\n    \n    // Déterminer le type de score et le contexte\n    let scoreType, context;\n    \n    if (options.teamId) {\n      // Score d'équipe\n      scoreType = SCORE_TYPES.TEAM;\n      context = 'team';\n      \n      // Vérifier que l'équipe existe\n      const team = await Team.findById(options.teamId);\n      if (!team) {\n        throw new Error(`Équipe non trouvée avec l'ID: ${options.teamId}`);\n      }\n    } else if (userId) {\n      // Score individuel\n      scoreType = SCORE_TYPES.INDIVIDUAL;\n      context = 'individual';\n      \n      // Vérifier que l'utilisateur existe\n      const user = await User.findById(userId);\n      if (!user) {\n        throw new Error(`Utilisateur non trouvé avec l'ID: ${userId}`);\n      }\n    } else {\n      throw new Error('Soit userId soit teamId doit être fourni');\n    }\n    \n    // Vérifier si un score existe déjà pour cette combinaison\n    const existingScoreFilter = {\n      activity: activityId,\n      ...(userId && { user: userId }),\n      ...(options.teamId && { team: options.teamId }),\n      ...(options.subActivity && { subActivity: options.subActivity })\n    };\n    \n    const existingScore = await Score.findOne(existingScoreFilter);\n    \n    if (existingScore) {\n      // Mettre à jour le score existant\n      existingScore.value = points;\n      existingScore.maxPossible = options.maxPossible || 100;\n      \n      if (options.comments) {\n        existingScore.metadata.comments = options.comments;\n      }\n      \n      if (options.proofUrl) {\n        existingScore.metadata.evidence = options.proofUrl;\n      }\n      \n      await existingScore.save();\n      \n      logger.info(`Score mis à jour: ${points} points pour ${scoreType === SCORE_TYPES.INDIVIDUAL ? 'utilisateur' : 'équipe'} ${userId || options.teamId}`);\n      \n      return existingScore;\n    }\n    \n    // Créer un nouveau score\n    const newScore = new Score({\n      user: userId || undefined,\n      team: options.teamId || undefined,\n      activity: activityId,\n      subActivity: options.subActivity || undefined,\n      value: points,\n      maxPossible: options.maxPossible || 100,\n      context,\n      awardedBy: options.awardedBy || userId,\n      status: options.status || SCORE_STATUS.APPROVED,\n      metadata: {\n        chatId: options.chatId || '',\n        messageId: options.messageId || '',\n        comments: options.comments || '',\n        evidence: options.proofUrl || ''\n      }\n    });\n    \n    await newScore.save();\n    \n    // Mettre à jour les statistiques de l'utilisateur ou de l'équipe\n    if (userId && scoreType === SCORE_TYPES.INDIVIDUAL) {\n      const user = await User.findById(userId);\n      await user.updateScore(points, activityId);\n    }\n    \n    if (options.teamId && scoreType === SCORE_TYPES.TEAM) {\n      const team = await Team.findById(options.teamId);\n      await team.updateScore(points);\n    }\n    \n    // Mettre à jour les statistiques de l'activité\n    activity.stats.totalSubmissions = (activity.stats.totalSubmissions || 0) + 1;\n    activity.stats.lastSubmission = new Date();\n    \n    // Calculer la moyenne des scores\n    const currentAverage = activity.stats.averageScore || 0;\n    const totalSubmissions = activity.stats.totalSubmissions;\n    activity.stats.averageScore = ((currentAverage * (totalSubmissions - 1)) + points) / totalSubmissions;\n    \n    await activity.save();\n    \n    logger.info(`Nouveau score ajouté: ${points} points pour ${scoreType === SCORE_TYPES.INDIVIDUAL ? 'utilisateur' : 'équipe'} ${userId || options.teamId}`);\n    \n    return newScore;\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de l\\'ajout du score',\n      { userId, activityId, points, options }\n    );\n  }\n};\n\n/**\n * Récupère le classement des scores\n * @param {string} activityId - ID de l'activité\n * @param {Object} options - Options de filtrage et de pagination\n * @param {string} [options.scope='individual'] - Type de classement ('individual' ou 'team')\n * @param {string} [options.period=STATS_PERIODS.MONTH] - Période de temps\n * @param {string} [options.teamId] - ID de l'équipe pour filtrer\n * @param {string} [options.userId] - ID de l'utilisateur pour filtrer\n * @param {string} [options.subActivity] - Nom de la sous-activité pour filtrer\n * @param {number} [options.limit=10] - Nombre de résultats\n * @param {number} [options.offset=0] - Décalage pour la pagination\n * @returns {Promise<Object>} Classement des scores\n */\nexport const getScoreRanking = async (activityId, options = {}) => {\n  try {\n    if (!activityId) {\n      throw new Error('L\\'ID de l\\'activité est requis');\n    }\n    \n    const {\n      scope = 'individual',\n      period = STATS_PERIODS.MONTH,\n      teamId,\n      userId,\n      subActivity,\n      limit = 10,\n      offset = 0\n    } = options;\n    \n    // Construire le filtre de base\n    const match = { \n      activity: activityId,\n      status: SCORE_STATUS.APPROVED \n    };\n    \n    if (teamId) match.team = teamId;\n    if (userId) match.user = userId;\n    if (subActivity) match.subActivity = subActivity;\n    \n    // Filtrer par période\n    if (period !== STATS_PERIODS.ALL) {\n      const now = new Date();\n      let startDate;\n      \n      switch (period) {\n        case STATS_PERIODS.DAY:\n          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n          break;\n        case STATS_PERIODS.WEEK:\n          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n          break;\n        case STATS_PERIODS.MONTH:\n          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n          break;\n        case STATS_PERIODS.YEAR:\n          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);\n          break;\n      }\n      \n      if (startDate) {\n        match.createdAt = { $gte: startDate };\n      }\n    }\n    \n    let pipeline;\n    \n    if (scope === 'individual') {\n      match.context = 'individual';\n      match.user = { $exists: true };\n      \n      pipeline = [\n        { $match: match },\n        {\n          $group: {\n            _id: '$user',\n            totalScore: { $sum: '$value' },\n            totalNormalizedScore: { $sum: '$normalizedScore' },\n            scoreCount: { $sum: 1 },\n            averageScore: { $avg: '$normalizedScore' },\n            lastScore: { $max: '$createdAt' }\n          }\n        },\n        { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n        { $skip: offset },\n        { $limit: limit },\n        {\n          $lookup: {\n            from: 'users',\n            localField: '_id',\n            foreignField: '_id',\n            as: 'user'\n          }\n        },\n        { $unwind: '$user' },\n        {\n          $project: {\n            userId: '$_id',\n            username: '$user.username',\n            firstName: '$user.firstName',\n            lastName: '$user.lastName',\n            avatar: '$user.avatar',\n            totalScore: 1,\n            totalNormalizedScore: 1,\n            scoreCount: 1,\n            averageScore: { $round: ['$averageScore', 2] },\n            lastScore: 1\n          }\n        }\n      ];\n    } else if (scope === 'team') {\n      match.context = 'team';\n      match.team = { $exists: true };\n      \n      pipeline = [\n        { $match: match },\n        {\n          $group: {\n            _id: '$team',\n            totalScore: { $sum: '$value' },\n            totalNormalizedScore: { $sum: '$normalizedScore' },\n            scoreCount: { $sum: 1 },\n            averageScore: { $avg: '$normalizedScore' },\n            lastScore: { $max: '$createdAt' }\n          }\n        },\n        { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n        { $skip: offset },\n        { $limit: limit },\n        {\n          $lookup: {\n            from: 'teams',\n            localField: '_id',\n            foreignField: '_id',\n            as: 'team'\n          }\n        },\n        { $unwind: '$team' },\n        {\n          $project: {\n            teamId: '$_id',\n            name: '$team.name',\n            description: '$team.description',\n            memberCount: { $size: '$team.members' },\n            totalScore: 1,\n            totalNormalizedScore: 1,\n            scoreCount: 1,\n            averageScore: { $round: ['$averageScore', 2] },\n            lastScore: 1\n          }\n        }\n      ];\n    } else {\n      throw new Error('Scope invalide. Doit être \"individual\" ou \"team\"');\n    }\n    \n    const rankings = await Score.aggregate(pipeline);\n    \n    // Compter le total pour la pagination\n    const totalPipeline = pipeline.slice(0, -3); // Enlever skip, limit et lookup\n    totalPipeline.push({ $count: 'total' });\n    const totalResult = await Score.aggregate(totalPipeline);\n    const total = totalResult.length > 0 ? totalResult[0].total : 0;\n    \n    return {\n      items: rankings,\n      total,\n      stats: {\n        scope,\n        period,\n        activityId,\n        teamId,\n        subActivity,\n        limit,\n        offset\n      }\n    };\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération du classement',\n      { activityId, options }\n    );\n  }\n};\n\n/**\n * Récupère les données de classement pour l'affichage\n * @param {Object} options - Options de filtrage\n * @param {string} [options.activityId] - ID de l'activité\n * @param {string} [options.chatId] - ID du chat\n * @param {string} [options.period='month'] - Période ('day', 'week', 'month', 'year', 'all')\n * @param {number} [options.limit=10] - Nombre maximum d'entrées\n * @param {string} [options.subActivityId] - ID de la sous-activité\n * @returns {Promise<Array>} Liste des utilisateurs classés par score\n */\nexport const getRankingData = async ({ \n  activityId, \n  chatId, \n  period = 'month', \n  limit = 10,\n  subActivityId\n}) => {\n  try {\n    logger.info('Récupération des données de classement', { activityId, chatId, period, limit, subActivityId });\n    \n    // Construire le filtre de base\n    const filter = { status: SCORE_STATUS.APPROVED };\n    \n    if (activityId) filter.activity = activityId;\n    if (chatId) filter.metadata = { chatId };\n    if (subActivityId) filter.subActivity = subActivityId;\n    \n    // Filtrer par période\n    if (period !== 'all') {\n      const now = new Date();\n      let startDate;\n      \n      switch (period) {\n        case 'day':\n          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n          break;\n        case 'week':\n          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n          break;\n        case 'month':\n          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n          break;\n        case 'year':\n          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);\n          break;\n      }\n      \n      if (startDate) {\n        filter.createdAt = { $gte: startDate };\n      }\n    }\n    \n    // Agréger les scores par utilisateur\n    const aggregation = [\n      { $match: filter },\n      {\n        $group: {\n          _id: '$user',\n          totalPoints: { $sum: '$value' },\n          scoreCount: { $sum: 1 },\n          lastScore: { $max: '$createdAt' }\n        }\n      },\n      { $sort: { totalPoints: -1, lastScore: 1 } },\n      { $limit: limit },\n      {\n        $lookup: {\n          from: 'users',\n          localField: '_id',\n          foreignField: '_id',\n          as: 'userDetails'\n        }\n      },\n      { $unwind: '$userDetails' },\n      {\n        $project: {\n          _id: 1,\n          userId: '$_id',\n          username: '$userDetails.username',\n          firstName: '$userDetails.firstName',\n          lastName: '$userDetails.lastName',\n          totalPoints: 1,\n          scoreCount: 1,\n          lastScore: 1\n        }\n      }\n    ];\n    \n    const rankings = await Score.aggregate(aggregation);\n    \n    // Récupérer le classement précédent pour calculer les changements de position\n    // (Simplifié pour l'exemple - dans une implémentation réelle, cela nécessiterait\n    // de stocker les classements précédents dans une collection séparée)\n    \n    logger.info(`Récupéré ${rankings.length} entrées pour le classement`);\n    return rankings;\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération des données de classement',\n      { activityId, chatId, period, limit, subActivityId }\n    );\n  }\n};\n\n/**\n * Service principal de gestion des scores - Version MongoDB directe\n */\nconst scoreService = {\n  /**\n   * Récupère les données de classement avec support des équipes\n   */\n  async getRankings({\n    scope = 'individual',\n    period = STATS_PERIODS.MONTH,\n    activityId,\n    teamId,\n    userId,\n    limit = 50,\n    offset = 0\n  } = {}) {\n    try {\n      // Construire le filtre de base\n      const match = { status: 'approved' };\n      \n      if (activityId) match.activity = activityId;\n      if (teamId) match.team = teamId;\n      if (userId) match.user = userId;\n\n      // Filtrer par période\n      if (period !== STATS_PERIODS.ALL) {\n        const now = new Date();\n        let startDate;\n        \n        switch (period) {\n          case STATS_PERIODS.DAY:\n            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n            break;\n          case STATS_PERIODS.WEEK:\n            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n            break;\n          case STATS_PERIODS.MONTH:\n            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n            break;\n          case STATS_PERIODS.YEAR:\n            startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);\n            break;\n        }\n        \n        if (startDate) {\n          match.createdAt = { $gte: startDate };\n        }\n      }\n\n      let pipeline;\n\n      if (scope === 'individual') {\n        match.context = 'individual';\n        match.user = { $exists: true };\n        \n        pipeline = [\n          { $match: match },\n          {\n            $group: {\n              _id: '$user',\n              totalScore: { $sum: '$value' },\n              totalNormalizedScore: { $sum: '$normalizedScore' },\n              scoreCount: { $sum: 1 },\n              averageScore: { $avg: '$normalizedScore' },\n              lastScore: { $max: '$createdAt' }\n            }\n          },\n          { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n          { $skip: offset },\n          { $limit: limit },\n          {\n            $lookup: {\n              from: 'users',\n              localField: '_id',\n              foreignField: '_id',\n              as: 'user'\n            }\n          },\n          { $unwind: '$user' },\n          {\n            $project: {\n              userId: '$_id',\n              username: '$user.username',\n              firstName: '$user.firstName',\n              lastName: '$user.lastName',\n              avatar: '$user.avatar',\n              totalScore: 1,\n              totalNormalizedScore: 1,\n              scoreCount: 1,\n              averageScore: { $round: ['$averageScore', 2] },\n              lastScore: 1\n            }\n          }\n        ];\n      } else if (scope === 'team') {\n        match.context = 'team';\n        match.team = { $exists: true };\n        \n        pipeline = [\n          { $match: match },\n          {\n            $group: {\n              _id: '$team',\n              totalScore: { $sum: '$value' },\n              totalNormalizedScore: { $sum: '$normalizedScore' },\n              scoreCount: { $sum: 1 },\n              averageScore: { $avg: '$normalizedScore' },\n              lastScore: { $max: '$createdAt' }\n            }\n          },\n          { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n          { $skip: offset },\n          { $limit: limit },\n          {\n            $lookup: {\n              from: 'teams',\n              localField: '_id',\n              foreignField: '_id',\n              as: 'team'\n            }\n          },\n          { $unwind: '$team' },\n          {\n            $project: {\n              teamId: '$_id',\n              name: '$team.name',\n              description: '$team.description',\n              memberCount: { $size: '$team.members' },\n              totalScore: 1,\n              totalNormalizedScore: 1,\n              scoreCount: 1,\n              averageScore: { $round: ['$averageScore', 2] },\n              lastScore: 1\n            }\n          }\n        ];\n      } else {\n        throw new Error('Scope invalide. Doit être \"individual\" ou \"team\"');\n      }\n\n      const rankings = await Score.aggregate(pipeline);\n      \n      // Compter le total pour la pagination\n      const totalPipeline = pipeline.slice(0, -3); // Enlever skip, limit et lookup\n      totalPipeline.push({ $count: 'total' });\n      const totalResult = await Score.aggregate(totalPipeline);\n      const total = totalResult.length > 0 ? totalResult[0].total : 0;\n\n      return {\n        items: rankings,\n        total,\n        stats: {\n          scope,\n          period,\n          activityId,\n          teamId,\n          limit,\n          offset\n        }\n      };\n    } catch (error) {\n      return handleScoreError(\n        error,\n        'Erreur lors de la récupération du classement',\n        { scope, period, activityId, teamId, limit }\n      );\n    }\n  },\n\n  /**\n   * Ajoute un nouveau score (individuel ou d'équipe)\n   */\n  async addScore(scoreData) {\n    try {\n      const requiredFields = ['type', 'entityId', 'activityId', 'value'];\n      const missingFields = requiredFields.filter(field => !(field in scoreData));\n      \n      if (missingFields.length > 0) {\n        throw new Error(`Champs manquants: ${missingFields.join(', ')}`);\n      }\n\n      // Validation du type de score\n      if (!Object.values(SCORE_TYPES).includes(scoreData.type)) {\n        throw new Error(`Type de score invalide. Doit être l'un des suivants: ${Object.values(SCORE_TYPES).join(', ')}`);\n      }\n\n      // Vérifier que l'activité existe\n      const activity = await Activity.findById(scoreData.activityId);\n      if (!activity) {\n        throw new Error('Activité non trouvée');\n      }\n\n      // Déterminer le contexte et les entités\n      let context, userId, teamId;\n      \n      if (scoreData.type === SCORE_TYPES.INDIVIDUAL) {\n        context = 'individual';\n        userId = scoreData.entityId;\n        \n        // Vérifier que l'utilisateur existe\n        const user = await User.findById(userId);\n        if (!user) {\n          throw new Error('Utilisateur non trouvé');\n        }\n      } else if (scoreData.type === SCORE_TYPES.TEAM) {\n        context = 'team';\n        teamId = scoreData.entityId;\n        \n        // Vérifier que l'équipe existe\n        const team = await Team.findById(teamId);\n        if (!team) {\n          throw new Error('Équipe non trouvée');\n        }\n      }\n\n      // Vérifier si un score existe déjà\n      const existingScore = await Score.findOne({\n        ...(userId && { user: userId }),\n        ...(teamId && { team: teamId }),\n        activity: scoreData.activityId,\n        ...(scoreData.subActivityId && { subActivity: scoreData.subActivityId })\n      });\n\n      if (existingScore) {\n        throw new Error('Un score existe déjà pour cette combinaison');\n      }\n\n      // Créer le score\n      const score = new Score({\n        user: userId,\n        team: teamId,\n        activity: scoreData.activityId,\n        subActivity: scoreData.subActivityId,\n        value: scoreData.value,\n        maxPossible: scoreData.maxPossible || 100,\n        context,\n        awardedBy: scoreData.awardedBy,\n        status: scoreData.status || SCORE_STATUS.APPROVED,\n        metadata: {\n          chatId: scoreData.chatId,\n          messageId: scoreData.messageId,\n          comments: scoreData.comments,\n          evidence: scoreData.proofUrl\n        }\n      });\n\n      await score.save();\n\n      // Mettre à jour les statistiques\n      if (userId) {\n        const user = await User.findById(userId);\n        await user.updateScore(scoreData.value, scoreData.activityId);\n      }\n\n      if (teamId) {\n        const team = await Team.findById(teamId);\n        await team.updateScore(scoreData.value);\n      }\n\n      logger.info(`Nouveau score ajouté: ${scoreData.value} points pour ${scoreData.type} ${scoreData.entityId}`);\n      \n      return score;\n    } catch (error) {\n      return handleScoreError(\n        error,\n        'Erreur lors de l\\'ajout du score',\n        { type: scoreData?.type, entityId: scoreData?.entityId, activityId: scoreData?.activityId }\n      );\n    }\n  },\n\n  /**\n   * Met à jour un score existant\n   */\n  async updateScore(scoreId, updates) {\n    try {\n      if (!scoreId) {\n        throw new Error('ID du score manquant');\n      }\n\n      const score = await Score.findById(scoreId);\n      if (!score) {\n        throw new Error('Score non trouvé');\n      }\n\n      // Validation des mises à jour\n      const allowedUpdates = ['value', 'maxPossible', 'status', 'comments', 'rejectionReason'];\n      const invalidUpdates = Object.keys(updates).filter(key => !allowedUpdates.includes(key));\n      \n      if (invalidUpdates.length > 0) {\n        throw new Error(`Mises à jour non autorisées: ${invalidUpdates.join(', ')}`);\n      }\n\n      // Appliquer les mises à jour\n      Object.assign(score, updates);\n      \n      if (updates.status) {\n        score.reviewedAt = new Date();\n      }\n\n      await score.save();\n\n      logger.info(`Score ${scoreId} mis à jour`, { updates: Object.keys(updates) });\n      return score;\n    } catch (error) {\n      return handleScoreError(\n        error,\n        `Erreur lors de la mise à jour du score ${scoreId}`,\n        { scoreId, updates: Object.keys(updates) }\n      );\n    }\n  },\n\n  /**\n   * Supprime un score\n   */\n  async deleteScore(scoreId, deletedBy) {\n    try {\n      if (!scoreId || !deletedBy) {\n        throw new Error('ID du score ou de l\\'utilisateur manquant');\n      }\n\n      const score = await Score.findById(scoreId);\n      if (!score) {\n        throw new Error('Score non trouvé');\n      }\n\n      // Mettre à jour les statistiques avant suppression\n      if (score.user && score.status === 'approved') {\n        const user = await User.findById(score.user);\n        if (user) {\n          await user.updateScore(-score.value);\n        }\n      }\n\n      if (score.team && score.status === 'approved') {\n        const team = await Team.findById(score.team);\n        if (team) {\n          await team.updateScore(-score.value);\n        }\n      }\n\n      await Score.findByIdAndDelete(scoreId);\n      \n      logger.info(`Score ${scoreId} supprimé par ${deletedBy}`);\n      return true;\n    } catch (error) {\n      return handleScoreError(\n        error,\n        `Erreur lors de la suppression du score ${scoreId}`,\n        { scoreId, deletedBy }\n      );\n    }\n  }\n};\n\n/**\n * Récupère l'historique des scores d'un utilisateur\n * @param {Object} options - Options de filtrage\n * @param {string} options.userId - ID de l'utilisateur\n * @param {string} [options.period='month'] - Période ('week', 'month', '3months', 'all')\n * @param {string} [options.activityId] - ID de l'activité pour filtrer\n * @param {number} [options.limit=10] - Nombre maximum d'entrées\n * @returns {Promise<Array>} Liste des scores historiques\n */\nexport const getScoreHistory = async ({ userId, period = 'month', activityId, limit = 10 }) => {\n  try {\n    if (!userId) {\n      throw new Error('L\\'ID de l\\'utilisateur est requis');\n    }\n\n    // Construire le filtre de base\n    const filter = { \n      user: userId,\n      status: SCORE_STATUS.APPROVED \n    };\n\n    if (activityId) {\n      filter.activity = activityId;\n    }\n\n    // Filtrer par période\n    if (period !== 'all') {\n      const now = new Date();\n      let startDate;\n\n      switch (period) {\n        case 'week':\n          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n          break;\n        case 'month':\n          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n          break;\n        case '3months':\n          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);\n          break;\n      }\n\n      if (startDate) {\n        filter.createdAt = { $gte: startDate };\n      }\n    }\n\n    // Récupérer les scores avec les informations de l'activité\n    const scores = await Score.find(filter)\n      .populate('activity', 'name description')\n      .sort({ createdAt: -1 })\n      .limit(limit)\n      .lean();\n\n    // Formater les données pour l'affichage\n    const historyData = scores.map(score => ({\n      timestamp: score.createdAt,\n      activityName: score.activity?.name || 'Activité inconnue',\n      value: score.value,\n      comments: score.metadata?.comments || '',\n      proofUrl: score.metadata?.evidence || '',\n      maxPossible: score.maxPossible || 100,\n      normalizedScore: score.normalizedScore || score.value\n    }));\n\n    logger.info(`Historique récupéré pour l'utilisateur ${userId}: ${historyData.length} entrées`);\n    return historyData;\n\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération de l\\'historique des scores',\n      { userId, period, activityId, limit }\n    );\n  }\n};\n\nexport default scoreService;\nexport { SCORE_TYPES, SCORE_STATUS, STATS_PERIODS };"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1750348697397,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "import { getDashboardData } from '../../services/scoreService.js';"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "^^^^^^^^^^^^^^^^"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "SyntaxError: The requested module '../../services/scoreService.js' does not provide an export named 'getDashboardData'"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "at ModuleJob._instantiate (node:internal/modules/esm/module_job:182:21)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "at async ModuleJob.run (node:internal/modules/esm/module_job:266:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Node.js v22.15.0"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "aa0abd1f-5f19-415b-be33-e5e920914c34",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Another missing export! Now it's looking for `getDashboardData` from the scoreService. Let me check if this function exists or if I need to create it:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01PqKZnGm3SmYAuoqxYWRg14",
+                    "title": "Fulltext search",
+                    "statusText": "Done",
+                    "status": "SUCCESS",
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "Let me check what the dashboard.js file expects from the `getDashboardData` function:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01YGkWeHUPb6Xy1QZK8ibcJT",
+                    "statusText": "Viewed file",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/commands/scores/dashboard.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\commands\\scores\\dashboard.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "Now I can see what the `getDashboardData` function needs to return. Looking at the formatOverviewDashboard function, it expects an object with:\n- `user` (user information)\n- `recentActivities` (array of recent activities)\n- `stats` (statistics like totalScore, monthlyActivities, monthlyGoalProgress)\n- `leaderboardPosition` (user's ranking position)\n\nLet me add this function to the scoreService.js:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01NTZLjvYn46MRsEeD4H66Kv",
+                    "statusText": "Change generated",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/services/scoreService.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\scoreService.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "codeHunk",
+                    "lineBasedDiff": "--- src/services/scoreService.js\n+++ src/services/scoreService.js\n@@ -920,5 +920,107 @@\n   }\n };\n \n+/**\n+ * Récupère les données pour le tableau de bord d'un utilisateur\n+ * @param {Object} options - Options\n+ * @param {string} options.userId - ID de l'utilisateur\n+ * @param {string} [options.type='overview'] - Type de tableau de bord\n+ * @returns {Promise<Object>} Données du tableau de bord\n+ */\n+export const getDashboardData = async ({ userId, type = 'overview' }) => {\n+  try {\n+    if (!userId) {\n+      throw new Error('L\\'ID de l\\'utilisateur est requis');\n+    }\n+\n+    // Récupérer les informations de l'utilisateur\n+    const user = await User.findById(userId).lean();\n+    if (!user) {\n+      throw new Error('Utilisateur non trouvé');\n+    }\n+\n+    // Calculer les dates pour les filtres\n+    const now = new Date();\n+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);\n+    const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n+\n+    // Récupérer les scores de l'utilisateur ce mois-ci\n+    const monthlyScores = await Score.find({\n+      user: userId,\n+      status: SCORE_STATUS.APPROVED,\n+      createdAt: { $gte: startOfMonth }\n+    }).populate('activity', 'name').lean();\n+\n+    // Récupérer les activités récentes (5 dernières)\n+    const recentScores = await Score.find({\n+      user: userId,\n+      status: SCORE_STATUS.APPROVED\n+    })\n+    .populate('activity', 'name')\n+    .sort({ createdAt: -1 })\n+    .limit(5)\n+    .lean();\n+\n+    // Calculer les statistiques\n+    const totalScore = await Score.aggregate([\n+      { $match: { user: userId, status: SCORE_STATUS.APPROVED } },\n+      { $group: { _id: null, total: { $sum: '$value' } } }\n+    ]);\n+\n+    const monthlyActivities = monthlyScores.length;\n+    const monthlyPoints = monthlyScores.reduce((sum, score) => sum + score.value, 0);\n+\n+    // Calcul simple de la progression de l'objectif mensuel (assumons 1000 points/mois)\n+    const monthlyGoal = 1000;\n+    const monthlyGoalProgress = Math.min(100, Math.round((monthlyPoints / monthlyGoal) * 100));\n+\n+    // Calculer la position dans le classement\n+    const allUserScores = await Score.aggregate([\n+      { $match: { status: SCORE_STATUS.APPROVED } },\n+      { $group: { _id: '$user', totalScore: { $sum: '$value' } } },\n+      { $sort: { totalScore: -1 } }\n+    ]);\n+\n+    const userTotalScore = totalScore.length > 0 ? totalScore[0].total : 0;\n+    const leaderboardPosition = allUserScores.findIndex(u => u._id.toString() === userId.toString()) + 1;\n+\n+    // Formater les activités récentes\n+    const recentActivities = recentScores.map(score => ({\n+      name: score.activity?.name || 'Activité inconnue',\n+      score: score.value,\n+      date: score.createdAt.toLocaleDateString('fr-FR', { \n+        day: '2-digit', \n+        month: '2-digit' \n+      })\n+    }));\n+\n+    const dashboardData = {\n+      user: {\n+        id: user._id,\n+        name: user.firstName || user.username || 'Utilisateur',\n+        username: user.username\n+      },\n+      recentActivities,\n+      stats: {\n+        totalScore: userTotalScore,\n+        monthlyActivities,\n+        monthlyGoalProgress,\n+        monthlyPoints\n+      },\n+      leaderboardPosition: leaderboardPosition || 'N/A'\n+    };\n+\n+    logger.info(`Données du tableau de bord récupérées pour l'utilisateur ${userId}`);\n+    return dashboardData;\n+\n+  } catch (error) {\n+    return handleScoreError(\n+      error,\n+      'Erreur lors de la récupération des données du tableau de bord',\n+      { userId, type }\n+    );\n+  }\n+};\n+\n export default scoreService;\n export { SCORE_TYPES, SCORE_STATUS, STATS_PERIODS };",
+                    "refToolCallId": "toolu_01NTZLjvYn46MRsEeD4H66Kv"
+                },
+                {
+                    "type": "text",
+                    "text": "Perfect! I've added the `getDashboardData` function that:\n\n1. **Fetches user information** from the database\n2. **Calculates monthly and total statistics** including:\n   - Total score across all time\n   - Monthly activities count\n   - Monthly goal progress (based on a 1000 point monthly goal)\n   - User's leaderboard position\n3. **Retrieves recent activities** (last 5 scores) with activity names and dates\n4. **Returns properly formatted data** that matches what the dashboard.js expects\n\nThe function handles different dashboard types (though the implementation focuses on the overview type for now) and includes proper error handling.\n\nLet's test the application again:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_019KH8g93YAXwNDrpZErs9HK",
+                    "status": "IN_PROGRESS",
+                    "isHidden": true
+                },
+                {
+                    "type": "codePatch",
+                    "diffs": [
+                        {
+                            "path": "src/services/scoreService.js",
+                            "patch": "@@ -27659,16 +27659,3377 @@\n   %7D%0A%7D;%0A%0A\n+/**%0A * R%C3%A9cup%C3%A8re les donn%C3%A9es pour le tableau de bord d'un utilisateur%0A * @param %7BObject%7D options - Options%0A * @param %7Bstring%7D options.userId - ID de l'utilisateur%0A * @param %7Bstring%7D %5Boptions.type='overview'%5D - Type de tableau de bord%0A * @returns %7BPromise%3CObject%3E%7D Donn%C3%A9es du tableau de bord%0A */%0Aexport const getDashboardData = async (%7B userId, type = 'overview' %7D) =%3E %7B%0A  try %7B%0A    if (!userId) %7B%0A      throw new Error('L%5C'ID de l%5C'utilisateur est requis');%0A    %7D%0A%0A    // R%C3%A9cup%C3%A9rer les informations de l'utilisateur%0A    const user = await User.findById(userId).lean();%0A    if (!user) %7B%0A      throw new Error('Utilisateur non trouv%C3%A9');%0A    %7D%0A%0A    // Calculer les dates pour les filtres%0A    const now = new Date();%0A    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);%0A    const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);%0A%0A    // R%C3%A9cup%C3%A9rer les scores de l'utilisateur ce mois-ci%0A    const monthlyScores = await Score.find(%7B%0A      user: userId,%0A      status: SCORE_STATUS.APPROVED,%0A      createdAt: %7B $gte: startOfMonth %7D%0A    %7D).populate('activity', 'name').lean();%0A%0A    // R%C3%A9cup%C3%A9rer les activit%C3%A9s r%C3%A9centes (5 derni%C3%A8res)%0A    const recentScores = await Score.find(%7B%0A      user: userId,%0A      status: SCORE_STATUS.APPROVED%0A    %7D)%0A    .populate('activity', 'name')%0A    .sort(%7B createdAt: -1 %7D)%0A    .limit(5)%0A    .lean();%0A%0A    // Calculer les statistiques%0A    const totalScore = await Score.aggregate(%5B%0A      %7B $match: %7B user: userId, status: SCORE_STATUS.APPROVED %7D %7D,%0A      %7B $group: %7B _id: null, total: %7B $sum: '$value' %7D %7D %7D%0A    %5D);%0A%0A    const monthlyActivities = monthlyScores.length;%0A    const monthlyPoints = monthlyScores.reduce((sum, score) =%3E sum + score.value, 0);%0A%0A    // Calcul simple de la progression de l'objectif mensuel (assumons 1000 points/mois)%0A    const monthlyGoal = 1000;%0A    const monthlyGoalProgress = Math.min(100, Math.round((monthlyPoints / monthlyGoal) * 100));%0A%0A    // Calculer la position dans le classement%0A    const allUserScores = await Score.aggregate(%5B%0A      %7B $match: %7B status: SCORE_STATUS.APPROVED %7D %7D,%0A      %7B $group: %7B _id: '$user', totalScore: %7B $sum: '$value' %7D %7D %7D,%0A      %7B $sort: %7B totalScore: -1 %7D %7D%0A    %5D);%0A%0A    const userTotalScore = totalScore.length %3E 0 ? totalScore%5B0%5D.total : 0;%0A    const leaderboardPosition = allUserScores.findIndex(u =%3E u._id.toString() === userId.toString()) + 1;%0A%0A    // Formater les activit%C3%A9s r%C3%A9centes%0A    const recentActivities = recentScores.map(score =%3E (%7B%0A      name: score.activity?.name %7C%7C 'Activit%C3%A9 inconnue',%0A      score: score.value,%0A      date: score.createdAt.toLocaleDateString('fr-FR', %7B %0A        day: '2-digit', %0A        month: '2-digit' %0A      %7D)%0A    %7D));%0A%0A    const dashboardData = %7B%0A      user: %7B%0A        id: user._id,%0A        name: user.firstName %7C%7C user.username %7C%7C 'Utilisateur',%0A        username: user.username%0A      %7D,%0A      recentActivities,%0A      stats: %7B%0A        totalScore: userTotalScore,%0A        monthlyActivities,%0A        monthlyGoalProgress,%0A        monthlyPoints%0A      %7D,%0A      leaderboardPosition: leaderboardPosition %7C%7C 'N/A'%0A    %7D;%0A%0A    logger.info(%60Donn%C3%A9es du tableau de bord r%C3%A9cup%C3%A9r%C3%A9es pour l'utilisateur $%7BuserId%7D%60);%0A    return dashboardData;%0A%0A  %7D catch (error) %7B%0A    return handleScoreError(%0A      error,%0A      'Erreur lors de la r%C3%A9cup%C3%A9ration des donn%C3%A9es du tableau de bord',%0A      %7B userId, type %7D%0A    );%0A  %7D%0A%7D;%0A%0A\n export d\n",
+                            "isNew": false,
+                            "isApplied": true
+                        }
+                    ]
+                },
+                {
+                    "type": "shellCommand",
+                    "command": "cd C:/Users/johan/Scory-bot; npm start",
+                    "id": "dd8efc1e-e4f5-48fe-b3c9-e73f413b6d15",
+                    "status": "CONFIRMATION",
+                    "toolCallId": "toolu_019KH8g93YAXwNDrpZErs9HK",
+                    "commandsRequiringConfirmation": [
+                        {
+                            "name": "npm",
+                            "arguments": [
+                                "start"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "context": {
+                "author": "Coding Agent",
+                "operationId": "0afd82ab-7e3c-4ff3-8a71-47b688103089"
+            },
+            "createdAt": 1750348700564,
+            "isInternal": false
+        },
+        {
+            "id": "f6ad277a-9d25-4951-93bd-5ec49955708d",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "import { getStatistics } from '../../services/statisticsService.js';"
+                },
+                {
+                    "type": "text",
+                    "text": "         ^^^^^^^^^^^^^"
+                },
+                {
+                    "type": "text",
+                    "text": "SyntaxError: The requested module '../../services/statisticsService.js' does not provide an export named 'getStatistics'"
+                },
+                {
+                    "type": "text",
+                    "text": "    at ModuleJob._instantiate (node:internal/modules/esm/module_job:182:21)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at async ModuleJob.run (node:internal/modules/esm/module_job:266:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "Node.js v22.15.0"
+                },
+                {
+                    "type": "text",
+                    "text": "[nodemon] app crashed - waiting for file changes before starting..."
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "src\\services\\scoreService.js",
+                    "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\scoreService.js",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "import Score from '../models/Score.js';\nimport User from '../models/User.js';\nimport Team from '../models/Team.js';\nimport { Activity } from '../models/activity.js';\nimport logger from '../utils/logger.js';\n\n// Types de scores\nconst SCORE_TYPES = {\n  INDIVIDUAL: 'individual',\n  TEAM: 'team',\n  SUB_ACTIVITY: 'sub_activity'\n};\n\n// Statuts de validation des scores\nconst SCORE_STATUS = {\n  PENDING: 'pending',\n  APPROVED: 'approved',\n  REJECTED: 'rejected',\n  DISPUTED: 'disputed'\n};\n\n// Périodes disponibles pour les statistiques\nconst STATS_PERIODS = {\n  DAY: 'day',\n  WEEK: 'week',\n  MONTH: 'month',\n  YEAR: 'year',\n  ALL: 'all'\n};\n\n/**\n * Gestion des erreurs pour le service de scores\n */\nconst handleScoreError = (error, customMessage, context = {}) => {\n  const errorDetails = {\n    message: error.message,\n    status: error.status || 500,\n    code: error.code || 'SCORE_SERVICE_ERROR',\n    context,\n    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined\n  };\n\n  logger.error(`${customMessage}: ${error.message}`, { \n    error: errorDetails,\n    context \n  });\n  \n  const errorToThrow = new Error(customMessage);\n  errorToThrow.status = error.status || 500;\n  errorToThrow.details = errorDetails;\n  throw errorToThrow;\n};\n\n/**\n * Ajoute un score pour un utilisateur ou une équipe\n * @param {string} userId - ID de l'utilisateur (obligatoire pour les scores individuels)\n * @param {string} activityId - ID de l'activité\n * @param {number} points - Nombre de points\n * @param {Object} options - Options supplémentaires\n * @param {string} [options.teamId] - ID de l'équipe (pour les scores d'équipe)\n * @param {string} [options.subActivity] - Nom de la sous-activité\n * @param {string} [options.awardedBy] - ID de l'utilisateur qui attribue le score\n * @param {string} [options.chatId] - ID du chat\n * @param {string} [options.messageId] - ID du message\n * @param {string} [options.comments] - Commentaires sur le score\n * @param {string} [options.proofUrl] - URL de preuve\n * @param {number} [options.maxPossible=100] - Score maximum possible\n * @param {string} [options.status=SCORE_STATUS.APPROVED] - Statut du score\n * @returns {Promise<Object>} Le score créé\n */\nexport const addScore = async (userId, activityId, points, options = {}) => {\n  try {\n    // Validation des paramètres obligatoires\n    if (!activityId) {\n      throw new Error('L\\'ID de l\\'activité est requis');\n    }\n    \n    if (isNaN(points) || points < 0) {\n      throw new Error('Les points doivent être un nombre positif');\n    }\n    \n    // Vérifier que l'activité existe\n    const activity = await Activity.findById(activityId);\n    if (!activity) {\n      throw new Error(`Activité non trouvée avec l'ID: ${activityId}`);\n    }\n    \n    // Déterminer le type de score et le contexte\n    let scoreType, context;\n    \n    if (options.teamId) {\n      // Score d'équipe\n      scoreType = SCORE_TYPES.TEAM;\n      context = 'team';\n      \n      // Vérifier que l'équipe existe\n      const team = await Team.findById(options.teamId);\n      if (!team) {\n        throw new Error(`Équipe non trouvée avec l'ID: ${options.teamId}`);\n      }\n    } else if (userId) {\n      // Score individuel\n      scoreType = SCORE_TYPES.INDIVIDUAL;\n      context = 'individual';\n      \n      // Vérifier que l'utilisateur existe\n      const user = await User.findById(userId);\n      if (!user) {\n        throw new Error(`Utilisateur non trouvé avec l'ID: ${userId}`);\n      }\n    } else {\n      throw new Error('Soit userId soit teamId doit être fourni');\n    }\n    \n    // Vérifier si un score existe déjà pour cette combinaison\n    const existingScoreFilter = {\n      activity: activityId,\n      ...(userId && { user: userId }),\n      ...(options.teamId && { team: options.teamId }),\n      ...(options.subActivity && { subActivity: options.subActivity })\n    };\n    \n    const existingScore = await Score.findOne(existingScoreFilter);\n    \n    if (existingScore) {\n      // Mettre à jour le score existant\n      existingScore.value = points;\n      existingScore.maxPossible = options.maxPossible || 100;\n      \n      if (options.comments) {\n        existingScore.metadata.comments = options.comments;\n      }\n      \n      if (options.proofUrl) {\n        existingScore.metadata.evidence = options.proofUrl;\n      }\n      \n      await existingScore.save();\n      \n      logger.info(`Score mis à jour: ${points} points pour ${scoreType === SCORE_TYPES.INDIVIDUAL ? 'utilisateur' : 'équipe'} ${userId || options.teamId}`);\n      \n      return existingScore;\n    }\n    \n    // Créer un nouveau score\n    const newScore = new Score({\n      user: userId || undefined,\n      team: options.teamId || undefined,\n      activity: activityId,\n      subActivity: options.subActivity || undefined,\n      value: points,\n      maxPossible: options.maxPossible || 100,\n      context,\n      awardedBy: options.awardedBy || userId,\n      status: options.status || SCORE_STATUS.APPROVED,\n      metadata: {\n        chatId: options.chatId || '',\n        messageId: options.messageId || '',\n        comments: options.comments || '',\n        evidence: options.proofUrl || ''\n      }\n    });\n    \n    await newScore.save();\n    \n    // Mettre à jour les statistiques de l'utilisateur ou de l'équipe\n    if (userId && scoreType === SCORE_TYPES.INDIVIDUAL) {\n      const user = await User.findById(userId);\n      await user.updateScore(points, activityId);\n    }\n    \n    if (options.teamId && scoreType === SCORE_TYPES.TEAM) {\n      const team = await Team.findById(options.teamId);\n      await team.updateScore(points);\n    }\n    \n    // Mettre à jour les statistiques de l'activité\n    activity.stats.totalSubmissions = (activity.stats.totalSubmissions || 0) + 1;\n    activity.stats.lastSubmission = new Date();\n    \n    // Calculer la moyenne des scores\n    const currentAverage = activity.stats.averageScore || 0;\n    const totalSubmissions = activity.stats.totalSubmissions;\n    activity.stats.averageScore = ((currentAverage * (totalSubmissions - 1)) + points) / totalSubmissions;\n    \n    await activity.save();\n    \n    logger.info(`Nouveau score ajouté: ${points} points pour ${scoreType === SCORE_TYPES.INDIVIDUAL ? 'utilisateur' : 'équipe'} ${userId || options.teamId}`);\n    \n    return newScore;\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de l\\'ajout du score',\n      { userId, activityId, points, options }\n    );\n  }\n};\n\n/**\n * Récupère le classement des scores\n * @param {string} activityId - ID de l'activité\n * @param {Object} options - Options de filtrage et de pagination\n * @param {string} [options.scope='individual'] - Type de classement ('individual' ou 'team')\n * @param {string} [options.period=STATS_PERIODS.MONTH] - Période de temps\n * @param {string} [options.teamId] - ID de l'équipe pour filtrer\n * @param {string} [options.userId] - ID de l'utilisateur pour filtrer\n * @param {string} [options.subActivity] - Nom de la sous-activité pour filtrer\n * @param {number} [options.limit=10] - Nombre de résultats\n * @param {number} [options.offset=0] - Décalage pour la pagination\n * @returns {Promise<Object>} Classement des scores\n */\nexport const getScoreRanking = async (activityId, options = {}) => {\n  try {\n    if (!activityId) {\n      throw new Error('L\\'ID de l\\'activité est requis');\n    }\n    \n    const {\n      scope = 'individual',\n      period = STATS_PERIODS.MONTH,\n      teamId,\n      userId,\n      subActivity,\n      limit = 10,\n      offset = 0\n    } = options;\n    \n    // Construire le filtre de base\n    const match = { \n      activity: activityId,\n      status: SCORE_STATUS.APPROVED \n    };\n    \n    if (teamId) match.team = teamId;\n    if (userId) match.user = userId;\n    if (subActivity) match.subActivity = subActivity;\n    \n    // Filtrer par période\n    if (period !== STATS_PERIODS.ALL) {\n      const now = new Date();\n      let startDate;\n      \n      switch (period) {\n        case STATS_PERIODS.DAY:\n          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n          break;\n        case STATS_PERIODS.WEEK:\n          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n          break;\n        case STATS_PERIODS.MONTH:\n          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n          break;\n        case STATS_PERIODS.YEAR:\n          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);\n          break;\n      }\n      \n      if (startDate) {\n        match.createdAt = { $gte: startDate };\n      }\n    }\n    \n    let pipeline;\n    \n    if (scope === 'individual') {\n      match.context = 'individual';\n      match.user = { $exists: true };\n      \n      pipeline = [\n        { $match: match },\n        {\n          $group: {\n            _id: '$user',\n            totalScore: { $sum: '$value' },\n            totalNormalizedScore: { $sum: '$normalizedScore' },\n            scoreCount: { $sum: 1 },\n            averageScore: { $avg: '$normalizedScore' },\n            lastScore: { $max: '$createdAt' }\n          }\n        },\n        { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n        { $skip: offset },\n        { $limit: limit },\n        {\n          $lookup: {\n            from: 'users',\n            localField: '_id',\n            foreignField: '_id',\n            as: 'user'\n          }\n        },\n        { $unwind: '$user' },\n        {\n          $project: {\n            userId: '$_id',\n            username: '$user.username',\n            firstName: '$user.firstName',\n            lastName: '$user.lastName',\n            avatar: '$user.avatar',\n            totalScore: 1,\n            totalNormalizedScore: 1,\n            scoreCount: 1,\n            averageScore: { $round: ['$averageScore', 2] },\n            lastScore: 1\n          }\n        }\n      ];\n    } else if (scope === 'team') {\n      match.context = 'team';\n      match.team = { $exists: true };\n      \n      pipeline = [\n        { $match: match },\n        {\n          $group: {\n            _id: '$team',\n            totalScore: { $sum: '$value' },\n            totalNormalizedScore: { $sum: '$normalizedScore' },\n            scoreCount: { $sum: 1 },\n            averageScore: { $avg: '$normalizedScore' },\n            lastScore: { $max: '$createdAt' }\n          }\n        },\n        { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n        { $skip: offset },\n        { $limit: limit },\n        {\n          $lookup: {\n            from: 'teams',\n            localField: '_id',\n            foreignField: '_id',\n            as: 'team'\n          }\n        },\n        { $unwind: '$team' },\n        {\n          $project: {\n            teamId: '$_id',\n            name: '$team.name',\n            description: '$team.description',\n            memberCount: { $size: '$team.members' },\n            totalScore: 1,\n            totalNormalizedScore: 1,\n            scoreCount: 1,\n            averageScore: { $round: ['$averageScore', 2] },\n            lastScore: 1\n          }\n        }\n      ];\n    } else {\n      throw new Error('Scope invalide. Doit être \"individual\" ou \"team\"');\n    }\n    \n    const rankings = await Score.aggregate(pipeline);\n    \n    // Compter le total pour la pagination\n    const totalPipeline = pipeline.slice(0, -3); // Enlever skip, limit et lookup\n    totalPipeline.push({ $count: 'total' });\n    const totalResult = await Score.aggregate(totalPipeline);\n    const total = totalResult.length > 0 ? totalResult[0].total : 0;\n    \n    return {\n      items: rankings,\n      total,\n      stats: {\n        scope,\n        period,\n        activityId,\n        teamId,\n        subActivity,\n        limit,\n        offset\n      }\n    };\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération du classement',\n      { activityId, options }\n    );\n  }\n};\n\n/**\n * Récupère les données de classement pour l'affichage\n * @param {Object} options - Options de filtrage\n * @param {string} [options.activityId] - ID de l'activité\n * @param {string} [options.chatId] - ID du chat\n * @param {string} [options.period='month'] - Période ('day', 'week', 'month', 'year', 'all')\n * @param {number} [options.limit=10] - Nombre maximum d'entrées\n * @param {string} [options.subActivityId] - ID de la sous-activité\n * @returns {Promise<Array>} Liste des utilisateurs classés par score\n */\nexport const getRankingData = async ({ \n  activityId, \n  chatId, \n  period = 'month', \n  limit = 10,\n  subActivityId\n}) => {\n  try {\n    logger.info('Récupération des données de classement', { activityId, chatId, period, limit, subActivityId });\n    \n    // Construire le filtre de base\n    const filter = { status: SCORE_STATUS.APPROVED };\n    \n    if (activityId) filter.activity = activityId;\n    if (chatId) filter.metadata = { chatId };\n    if (subActivityId) filter.subActivity = subActivityId;\n    \n    // Filtrer par période\n    if (period !== 'all') {\n      const now = new Date();\n      let startDate;\n      \n      switch (period) {\n        case 'day':\n          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n          break;\n        case 'week':\n          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n          break;\n        case 'month':\n          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n          break;\n        case 'year':\n          startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);\n          break;\n      }\n      \n      if (startDate) {\n        filter.createdAt = { $gte: startDate };\n      }\n    }\n    \n    // Agréger les scores par utilisateur\n    const aggregation = [\n      { $match: filter },\n      {\n        $group: {\n          _id: '$user',\n          totalPoints: { $sum: '$value' },\n          scoreCount: { $sum: 1 },\n          lastScore: { $max: '$createdAt' }\n        }\n      },\n      { $sort: { totalPoints: -1, lastScore: 1 } },\n      { $limit: limit },\n      {\n        $lookup: {\n          from: 'users',\n          localField: '_id',\n          foreignField: '_id',\n          as: 'userDetails'\n        }\n      },\n      { $unwind: '$userDetails' },\n      {\n        $project: {\n          _id: 1,\n          userId: '$_id',\n          username: '$userDetails.username',\n          firstName: '$userDetails.firstName',\n          lastName: '$userDetails.lastName',\n          totalPoints: 1,\n          scoreCount: 1,\n          lastScore: 1\n        }\n      }\n    ];\n    \n    const rankings = await Score.aggregate(aggregation);\n    \n    // Récupérer le classement précédent pour calculer les changements de position\n    // (Simplifié pour l'exemple - dans une implémentation réelle, cela nécessiterait\n    // de stocker les classements précédents dans une collection séparée)\n    \n    logger.info(`Récupéré ${rankings.length} entrées pour le classement`);\n    return rankings;\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération des données de classement',\n      { activityId, chatId, period, limit, subActivityId }\n    );\n  }\n};\n\n/**\n * Service principal de gestion des scores - Version MongoDB directe\n */\nconst scoreService = {\n  /**\n   * Récupère les données de classement avec support des équipes\n   */\n  async getRankings({\n    scope = 'individual',\n    period = STATS_PERIODS.MONTH,\n    activityId,\n    teamId,\n    userId,\n    limit = 50,\n    offset = 0\n  } = {}) {\n    try {\n      // Construire le filtre de base\n      const match = { status: 'approved' };\n      \n      if (activityId) match.activity = activityId;\n      if (teamId) match.team = teamId;\n      if (userId) match.user = userId;\n\n      // Filtrer par période\n      if (period !== STATS_PERIODS.ALL) {\n        const now = new Date();\n        let startDate;\n        \n        switch (period) {\n          case STATS_PERIODS.DAY:\n            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);\n            break;\n          case STATS_PERIODS.WEEK:\n            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n            break;\n          case STATS_PERIODS.MONTH:\n            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n            break;\n          case STATS_PERIODS.YEAR:\n            startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);\n            break;\n        }\n        \n        if (startDate) {\n          match.createdAt = { $gte: startDate };\n        }\n      }\n\n      let pipeline;\n\n      if (scope === 'individual') {\n        match.context = 'individual';\n        match.user = { $exists: true };\n        \n        pipeline = [\n          { $match: match },\n          {\n            $group: {\n              _id: '$user',\n              totalScore: { $sum: '$value' },\n              totalNormalizedScore: { $sum: '$normalizedScore' },\n              scoreCount: { $sum: 1 },\n              averageScore: { $avg: '$normalizedScore' },\n              lastScore: { $max: '$createdAt' }\n            }\n          },\n          { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n          { $skip: offset },\n          { $limit: limit },\n          {\n            $lookup: {\n              from: 'users',\n              localField: '_id',\n              foreignField: '_id',\n              as: 'user'\n            }\n          },\n          { $unwind: '$user' },\n          {\n            $project: {\n              userId: '$_id',\n              username: '$user.username',\n              firstName: '$user.firstName',\n              lastName: '$user.lastName',\n              avatar: '$user.avatar',\n              totalScore: 1,\n              totalNormalizedScore: 1,\n              scoreCount: 1,\n              averageScore: { $round: ['$averageScore', 2] },\n              lastScore: 1\n            }\n          }\n        ];\n      } else if (scope === 'team') {\n        match.context = 'team';\n        match.team = { $exists: true };\n        \n        pipeline = [\n          { $match: match },\n          {\n            $group: {\n              _id: '$team',\n              totalScore: { $sum: '$value' },\n              totalNormalizedScore: { $sum: '$normalizedScore' },\n              scoreCount: { $sum: 1 },\n              averageScore: { $avg: '$normalizedScore' },\n              lastScore: { $max: '$createdAt' }\n            }\n          },\n          { $sort: { totalNormalizedScore: -1, lastScore: 1 } },\n          { $skip: offset },\n          { $limit: limit },\n          {\n            $lookup: {\n              from: 'teams',\n              localField: '_id',\n              foreignField: '_id',\n              as: 'team'\n            }\n          },\n          { $unwind: '$team' },\n          {\n            $project: {\n              teamId: '$_id',\n              name: '$team.name',\n              description: '$team.description',\n              memberCount: { $size: '$team.members' },\n              totalScore: 1,\n              totalNormalizedScore: 1,\n              scoreCount: 1,\n              averageScore: { $round: ['$averageScore', 2] },\n              lastScore: 1\n            }\n          }\n        ];\n      } else {\n        throw new Error('Scope invalide. Doit être \"individual\" ou \"team\"');\n      }\n\n      const rankings = await Score.aggregate(pipeline);\n      \n      // Compter le total pour la pagination\n      const totalPipeline = pipeline.slice(0, -3); // Enlever skip, limit et lookup\n      totalPipeline.push({ $count: 'total' });\n      const totalResult = await Score.aggregate(totalPipeline);\n      const total = totalResult.length > 0 ? totalResult[0].total : 0;\n\n      return {\n        items: rankings,\n        total,\n        stats: {\n          scope,\n          period,\n          activityId,\n          teamId,\n          limit,\n          offset\n        }\n      };\n    } catch (error) {\n      return handleScoreError(\n        error,\n        'Erreur lors de la récupération du classement',\n        { scope, period, activityId, teamId, limit }\n      );\n    }\n  },\n\n  /**\n   * Ajoute un nouveau score (individuel ou d'équipe)\n   */\n  async addScore(scoreData) {\n    try {\n      const requiredFields = ['type', 'entityId', 'activityId', 'value'];\n      const missingFields = requiredFields.filter(field => !(field in scoreData));\n      \n      if (missingFields.length > 0) {\n        throw new Error(`Champs manquants: ${missingFields.join(', ')}`);\n      }\n\n      // Validation du type de score\n      if (!Object.values(SCORE_TYPES).includes(scoreData.type)) {\n        throw new Error(`Type de score invalide. Doit être l'un des suivants: ${Object.values(SCORE_TYPES).join(', ')}`);\n      }\n\n      // Vérifier que l'activité existe\n      const activity = await Activity.findById(scoreData.activityId);\n      if (!activity) {\n        throw new Error('Activité non trouvée');\n      }\n\n      // Déterminer le contexte et les entités\n      let context, userId, teamId;\n      \n      if (scoreData.type === SCORE_TYPES.INDIVIDUAL) {\n        context = 'individual';\n        userId = scoreData.entityId;\n        \n        // Vérifier que l'utilisateur existe\n        const user = await User.findById(userId);\n        if (!user) {\n          throw new Error('Utilisateur non trouvé');\n        }\n      } else if (scoreData.type === SCORE_TYPES.TEAM) {\n        context = 'team';\n        teamId = scoreData.entityId;\n        \n        // Vérifier que l'équipe existe\n        const team = await Team.findById(teamId);\n        if (!team) {\n          throw new Error('Équipe non trouvée');\n        }\n      }\n\n      // Vérifier si un score existe déjà\n      const existingScore = await Score.findOne({\n        ...(userId && { user: userId }),\n        ...(teamId && { team: teamId }),\n        activity: scoreData.activityId,\n        ...(scoreData.subActivityId && { subActivity: scoreData.subActivityId })\n      });\n\n      if (existingScore) {\n        throw new Error('Un score existe déjà pour cette combinaison');\n      }\n\n      // Créer le score\n      const score = new Score({\n        user: userId,\n        team: teamId,\n        activity: scoreData.activityId,\n        subActivity: scoreData.subActivityId,\n        value: scoreData.value,\n        maxPossible: scoreData.maxPossible || 100,\n        context,\n        awardedBy: scoreData.awardedBy,\n        status: scoreData.status || SCORE_STATUS.APPROVED,\n        metadata: {\n          chatId: scoreData.chatId,\n          messageId: scoreData.messageId,\n          comments: scoreData.comments,\n          evidence: scoreData.proofUrl\n        }\n      });\n\n      await score.save();\n\n      // Mettre à jour les statistiques\n      if (userId) {\n        const user = await User.findById(userId);\n        await user.updateScore(scoreData.value, scoreData.activityId);\n      }\n\n      if (teamId) {\n        const team = await Team.findById(teamId);\n        await team.updateScore(scoreData.value);\n      }\n\n      logger.info(`Nouveau score ajouté: ${scoreData.value} points pour ${scoreData.type} ${scoreData.entityId}`);\n      \n      return score;\n    } catch (error) {\n      return handleScoreError(\n        error,\n        'Erreur lors de l\\'ajout du score',\n        { type: scoreData?.type, entityId: scoreData?.entityId, activityId: scoreData?.activityId }\n      );\n    }\n  },\n\n  /**\n   * Met à jour un score existant\n   */\n  async updateScore(scoreId, updates) {\n    try {\n      if (!scoreId) {\n        throw new Error('ID du score manquant');\n      }\n\n      const score = await Score.findById(scoreId);\n      if (!score) {\n        throw new Error('Score non trouvé');\n      }\n\n      // Validation des mises à jour\n      const allowedUpdates = ['value', 'maxPossible', 'status', 'comments', 'rejectionReason'];\n      const invalidUpdates = Object.keys(updates).filter(key => !allowedUpdates.includes(key));\n      \n      if (invalidUpdates.length > 0) {\n        throw new Error(`Mises à jour non autorisées: ${invalidUpdates.join(', ')}`);\n      }\n\n      // Appliquer les mises à jour\n      Object.assign(score, updates);\n      \n      if (updates.status) {\n        score.reviewedAt = new Date();\n      }\n\n      await score.save();\n\n      logger.info(`Score ${scoreId} mis à jour`, { updates: Object.keys(updates) });\n      return score;\n    } catch (error) {\n      return handleScoreError(\n        error,\n        `Erreur lors de la mise à jour du score ${scoreId}`,\n        { scoreId, updates: Object.keys(updates) }\n      );\n    }\n  },\n\n  /**\n   * Supprime un score\n   */\n  async deleteScore(scoreId, deletedBy) {\n    try {\n      if (!scoreId || !deletedBy) {\n        throw new Error('ID du score ou de l\\'utilisateur manquant');\n      }\n\n      const score = await Score.findById(scoreId);\n      if (!score) {\n        throw new Error('Score non trouvé');\n      }\n\n      // Mettre à jour les statistiques avant suppression\n      if (score.user && score.status === 'approved') {\n        const user = await User.findById(score.user);\n        if (user) {\n          await user.updateScore(-score.value);\n        }\n      }\n\n      if (score.team && score.status === 'approved') {\n        const team = await Team.findById(score.team);\n        if (team) {\n          await team.updateScore(-score.value);\n        }\n      }\n\n      await Score.findByIdAndDelete(scoreId);\n      \n      logger.info(`Score ${scoreId} supprimé par ${deletedBy}`);\n      return true;\n    } catch (error) {\n      return handleScoreError(\n        error,\n        `Erreur lors de la suppression du score ${scoreId}`,\n        { scoreId, deletedBy }\n      );\n    }\n  }\n};\n\n/**\n * Récupère l'historique des scores d'un utilisateur\n * @param {Object} options - Options de filtrage\n * @param {string} options.userId - ID de l'utilisateur\n * @param {string} [options.period='month'] - Période ('week', 'month', '3months', 'all')\n * @param {string} [options.activityId] - ID de l'activité pour filtrer\n * @param {number} [options.limit=10] - Nombre maximum d'entrées\n * @returns {Promise<Array>} Liste des scores historiques\n */\nexport const getScoreHistory = async ({ userId, period = 'month', activityId, limit = 10 }) => {\n  try {\n    if (!userId) {\n      throw new Error('L\\'ID de l\\'utilisateur est requis');\n    }\n\n    // Construire le filtre de base\n    const filter = { \n      user: userId,\n      status: SCORE_STATUS.APPROVED \n    };\n\n    if (activityId) {\n      filter.activity = activityId;\n    }\n\n    // Filtrer par période\n    if (period !== 'all') {\n      const now = new Date();\n      let startDate;\n\n      switch (period) {\n        case 'week':\n          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n          break;\n        case 'month':\n          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);\n          break;\n        case '3months':\n          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);\n          break;\n      }\n\n      if (startDate) {\n        filter.createdAt = { $gte: startDate };\n      }\n    }\n\n    // Récupérer les scores avec les informations de l'activité\n    const scores = await Score.find(filter)\n      .populate('activity', 'name description')\n      .sort({ createdAt: -1 })\n      .limit(limit)\n      .lean();\n\n    // Formater les données pour l'affichage\n    const historyData = scores.map(score => ({\n      timestamp: score.createdAt,\n      activityName: score.activity?.name || 'Activité inconnue',\n      value: score.value,\n      comments: score.metadata?.comments || '',\n      proofUrl: score.metadata?.evidence || '',\n      maxPossible: score.maxPossible || 100,\n      normalizedScore: score.normalizedScore || score.value\n    }));\n\n    logger.info(`Historique récupéré pour l'utilisateur ${userId}: ${historyData.length} entrées`);\n    return historyData;\n\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération de l\\'historique des scores',\n      { userId, period, activityId, limit }\n    );\n  }\n};\n\n/**\n * Récupère les données pour le tableau de bord d'un utilisateur\n * @param {Object} options - Options\n * @param {string} options.userId - ID de l'utilisateur\n * @param {string} [options.type='overview'] - Type de tableau de bord\n * @returns {Promise<Object>} Données du tableau de bord\n */\nexport const getDashboardData = async ({ userId, type = 'overview' }) => {\n  try {\n    if (!userId) {\n      throw new Error('L\\'ID de l\\'utilisateur est requis');\n    }\n\n    // Récupérer les informations de l'utilisateur\n    const user = await User.findById(userId).lean();\n    if (!user) {\n      throw new Error('Utilisateur non trouvé');\n    }\n\n    // Calculer les dates pour les filtres\n    const now = new Date();\n    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);\n    const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n\n    // Récupérer les scores de l'utilisateur ce mois-ci\n    const monthlyScores = await Score.find({\n      user: userId,\n      status: SCORE_STATUS.APPROVED,\n      createdAt: { $gte: startOfMonth }\n    }).populate('activity', 'name').lean();\n\n    // Récupérer les activités récentes (5 dernières)\n    const recentScores = await Score.find({\n      user: userId,\n      status: SCORE_STATUS.APPROVED\n    })\n    .populate('activity', 'name')\n    .sort({ createdAt: -1 })\n    .limit(5)\n    .lean();\n\n    // Calculer les statistiques\n    const totalScore = await Score.aggregate([\n      { $match: { user: userId, status: SCORE_STATUS.APPROVED } },\n      { $group: { _id: null, total: { $sum: '$value' } } }\n    ]);\n\n    const monthlyActivities = monthlyScores.length;\n    const monthlyPoints = monthlyScores.reduce((sum, score) => sum + score.value, 0);\n\n    // Calcul simple de la progression de l'objectif mensuel (assumons 1000 points/mois)\n    const monthlyGoal = 1000;\n    const monthlyGoalProgress = Math.min(100, Math.round((monthlyPoints / monthlyGoal) * 100));\n\n    // Calculer la position dans le classement\n    const allUserScores = await Score.aggregate([\n      { $match: { status: SCORE_STATUS.APPROVED } },\n      { $group: { _id: '$user', totalScore: { $sum: '$value' } } },\n      { $sort: { totalScore: -1 } }\n    ]);\n\n    const userTotalScore = totalScore.length > 0 ? totalScore[0].total : 0;\n    const leaderboardPosition = allUserScores.findIndex(u => u._id.toString() === userId.toString()) + 1;\n\n    // Formater les activités récentes\n    const recentActivities = recentScores.map(score => ({\n      name: score.activity?.name || 'Activité inconnue',\n      score: score.value,\n      date: score.createdAt.toLocaleDateString('fr-FR', { \n        day: '2-digit', \n        month: '2-digit' \n      })\n    }));\n\n    const dashboardData = {\n      user: {\n        id: user._id,\n        name: user.firstName || user.username || 'Utilisateur',\n        username: user.username\n      },\n      recentActivities,\n      stats: {\n        totalScore: userTotalScore,\n        monthlyActivities,\n        monthlyGoalProgress,\n        monthlyPoints\n      },\n      leaderboardPosition: leaderboardPosition || 'N/A'\n    };\n\n    logger.info(`Données du tableau de bord récupérées pour l'utilisateur ${userId}`);\n    return dashboardData;\n\n  } catch (error) {\n    return handleScoreError(\n      error,\n      'Erreur lors de la récupération des données du tableau de bord',\n      { userId, type }\n    );\n  }\n};\n\nexport default scoreService;\nexport { SCORE_TYPES, SCORE_STATUS, STATS_PERIODS };"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1750348806422,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "import { getStatistics } from '../../services/statisticsService.js';"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "         ^^^^^^^^^^^^^"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "SyntaxError: The requested module '../../services/statisticsService.js' does not provide an export named 'getStatistics'"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at ModuleJob._instantiate (node:internal/modules/esm/module_job:182:21)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at async ModuleJob.run (node:internal/modules/esm/module_job:266:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:644:26)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:116:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Node.js v22.15.0"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "[nodemon] app crashed - waiting for file changes before starting..."
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph"
+                    }
+                ]
+            }
+        },
+        {
+            "id": "106b2550-d09f-49f1-ab22-ec294f7f9df9",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "Now we have a missing export from `statisticsService.js`. Let me first check if this service file exists and what it contains:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01YZosLKKtvoU7BwiT21ZNmq",
+                    "statusText": "Viewed file",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/services/statisticsService.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\statisticsService.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "I can see that the `statisticsService.js` file exists and has `generateStatistics` and `generateGraph` functions, but no `getStatistics` function. Let me find where this function is being imported to understand what it should do:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_019cUUAn82LcVBqWWFwmy8dT",
+                    "title": "Fulltext search",
+                    "statusText": "Done",
+                    "status": "SUCCESS",
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "Let me check the `getStats.js` file to understand what the `getStatistics` function should do:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01KAB2F55vr2kvAj93v4Nt9H",
+                    "statusText": "Viewed file",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/commands/utils/getStats.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\commands\\utils\\getStats.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "Now I understand what the `getStatistics` function should do. It should:\n1. Take a type ('user', 'activity', 'team'), userId, and chatId as parameters\n2. Return statistics data based on the type\n3. Return an object with key-value pairs of statistics\n\nLet me add this function to the `statisticsService.js`:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01EP6Rj8RtuyXKN2dJCzMNTV",
+                    "statusText": "Change generated",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/services/statisticsService.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\statisticsService.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "codeHunk",
+                    "lineBasedDiff": "--- src/services/statisticsService.js\n+++ src/services/statisticsService.js\n@@ -1,5 +1,9 @@\n import { Activity } from '../models/activity.js';\n+import Score from '../models/Score.js';\n+import User from '../models/User.js';\n+import Team from '../models/Team.js';\n import QuickChart from 'quickchart-js';\n+import logger from '../utils/logger.js';\n \n export const generateStatistics = async (activityId) => {\n   const activity = await Activity.findById(activityId);",
+                    "refToolCallId": "toolu_01EP6Rj8RtuyXKN2dJCzMNTV"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_012FnBVTjMS5nxxGooareYzk",
+                    "statusText": "Change generated",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/services/statisticsService.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\statisticsService.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "codeHunk",
+                    "lineBasedDiff": "--- src/services/statisticsService.js\n+++ src/services/statisticsService.js\n@@ -83,3 +83,199 @@\n \n   return chart.getUrl();\n };\n+\n+/**\n+ * Récupère les statistiques selon le type demandé\n+ * @param {string} type - Type de statistiques ('user', 'activity', 'team')\n+ * @param {string} userId - ID de l'utilisateur\n+ * @param {string} chatId - ID du chat\n+ * @returns {Promise<Object>} Objet contenant les statistiques\n+ */\n+export const getStatistics = async (type, userId, chatId) => {\n+  try {\n+    logger.info(`Récupération des statistiques de type: ${type} pour utilisateur: ${userId}`);\n+    \n+    switch (type) {\n+      case 'user':\n+        return await getUserStatistics(userId);\n+      case 'activity':\n+        return await getActivityStatistics(chatId);\n+      case 'team':\n+        return await getTeamStatistics(userId, chatId);\n+      default:\n+        throw new Error(`Type de statistiques non supporté: ${type}`);\n+    }\n+  } catch (error) {\n+    logger.error(`Erreur lors de la récupération des statistiques ${type}:`, error);\n+    throw error;\n+  }\n+};\n+\n+/**\n+ * Récupère les statistiques d'un utilisateur\n+ * @param {string} userId - ID de l'utilisateur\n+ * @returns {Promise<Object>} Statistiques de l'utilisateur\n+ */\n+const getUserStatistics = async (userId) => {\n+  const user = await User.findById(userId);\n+  if (!user) {\n+    throw new Error('Utilisateur non trouvé');\n+  }\n+\n+  // Récupérer tous les scores de l'utilisateur\n+  const scores = await Score.find({ \n+    user: userId, \n+    status: 'approved' \n+  }).populate('activity', 'name');\n+\n+  // Calculer les dates pour les filtres\n+  const now = new Date();\n+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);\n+  const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n+\n+  // Statistiques générales\n+  const totalScore = scores.reduce((sum, score) => sum + score.value, 0);\n+  const totalActivities = scores.length;\n+  const averageScore = totalActivities > 0 ? (totalScore / totalActivities).toFixed(2) : 0;\n+\n+  // Statistiques de la semaine\n+  const weeklyScores = scores.filter(score => score.createdAt >= startOfWeek);\n+  const weeklyPoints = weeklyScores.reduce((sum, score) => sum + score.value, 0);\n+  const weeklyActivities = weeklyScores.length;\n+\n+  // Statistiques du mois\n+  const monthlyScores = scores.filter(score => score.createdAt >= startOfMonth);\n+  const monthlyPoints = monthlyScores.reduce((sum, score) => sum + score.value, 0);\n+  const monthlyActivities = monthlyScores.length;\n+\n+  // Meilleur score\n+  const bestScore = scores.length > 0 ? Math.max(...scores.map(s => s.value)) : 0;\n+\n+  // Activité la plus fréquente\n+  const activityCounts = {};\n+  scores.forEach(score => {\n+    const activityName = score.activity?.name || 'Activité inconnue';\n+    activityCounts[activityName] = (activityCounts[activityName] || 0) + 1;\n+  });\n+  \n+  const mostFrequentActivity = Object.keys(activityCounts).length > 0 \n+    ? Object.entries(activityCounts).sort((a, b) => b[1] - a[1])[0][0]\n+    : 'Aucune';\n+\n+  return {\n+    'Nom': user.firstName || user.username || 'Utilisateur',\n+    'Score total': `${totalScore} points`,\n+    'Nombre d\\'activités': totalActivities,\n+    'Score moyen': `${averageScore} points`,\n+    'Meilleur score': `${bestScore} points`,\n+    'Points cette semaine': `${weeklyPoints} points`,\n+    'Activités cette semaine': weeklyActivities,\n+    'Points ce mois': `${monthlyPoints} points`,\n+    'Activités ce mois': monthlyActivities,\n+    'Activité favorite': mostFrequentActivity\n+  };\n+};\n+\n+/**\n+ * Récupère les statistiques des activités\n+ * @param {string} chatId - ID du chat\n+ * @returns {Promise<Object>} Statistiques des activités\n+ */\n+const getActivityStatistics = async (chatId) => {\n+  // Récupérer toutes les activités\n+  const activities = await Activity.find().lean();\n+  \n+  // Récupérer tous les scores\n+  const scores = await Score.find({ status: 'approved' }).populate('activity', 'name');\n+\n+  const totalActivities = activities.length;\n+  const totalScores = scores.length;\n+  const totalPoints = scores.reduce((sum, score) => sum + score.value, 0);\n+  const averagePoints = totalScores > 0 ? (totalPoints / totalScores).toFixed(2) : 0;\n+\n+  // Activité la plus populaire\n+  const activityCounts = {};\n+  scores.forEach(score => {\n+    const activityName = score.activity?.name || 'Activité inconnue';\n+    activityCounts[activityName] = (activityCounts[activityName] || 0) + 1;\n+  });\n+  \n+  const mostPopularActivity = Object.keys(activityCounts).length > 0 \n+    ? Object.entries(activityCounts).sort((a, b) => b[1] - a[1])[0][0]\n+    : 'Aucune';\n+\n+  // Statistiques récentes (7 derniers jours)\n+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);\n+  const recentScores = scores.filter(score => score.createdAt >= weekAgo);\n+  const recentActivities = recentScores.length;\n+  const recentPoints = recentScores.reduce((sum, score) => sum + score.value, 0);\n+\n+  return {\n+    'Total activités créées': totalActivities,\n+    'Total participations': totalScores,\n+    'Points totaux distribués': `${totalPoints} points`,\n+    'Moyenne par participation': `${averagePoints} points`,\n+    'Activité la plus populaire': mostPopularActivity,\n+    'Participations cette semaine': recentActivities,\n+    'Points cette semaine': `${recentPoints} points`\n+  };\n+};\n+\n+/**\n+ * Récupère les statistiques des équipes\n+ * @param {string} userId - ID de l'utilisateur\n+ * @param {string} chatId - ID du chat\n+ * @returns {Promise<Object>} Statistiques des équipes\n+ */\n+const getTeamStatistics = async (userId, chatId) => {\n+  // Récupérer toutes les équipes\n+  const teams = await Team.find().lean();\n+  \n+  // Récupérer les scores d'équipe\n+  const teamScores = await Score.find({ \n+    context: 'team', \n+    status: 'approved' \n+  }).populate('team', 'name');\n+\n+  const totalTeams = teams.length;\n+  const totalTeamActivities = teamScores.length;\n+  const totalTeamPoints = teamScores.reduce((sum, score) => sum + score.value, 0);\n+\n+  // Équipe avec le plus de points\n+  const teamPoints = {};\n+  teamScores.forEach(score => {\n+    const teamName = score.team?.name || 'Équipe inconnue';\n+    teamPoints[teamName] = (teamPoints[teamName] || 0) + score.value;\n+  });\n+  \n+  const topTeam = Object.keys(teamPoints).length > 0 \n+    ? Object.entries(teamPoints).sort((a, b) => b[1] - a[1])[0][0]\n+    : 'Aucune';\n+\n+  // Vérifier si l'utilisateur fait partie d'une équipe\n+  const userTeam = teams.find(team => \n+    team.members && team.members.some(member => member.toString() === userId)\n+  );\n+\n+  let userTeamStats = {};\n+  if (userTeam) {\n+    const userTeamScores = teamScores.filter(score => \n+      score.team && score.team._id.toString() === userTeam._id.toString()\n+    );\n+    const userTeamPoints = userTeamScores.reduce((sum, score) => sum + score.value, 0);\n+    \n+    userTeamStats = {\n+      'Votre équipe': userTeam.name,\n+      'Points de votre équipe': `${userTeamPoints} points`,\n+      'Activités de votre équipe': userTeamScores.length\n+    };\n+  }\n+\n+  return {\n+    'Nombre d\\'équipes': totalTeams,\n+    'Total activités d\\'équipe': totalTeamActivities,\n+    'Points totaux équipes': `${totalTeamPoints} points`,\n+    'Équipe leader': topTeam,\n+    ...userTeamStats\n+  };\n+};",
+                    "refToolCallId": "toolu_012FnBVTjMS5nxxGooareYzk"
+                },
+                {
+                    "type": "text",
+                    "text": "Perfect! I've added the missing `getStatistics` function and its helper functions to the `statisticsService.js`. The function now:\n\n1. **Supports three types of statistics**: 'user', 'activity', and 'team'\n2. **getUserStatistics**: Provides comprehensive user statistics including:\n   - Total score, activities count, average score\n   - Weekly and monthly statistics\n   - Best score and favorite activity\n3. **getActivityStatistics**: Shows overall platform statistics including:\n   - Total activities and participations\n   - Most popular activity\n   - Recent activity trends\n4. **getTeamStatistics**: Displays team-related statistics including:\n   - Total teams and team activities\n   - Top performing team\n   - User's own team statistics if applicable\n\nNow let's test the application:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01QK9ymn3siLchKY7UCwzQgr",
+                    "status": "IN_PROGRESS",
+                    "isHidden": true
+                },
+                {
+                    "type": "codePatch",
+                    "diffs": [
+                        {
+                            "path": "src/services/statisticsService.js",
+                            "patch": "@@ -55,36 +55,197 @@\n ort \n-QuickChart from 'quickchart-\n+Score from '../models/Score.js';%0D%0Aimport User from '../models/User.js';%0D%0Aimport Team from '../models/Team.js';%0D%0Aimport QuickChart from 'quickchart-js';%0D%0Aimport logger from '../utils/logger.\n js';\n@@ -2520,24 +2520,24 @@\n %7D%0D%0A  %7D);%0D%0A%0D%0A\n-\n   return cha\n@@ -2548,12 +2548,7178 @@\n etUrl();%0D%0A%7D;\n+%0D%0A%0D%0A/**%0D%0A * R%C3%A9cup%C3%A8re les statistiques selon le type demand%C3%A9%0D%0A * @param %7Bstring%7D type - Type de statistiques ('user', 'activity', 'team')%0D%0A * @param %7Bstring%7D userId - ID de l'utilisateur%0D%0A * @param %7Bstring%7D chatId - ID du chat%0D%0A * @returns %7BPromise%3CObject%3E%7D Objet contenant les statistiques%0D%0A */%0D%0Aexport const getStatistics = async (type, userId, chatId) =%3E %7B%0D%0A  try %7B%0D%0A    logger.info(%60R%C3%A9cup%C3%A9ration des statistiques de type: $%7Btype%7D pour utilisateur: $%7BuserId%7D%60);%0D%0A    %0D%0A    switch (type) %7B%0D%0A      case 'user':%0D%0A        return await getUserStatistics(userId);%0D%0A      case 'activity':%0D%0A        return await getActivityStatistics(chatId);%0D%0A      case 'team':%0D%0A        return await getTeamStatistics(userId, chatId);%0D%0A      default:%0D%0A        throw new Error(%60Type de statistiques non support%C3%A9: $%7Btype%7D%60);%0D%0A    %7D%0D%0A  %7D catch (error) %7B%0D%0A    logger.error(%60Erreur lors de la r%C3%A9cup%C3%A9ration des statistiques $%7Btype%7D:%60, error);%0D%0A    throw error;%0D%0A  %7D%0D%0A%7D;%0D%0A%0D%0A/**%0D%0A * R%C3%A9cup%C3%A8re les statistiques d'un utilisateur%0D%0A * @param %7Bstring%7D userId - ID de l'utilisateur%0D%0A * @returns %7BPromise%3CObject%3E%7D Statistiques de l'utilisateur%0D%0A */%0D%0Aconst getUserStatistics = async (userId) =%3E %7B%0D%0A  const user = await User.findById(userId);%0D%0A  if (!user) %7B%0D%0A    throw new Error('Utilisateur non trouv%C3%A9');%0D%0A  %7D%0D%0A%0D%0A  // R%C3%A9cup%C3%A9rer tous les scores de l'utilisateur%0D%0A  const scores = await Score.find(%7B %0D%0A    user: userId, %0D%0A    status: 'approved' %0D%0A  %7D).populate('activity', 'name');%0D%0A%0D%0A  // Calculer les dates pour les filtres%0D%0A  const now = new Date();%0D%0A  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);%0D%0A  const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);%0D%0A%0D%0A  // Statistiques g%C3%A9n%C3%A9rales%0D%0A  const totalScore = scores.reduce((sum, score) =%3E sum + score.value, 0);%0D%0A  const totalActivities = scores.length;%0D%0A  const averageScore = totalActivities %3E 0 ? (totalScore / totalActivities).toFixed(2) : 0;%0D%0A%0D%0A  // Statistiques de la semaine%0D%0A  const weeklyScores = scores.filter(score =%3E score.createdAt %3E= startOfWeek);%0D%0A  const weeklyPoints = weeklyScores.reduce((sum, score) =%3E sum + score.value, 0);%0D%0A  const weeklyActivities = weeklyScores.length;%0D%0A%0D%0A  // Statistiques du mois%0D%0A  const monthlyScores = scores.filter(score =%3E score.createdAt %3E= startOfMonth);%0D%0A  const monthlyPoints = monthlyScores.reduce((sum, score) =%3E sum + score.value, 0);%0D%0A  const monthlyActivities = monthlyScores.length;%0D%0A%0D%0A  // Meilleur score%0D%0A  const bestScore = scores.length %3E 0 ? Math.max(...scores.map(s =%3E s.value)) : 0;%0D%0A%0D%0A  // Activit%C3%A9 la plus fr%C3%A9quente%0D%0A  const activityCounts = %7B%7D;%0D%0A  scores.forEach(score =%3E %7B%0D%0A    const activityName = score.activity?.name %7C%7C 'Activit%C3%A9 inconnue';%0D%0A    activityCounts%5BactivityName%5D = (activityCounts%5BactivityName%5D %7C%7C 0) + 1;%0D%0A  %7D);%0D%0A  %0D%0A  const mostFrequentActivity = Object.keys(activityCounts).length %3E 0 %0D%0A    ? Object.entries(activityCounts).sort((a, b) =%3E b%5B1%5D - a%5B1%5D)%5B0%5D%5B0%5D%0D%0A    : 'Aucune';%0D%0A%0D%0A  return %7B%0D%0A    'Nom': user.firstName %7C%7C user.username %7C%7C 'Utilisateur',%0D%0A    'Score total': %60$%7BtotalScore%7D points%60,%0D%0A    'Nombre d%5C'activit%C3%A9s': totalActivities,%0D%0A    'Score moyen': %60$%7BaverageScore%7D points%60,%0D%0A    'Meilleur score': %60$%7BbestScore%7D points%60,%0D%0A    'Points cette semaine': %60$%7BweeklyPoints%7D points%60,%0D%0A    'Activit%C3%A9s cette semaine': weeklyActivities,%0D%0A    'Points ce mois': %60$%7BmonthlyPoints%7D points%60,%0D%0A    'Activit%C3%A9s ce mois': monthlyActivities,%0D%0A    'Activit%C3%A9 favorite': mostFrequentActivity%0D%0A  %7D;%0D%0A%7D;%0D%0A%0D%0A/**%0D%0A * R%C3%A9cup%C3%A8re les statistiques des activit%C3%A9s%0D%0A * @param %7Bstring%7D chatId - ID du chat%0D%0A * @returns %7BPromise%3CObject%3E%7D Statistiques des activit%C3%A9s%0D%0A */%0D%0Aconst getActivityStatistics = async (chatId) =%3E %7B%0D%0A  // R%C3%A9cup%C3%A9rer toutes les activit%C3%A9s%0D%0A  const activities = await Activity.find().lean();%0D%0A  %0D%0A  // R%C3%A9cup%C3%A9rer tous les scores%0D%0A  const scores = await Score.find(%7B status: 'approved' %7D).populate('activity', 'name');%0D%0A%0D%0A  const totalActivities = activities.length;%0D%0A  const totalScores = scores.length;%0D%0A  const totalPoints = scores.reduce((sum, score) =%3E sum + score.value, 0);%0D%0A  const averagePoints = totalScores %3E 0 ? (totalPoints / totalScores).toFixed(2) : 0;%0D%0A%0D%0A  // Activit%C3%A9 la plus populaire%0D%0A  const activityCounts = %7B%7D;%0D%0A  scores.forEach(score =%3E %7B%0D%0A    const activityName = score.activity?.name %7C%7C 'Activit%C3%A9 inconnue';%0D%0A    activityCounts%5BactivityName%5D = (activityCounts%5BactivityName%5D %7C%7C 0) + 1;%0D%0A  %7D);%0D%0A  %0D%0A  const mostPopularActivity = Object.keys(activityCounts).length %3E 0 %0D%0A    ? Object.entries(activityCounts).sort((a, b) =%3E b%5B1%5D - a%5B1%5D)%5B0%5D%5B0%5D%0D%0A    : 'Aucune';%0D%0A%0D%0A  // Statistiques r%C3%A9centes (7 derniers jours)%0D%0A  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);%0D%0A  const recentScores = scores.filter(score =%3E score.createdAt %3E= weekAgo);%0D%0A  const recentActivities = recentScores.length;%0D%0A  const recentPoints = recentScores.reduce((sum, score) =%3E sum + score.value, 0);%0D%0A%0D%0A  return %7B%0D%0A    'Total activit%C3%A9s cr%C3%A9%C3%A9es': totalActivities,%0D%0A    'Total participations': totalScores,%0D%0A    'Points totaux distribu%C3%A9s': %60$%7BtotalPoints%7D points%60,%0D%0A    'Moyenne par participation': %60$%7BaveragePoints%7D points%60,%0D%0A    'Activit%C3%A9 la plus populaire': mostPopularActivity,%0D%0A    'Participations cette semaine': recentActivities,%0D%0A    'Points cette semaine': %60$%7BrecentPoints%7D points%60%0D%0A  %7D;%0D%0A%7D;%0D%0A%0D%0A/**%0D%0A * R%C3%A9cup%C3%A8re les statistiques des %C3%A9quipes%0D%0A * @param %7Bstring%7D userId - ID de l'utilisateur%0D%0A * @param %7Bstring%7D chatId - ID du chat%0D%0A * @returns %7BPromise%3CObject%3E%7D Statistiques des %C3%A9quipes%0D%0A */%0D%0Aconst getTeamStatistics = async (userId, chatId) =%3E %7B%0D%0A  // R%C3%A9cup%C3%A9rer toutes les %C3%A9quipes%0D%0A  const teams = await Team.find().lean();%0D%0A  %0D%0A  // R%C3%A9cup%C3%A9rer les scores d'%C3%A9quipe%0D%0A  const teamScores = await Score.find(%7B %0D%0A    context: 'team', %0D%0A    status: 'approved' %0D%0A  %7D).populate('team', 'name');%0D%0A%0D%0A  const totalTeams = teams.length;%0D%0A  const totalTeamActivities = teamScores.length;%0D%0A  const totalTeamPoints = teamScores.reduce((sum, score) =%3E sum + score.value, 0);%0D%0A%0D%0A  // %C3%89quipe avec le plus de points%0D%0A  const teamPoints = %7B%7D;%0D%0A  teamScores.forEach(score =%3E %7B%0D%0A    const teamName = score.team?.name %7C%7C '%C3%89quipe inconnue';%0D%0A    teamPoints%5BteamName%5D = (teamPoints%5BteamName%5D %7C%7C 0) + score.value;%0D%0A  %7D);%0D%0A  %0D%0A  const topTeam = Object.keys(teamPoints).length %3E 0 %0D%0A    ? Object.entries(teamPoints).sort((a, b) =%3E b%5B1%5D - a%5B1%5D)%5B0%5D%5B0%5D%0D%0A    : 'Aucune';%0D%0A%0D%0A  // V%C3%A9rifier si l'utilisateur fait partie d'une %C3%A9quipe%0D%0A  const userTeam = teams.find(team =%3E %0D%0A    team.members && team.members.some(member =%3E member.toString() === userId)%0D%0A  );%0D%0A%0D%0A  let userTeamStats = %7B%7D;%0D%0A  if (userTeam) %7B%0D%0A    const userTeamScores = teamScores.filter(score =%3E %0D%0A      score.team && score.team._id.toString() === userTeam._id.toString()%0D%0A    );%0D%0A    const userTeamPoints = userTeamScores.reduce((sum, score) =%3E sum + score.value, 0);%0D%0A    %0D%0A    userTeamStats = %7B%0D%0A      'Votre %C3%A9quipe': userTeam.name,%0D%0A      'Points de votre %C3%A9quipe': %60$%7BuserTeamPoints%7D points%60,%0D%0A      'Activit%C3%A9s de votre %C3%A9quipe': userTeamScores.length%0D%0A    %7D;%0D%0A  %7D%0D%0A%0D%0A  return %7B%0D%0A    'Nombre d%5C'%C3%A9quipes': totalTeams,%0D%0A    'Total activit%C3%A9s d%5C'%C3%A9quipe': totalTeamActivities,%0D%0A    'Points totaux %C3%A9quipes': %60$%7BtotalTeamPoints%7D points%60,%0D%0A    '%C3%89quipe leader': topTeam,%0D%0A    ...userTeamStats%0D%0A  %7D;%0D%0A%7D;\n",
+                            "isNew": false,
+                            "isApplied": true
+                        }
+                    ]
+                },
+                {
+                    "type": "shellCommand",
+                    "command": "cd C:/Users/johan/Scory-bot; npm start",
+                    "id": "870f69a7-1c89-4757-83e4-0220ba868265",
+                    "status": "CONFIRMATION",
+                    "toolCallId": "toolu_01QK9ymn3siLchKY7UCwzQgr",
+                    "commandsRequiringConfirmation": [
+                        {
+                            "name": "npm",
+                            "arguments": [
+                                "start"
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "context": {
+                "author": "Coding Agent",
+                "operationId": "73b8f496-5a78-45af-a130-52c101410082"
+            },
+            "createdAt": 1750348810193,
+            "isInternal": false
+        },
+        {
+            "id": "a27f28b5-e491-4d47-9dc6-37b428f83652",
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "error: [CRITICAL] bot.catch is not a function"
+                },
+                {
+                    "type": "text",
+                    "text": "TypeError: bot.catch is not a function"
+                },
+                {
+                    "type": "text",
+                    "text": "    at setupEventHandlers (file:///C:/Users/johan/Scory-bot/src/app.js:94:12)"
+                },
+                {
+                    "type": "text",
+                    "text": "    at startApp (file:///C:/Users/johan/Scory-bot/src/app.js:43:5)"
+                },
+                {
+                    "type": "text",
+                    "text": "Impossible d'envoyer la notification d'erreur: TypeError: Cannot read properties of undefined (reading 'sendMessage')"
+                },
+                {
+                    "type": "text",
+                    "text": "    at startApp (file:///C:/Users/johan/Scory-bot/src/app.js:67:26)"
+                },
+                {
+                    "type": "text",
+                    "text": "[nodemon] starting `node src/app.js`"
+                }
+            ],
+            "context": {
+                "currentFile": {
+                    "path": "CHANGELOG_PORTS.md",
+                    "fsPath": "C:\\Users\\johan\\Scory-bot\\CHANGELOG_PORTS.md",
+                    "sources": [
+                        "opened_tab"
+                    ],
+                    "content": "# Changelog - Correction des Incohérences de Ports et URLs\n\n## 🎯 Objectif\nCorriger les incohérences de ports et URLs identifiées dans l'analyse de l'application Scory-bot.\n\n## ✅ Changements Effectués\n\n### 1. **Standardisation des Ports**\n\n| Service | Ancien Port | Nouveau Port | Statut |\n|---------|-------------|--------------|--------|\n| Frontend React | 3000 | 3000 | ✅ Maintenu |\n| API Server | 3001 | 3001 | ✅ Maintenu |\n| Mock Server | 3000 | 3002 | 🔄 Modifié |\n\n### 2. **Correction des URLs**\n\n#### Avant\n```javascript\n// src/services/apiService.js\nconst API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';\n\n// web/src/api.js\nconst BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';\n\n// server.js\nconst port = process.env.PORT || 3000;\n```\n\n#### Après\n```javascript\n// src/services/apiService.js\nconst API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api';\n\n// web/src/api.js\nconst BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';\n\n// server.js\nconst port = process.env.MOCK_SERVER_PORT || 3002;\n```\n\n### 3. **Fichiers de Configuration Créés**\n\n#### `.env` (racine du projet)\n```env\nAPI_PORT=3001\nWEB_PORT=3000\nMOCK_SERVER_PORT=3002\nAPI_BASE_URL=http://localhost:3001/api\nMONGO_URL=mongodb://localhost:27017/scory-bot\nJWT_SECRET=dev-secret-key-change-in-production\n```\n\n#### `web/.env` (frontend React)\n```env\nREACT_APP_API_URL=http://localhost:3001/api\nPORT=3000\n```\n\n#### `.env.example` (template)\n- Documentation complète des variables d'environnement\n- Valeurs par défaut pour le développement\n- Instructions pour la production\n\n### 4. **Scripts Mis à Jour**\n\n#### `package.json`\n```json\n{\n  \"scripts\": {\n    \"start\": \"node api-server.js\",\n    \"start:api\": \"node api-server.js\",\n    \"start:bot\": \"node src/app.js\",\n    \"start:mock\": \"node server.js\",\n    \"dev\": \"nodemon api-server.js\",\n    \"dev:api\": \"nodemon api-server.js\",\n    \"dev:bot\": \"nodemon src/app.js\",\n    \"dev:mock\": \"nodemon server.js\",\n    \"validate:config\": \"node scripts/validate-config.js\"\n  }\n}\n```\n\n### 5. **Outils de Validation**\n\n#### Script de Validation (`scripts/validate-config.js`)\n- Vérification automatique de la cohérence des configurations\n- Détection des incohérences entre fichiers\n- Recommandations de correction\n\n#### Documentation (`PORTS_CONFIG.md`)\n- Architecture des services\n- Configuration des variables d'environnement\n- Guide de démarrage\n- Résolution de problèmes\n\n### 6. **Améliorations de la Base de Données**\n\n#### `src/config/database.js`\n```javascript\n// Avant\nconsole.log('Connected to MongoDB');\n\n// Après\nlogger.info('✅ Connected to MongoDB', { url: mongoUrl.replace(/\\/\\/.*@/, '//***:***@') });\n```\n\n## 🚀 **Résultats**\n\n### ✅ Avant les Corrections\n- ❌ Port 3000 utilisé par 2 services (conflit)\n- ❌ URLs incohérentes (5000, 3000, 3001)\n- ❌ Variables d'environnement manquantes\n- ❌ Pas de validation automatique\n\n### ✅ Après les Corrections\n- ✅ Ports uniques pour chaque service\n- ✅ URLs cohérentes (toutes pointent vers 3001)\n- ✅ Configuration centralisée avec .env\n- ✅ Script de validation automatique\n- ✅ Documentation complète\n\n## 🔧 **Commandes de Vérification**\n\n```bash\n# Valider la configuration\nnpm run validate:config\n\n# Démarrer l'API principale\nnpm run dev:api\n\n# Démarrer le frontend\ncd web && npm start\n\n# Démarrer le serveur mock (si nécessaire)\nnpm run dev:mock\n```\n\n## 📊 **Impact**\n\n### Performance\n- ✅ Pas de conflits de ports\n- ✅ Communication directe entre services\n- ✅ Réduction des erreurs de connexion\n\n### Développement\n- ✅ Configuration claire et documentée\n- ✅ Démarrage simplifié\n- ✅ Validation automatique\n\n### Maintenance\n- ✅ Cohérence entre environnements\n- ✅ Documentation à jour\n- ✅ Scripts de vérification\n\n## 🎯 **Prochaines Étapes**\n\n1. **Court terme** : Tester le démarrage de tous les services\n2. **Moyen terme** : Unifier l'approche d'accès aux données (MongoDB direct vs API)\n3. **Long terme** : Standardiser la gestion d'erreurs\n\n## 📝 **Notes**\n\n- Tous les changements sont rétrocompatibles\n- Les anciens ports peuvent encore être utilisés via variables d'environnement\n- La configuration par défaut privilégie la cohérence et la simplicité"
+                },
+                "codebaseEnabled": true
+            },
+            "createdAt": 1750349870149,
+            "isInternal": false,
+            "rawContent": {
+                "type": "doc",
+                "content": [
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": " error: [CRITICAL] bot.catch is not a function"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "TypeError: bot.catch is not a function"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at setupEventHandlers (file:///C:/Users/johan/Scory-bot/src/app.js:94:12)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at startApp (file:///C:/Users/johan/Scory-bot/src/app.js:43:5)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Impossible d'envoyer la notification d'erreur: TypeError: Cannot read properties of undefined (reading 'sendMessage')"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "    at startApp (file:///C:/Users/johan/Scory-bot/src/app.js:67:26)"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "[nodemon] starting `node src/app.js`"
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "id": "754ef08b-610c-4a1b-80c3-98026a9f8d5d",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "I see multiple issues. Let me check the structure of the scoreService.js file more carefully. There seems to be a syntax issue preventing the exports from working properly. Let me examine the end of the file:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_01DbZdi42gFKobFHM2agYXi5",
+                    "statusText": "Viewed file",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/services/scoreService.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\scoreService.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "text",
+                    "text": "I see the issue! The `getDashboardData` function is defined, but it needs to be added to the export statement at the end. Let me fix that:"
+                },
+                {
+                    "type": "toolCall",
+                    "toolCallId": "toolu_012HzrtwU2y8wWja9ahKWWd5",
+                    "statusText": "Change generated",
+                    "status": "SUCCESS",
+                    "context": {
+                        "files": [
+                            {
+                                "path": "src/services/scoreService.js",
+                                "fsPath": "C:\\Users\\johan\\Scory-bot\\src\\services\\scoreService.js"
+                            }
+                        ]
+                    },
+                    "isHidden": false
+                },
+                {
+                    "type": "codeHunk",
+                    "lineBasedDiff": "",
+                    "refToolCallId": "toolu_012HzrtwU2y8wWja9ahKWWd5"
+                },
+                {
+                    "type": "codePatch",
+                    "diffs": [
+                        {
+                            "path": "src/services/scoreService.js",
+                            "patch": "",
+                            "isNew": false,
+                            "isApplied": true
+                        }
+                    ]
+                }
+            ],
+            "context": {
+                "author": "Coding Agent",
+                "operationId": "3a4b61b9-d799-46d3-8d4d-39bf9f5ff782"
+            },
+            "createdAt": 1750349873381,
+            "isInternal": false
+        }
+    ],
+    "isAgent": true,
+    "isNameGenerated": true,
+    "isCustomAgent": false,
+    "isUnitTestsAgent": false,
+    "isE2EAgent": false,
+    "autoApply": false
+}
+}

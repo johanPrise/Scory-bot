@@ -45,12 +45,13 @@ async function startApp() {
     // 5. Démarrer le bot en mode polling ou webhook selon la configuration
     if (config.polling) {
       logger.info('Démarrage du bot en mode polling...');
-      await bot.startPolling(config.POLLING_OPTIONS);
+      // Le bot est déjà en mode polling si configuré dans les options du constructeur
+      logger.info('Bot en mode polling activé');
     } else if (config.webhook) {
       logger.info('Démarrage du bot en mode webhook...');
-      await bot.launch({
-        webhook: config.WEBHOOK_OPTIONS
-      });
+      // Pour node-telegram-bot-api, le webhook doit être configuré différemment
+      // Vous devrez utiliser bot.setWebHook() et configurer un serveur Express
+      logger.warn('Mode webhook non implémenté pour node-telegram-bot-api');
     }
     
     logger.info(`🤖 Bot démarré avec succès en mode ${env.toUpperCase()}`);
@@ -64,7 +65,7 @@ async function startApp() {
     
     // Essayer d'envoyer un message d'erreur avant de quitter
     try {
-      await bot.telegram.sendMessage(
+      await bot.sendMessage(
         process.env.ADMIN_CHAT_ID, 
         `❌ Erreur critique: ${error.message}\n\nStack: ${error.stack}`.substring(0, 4000)
       );
@@ -91,14 +92,14 @@ function setupEventHandlers() {
   });
   
   // Gestion des erreurs générales du bot
-  bot.catch((error) => {
+  bot.on('error', (error) => {
     logCriticalError(error, { context: 'Erreur non gérée du bot' });
   });
   
   // Log des messages entrants (pour débogage)
   if (env !== 'production') {
-    bot.on('message', (ctx) => {
-      const { from, chat, text } = ctx.message || {};
+    bot.on('message', (msg) => {
+      const { from, chat, text } = msg || {};
       const userId = from?.id;
       const userName = from?.username || `${from?.first_name || ''} ${from?.last_name || ''}`.trim();
       const chatType = chat?.type || 'unknown';
@@ -116,7 +117,7 @@ async function shutdown(signal) {
   
   try {
     logger.info('Arrêt du bot...');
-    await bot.stop();
+    await bot.stopPolling();
     logger.info('✅ Bot arrêté avec succès');
     
     // Fermer les connexions à la base de données si nécessaire
@@ -145,7 +146,7 @@ process.on('unhandledRejection', (reason, promise) => {
   
   // En production, on peut notifier l'administrateur
   if (process.env.NODE_ENV === 'production') {
-    bot.telegram.sendMessage(
+    bot.sendMessage(
       process.env.ADMIN_CHAT_ID, 
       `${errorMsg}: ${reason?.message || 'Aucun détail'}`
     ).catch(console.error);

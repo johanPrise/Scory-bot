@@ -1,6 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
-import logger from '../utils/logger';
+import logger from '../utils/logger.js';
 
 // Charger les variables d'environnement
 dotenv.config();

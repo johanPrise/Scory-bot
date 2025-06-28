@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTelegram } from '../context/TelegramContext';
 import { dashboard, scores } from '../api';
+import TelegramButton from '../components/TelegramButton';
 import {
   Grid,
   Paper,
@@ -178,6 +180,8 @@ const TopPerformerItem = ({ performer, rank }) => (
 
 const Dashboard = () => {
   const { currentUser, hasPermission } = useAuth();
+  const { telegram, user } = useTelegram();
+  const isTelegram = !!telegram;
   const [stats, setStats] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [topPerformers, setTopPerformers] = useState([]);
@@ -296,26 +300,32 @@ const Dashboard = () => {
   };
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
+    <Box sx={{ flexGrow: 1, p: 3 }} className={isTelegram ? 'telegram-theme' : ''}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
             Tableau de bord
           </Typography>
           <Typography variant="subtitle1" color="textSecondary">
-            Bienvenue {currentUser?.firstName || currentUser?.username} !
+            Bienvenue {user?.first_name || currentUser?.firstName || currentUser?.username} !
           </Typography>
         </Box>
         
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Période</InputLabel>
-          <Select value={period} onChange={handlePeriodChange} label="Période">
-            <MenuItem value="day">Aujourd'hui</MenuItem>
-            <MenuItem value="week">Cette semaine</MenuItem>
-            <MenuItem value="month">Ce mois</MenuItem>
-            <MenuItem value="year">Cette année</MenuItem>
-          </Select>
-        </FormControl>
+        {isTelegram ? (
+          <TelegramButton onClick={() => telegram.close()}>
+            Fermer
+          </TelegramButton>
+        ) : (
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Période</InputLabel>
+            <Select value={period} onChange={handlePeriodChange} label="Période">
+              <MenuItem value="day">Aujourd'hui</MenuItem>
+              <MenuItem value="week">Cette semaine</MenuItem>
+              <MenuItem value="month">Ce mois</MenuItem>
+              <MenuItem value="year">Cette année</MenuItem>
+            </Select>
+          </FormControl>
+        )}
       </Box>
 
       {/* Cartes de statistiques */}

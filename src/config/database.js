@@ -9,10 +9,7 @@ const mongoUrl = process.env.MONGO_URL || 'mongodb://localhost:27017/scory-bot';
 
 export const connectToDatabase = async () => {
   try {
-    await mongoose.connect(mongoUrl, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(mongoUrl);
     logger.info('✅ Connected to MongoDB', { url: mongoUrl.replace(/\/\/.*@/, '//***:***@') });
   } catch (error) {
     logger.error('❌ Failed to connect to MongoDB:', error);
