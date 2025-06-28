@@ -28,6 +28,7 @@ import {
   Scoreboard as ScoreboardIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const drawerWidth = 240;
 
@@ -38,6 +39,7 @@ const Layout = ({ children, role }) => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout } = useAuth();
+  const { notify } = useNotification();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -45,6 +47,7 @@ const Layout = ({ children, role }) => {
 
   const handleLogout = () => {
     logout();
+    notify('Déconnexion réussie', 'success');
     navigate('/login');
   };
 

@@ -13,11 +13,19 @@ async function main() {
     logger.info('🚀 Démarrage du serveur API Scory-bot...');
     
     // Vérifier les variables d'environnement essentielles
-    const requiredEnvVars = ['MONGO_URL'];
+    const requiredEnvVars = ['MONGO_URL', 'JWT_SECRET'];
     const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
     
     if (missingEnvVars.length > 0) {
       throw new Error(`Variables d'environnement manquantes: ${missingEnvVars.join(', ')}`);
+    }
+
+    // Vérifier les variables optionnelles mais recommandées
+    const recommendedEnvVars = ['TELEGRAM_BOT_TOKEN', 'API_PORT'];
+    const missingRecommended = recommendedEnvVars.filter(varName => !process.env[varName]);
+    
+    if (missingRecommended.length > 0) {
+      logger.warn(`Variables d'environnement recommandées manquantes: ${missingRecommended.join(', ')}`);
     }
 
     // Démarrer le serveur API

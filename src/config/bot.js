@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { SocksProxyAgent } from 'socks-proxy-agent';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -34,10 +35,10 @@ const botOptions = {
   onlyFirstMatch: true,
   request: {
     proxy: process.env.HTTP_PROXY || null,
-    agentClass: process.env.HTTP_PROXY ? require('socks-proxy-agent').SocksProxyAgent : null,
+    agentClass: process.env.HTTP_PROXY ? SocksProxyAgent : null,
     agentOptions: process.env.HTTP_PROXY ? {
-      socksHost: 'your-proxy-host',
-      socksPort: 1080
+      socksHost: process.env.PROXY_HOST || 'localhost',
+      socksPort: parseInt(process.env.PROXY_PORT) || 1080
     } : null
   }
 };

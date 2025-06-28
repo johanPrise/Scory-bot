@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-d
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Snackbar, Alert } from '@mui/material';
-
+import {FloatingFeedback} from './components/FloatingFeedback';
+import FloatingTimers from './components/FloatingTimers';
 // Contexte d'authentification mis à jour
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -298,6 +299,9 @@ function App() {
       <AuthProvider>
         <Router>
           <AppContent />
+          {/* Bouton flottant pour minuteurs, accessible partout */}
+          <FloatingTimers />
+          <FloatingFeedback />
         </Router>
       </AuthProvider>
     </ThemeProvider>

@@ -189,32 +189,192 @@ export const scores = {
     });
     return fetchAPI(`/scores/pending?${queryParams.toString()}`);
   },
-  approve: (scoreId) => fetchAPI(`/scores/${scoreId}/approve`, { method: 'PUT' }),
-  reject: (scoreId, reason) => fetchAPI(`/scores/${scoreId}/reject`, { 
-    method: 'PUT',
-    body: JSON.stringify({ reason })
-  }),
+  
+  // Gestion des sous-scores
+  getSubScores: (activityId, filters = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    return fetchAPI(`/scores/sub-activities/${activityId}?${queryParams.toString()}`);
+  },
+  
+  // Récupérer un score par ID
+  getById: (scoreId) => fetchAPI(`/scores/${scoreId}`),
+  
+  // Créer un nouveau score
   create: (scoreData) => fetchAPI('/scores', {
     method: 'POST',
     body: JSON.stringify(scoreData)
   }),
+  
+  // Mettre à jour un score
   update: (scoreId, scoreData) => fetchAPI(`/scores/${scoreId}`, {
     method: 'PUT',
     body: JSON.stringify(scoreData)
   }),
-  delete: (scoreId) => fetchAPI(`/scores/${scoreId}`, { method: 'DELETE' })
+  
+  // Supprimer un score
+  delete: (scoreId) => fetchAPI(`/scores/${scoreId}`, { method: 'DELETE' }),
+  
+  // Approuver un score
+  approve: (scoreId, comments = '') => fetchAPI(`/scores/${scoreId}/approve`, { 
+    method: 'PUT',
+    body: JSON.stringify({ comments })
+  }),
+  
+  // Rejeter un score
+  reject: (scoreId, reason, comments = '') => fetchAPI(`/scores/${scoreId}/reject`, { 
+    method: 'PUT',
+    body: JSON.stringify({ reason, comments })
+  }),
+  
+  // Récupérer les classements
+  getRankings: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    return fetchAPI(`/scores/rankings?${queryParams.toString()}`);
+  },
+  
+  // Actions en lot pour les administrateurs
+  bulkApprove: (scoreIds, comments = '') => fetchAPI('/scores/bulk/approve', {
+    method: 'PUT',
+    body: JSON.stringify({ scoreIds, comments })
+  }),
+  
+  bulkReject: (scoreIds, reason, comments = '') => fetchAPI('/scores/bulk/reject', {
+    method: 'PUT',
+    body: JSON.stringify({ scoreIds, reason, comments })
+  }),
+  
+  // Export de données
+  export: async (filters = {}, format = 'csv') => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    queryParams.append('format', format);
+    
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${BASE_URL}/scores/export?${queryParams.toString()}`, {
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Erreur lors de l\'export');
+    }
+    
+    return response.blob();
+  },
+  
+  // Historique des scores avec export
+  getHistory: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    return fetchAPI(`/scores/history?${queryParams.toString()}`);
+  }
 };
 
 // Activités
-export const fetchActivities = () => fetchAPI('/activities');
-export const createActivity = (activity) => fetchAPI('/activities', {
-  method: 'POST',
-  body: JSON.stringify(activity)
-});
-export const updateActivity = (activityId, activity) => fetchAPI(`/activities/${activityId}`, {
-  method: 'PUT',
-  body: JSON.stringify(activity)
-});
-export const deleteActivity = (activityId) => fetchAPI(`/activities/${activityId}`, {
-  method: 'DELETE'
-});
+export const activities = {
+  // Récupérer toutes les activités
+  getAll: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, value);
+      }
+    });
+    return fetchAPI(`/activities?${queryParams.toString()}`);
+  },
+  
+  // Récupérer une activité par ID
+  getById: (activityId, options = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(options).forEach(([key, value]) => {
+      if (value) queryParams.append(key, value);
+    });
+    return fetchAPI(`/activities/${activityId}?${queryParams.toString()}`);
+  },
+  
+  // Créer une nouvelle activité
+  create: (activityData) => fetchAPI('/activities', {
+    method: 'POST',
+    body: JSON.stringify(activityData)
+  }),
+  
+  // Mettre à jour une activité
+  update: (activityId, activityData) => fetchAPI(`/activities/${activityId}`, {
+    method: 'PUT',
+    body: JSON.stringify(activityData)
+  }),
+  
+  // Supprimer une activité
+  delete: (activityId) => fetchAPI(`/activities/${activityId}`, {
+    method: 'DELETE'
+  }),
+  
+  // Gestion des sous-activités
+  subActivities: {
+    // Ajouter une sous-activité
+    add: (activityId, subActivityData) => fetchAPI(`/activities/${activityId}/sub-activities`, {
+      method: 'POST',
+      body: JSON.stringify(subActivityData)
+    }),
+    
+    // Mettre à jour une sous-activité
+    update: (activityId, subActivityId, subActivityData) => fetchAPI(`/activities/${activityId}/sub-activities/${subActivityId}`, {
+      method: 'PUT',
+      body: JSON.stringify(subActivityData)
+    }),
+    
+    // Supprimer une sous-activité
+    delete: (activityId, subActivityId) => fetchAPI(`/activities/${activityId}/sub-activities/${subActivityId}`, {
+      method: 'DELETE'
+    })
+  },
+  
+  // Historique des activités
+  getHistory: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, value);
+      }
+    });
+    return fetchAPI(`/activities/history?${queryParams.toString()}`);
+  },
+  
+  // Statistiques d'une activité
+  getStats: (activityId, period = 'month') => fetchAPI(`/activities/${activityId}/stats?period=${period}`),
+  
+  // Participants d'une activité
+  getParticipants: (activityId) => fetchAPI(`/activities/${activityId}/participants`),
+  
+  // Dupliquer une activité
+  duplicate: (activityId, newData = {}) => fetchAPI(`/activities/${activityId}/duplicate`, {
+    method: 'POST',
+    body: JSON.stringify(newData)
+  }),
+  
+  // Archiver/désarchiver une activité
+  archive: (activityId) => fetchAPI(`/activities/${activityId}/archive`, {
+    method: 'PUT'
+  }),
+  
+  unarchive: (activityId) => fetchAPI(`/activities/${activityId}/unarchive`, {
+    method: 'PUT'
+  })
+};
+
+// Compatibilité avec l'ancienne API
+export const fetchActivities = () => activities.getAll();
+export const createActivity = (activity) => activities.create(activity);
+export const updateActivity = (activityId, activity) => activities.update(activityId, activity);
+export const deleteActivity = (activityId) => activities.delete(activityId);

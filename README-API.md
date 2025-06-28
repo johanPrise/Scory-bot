@@ -23,9 +23,9 @@ src/
 │       ├── scores.js         # Gestion des scores
 │       └── dashboard.js      # Statistiques et dashboard
 ├── services/
-│   ├── scoreService.new.js   # Service scores (MongoDB direct)
-│   ├── teamService.new.js    # Service équipes (MongoDB direct)
-│   └── activityService.new.js # Service activités (MongoDB direct)
+│   ├── scoreService.js   # Service scores (MongoDB direct)
+│   ├── teamService.js    # Service équipes (MongoDB direct)
+│   └── activityService.js # Service activités (MongoDB direct)
 └── models/ (mis à jour avec pagination)
 ```
 

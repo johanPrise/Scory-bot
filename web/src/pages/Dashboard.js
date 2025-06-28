@@ -33,6 +33,7 @@ import {
   Person as PersonIcon,
   Star as StarIcon
 } from '@mui/icons-material';
+import { useNotification } from '../context/NotificationContext';
 
 const StatCard = ({ title, value, icon: Icon, color, loading = false, subtitle }) => (
   <Grid item xs={12} sm={6} md={3}>
@@ -189,6 +190,7 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [period, setPeriod] = useState('month');
   const [performerScope, setPerformerScope] = useState('individual');
+  const { notify } = useNotification();
 
   useEffect(() => {
     loadDashboardData();
@@ -211,6 +213,7 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Erreur lors du chargement du dashboard:', err);
       setError(err.message || 'Erreur lors du chargement des données');
+      notify(err.message || 'Erreur lors du chargement des données', 'error');
     } finally {
       setLoading(false);
     }

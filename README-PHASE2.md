@@ -8,7 +8,7 @@ La **Phase 2** adapte complètement l'interface web pour utiliser la nouvelle AP
 
 ### 1. **API Frontend Complètement Refactorisée**
 - **Ancien** : `api.js` avec endpoints mockés
-- **Nouveau** : `api.new.js` avec API MongoDB complète
+- **Nouveau** : `api.js` avec API MongoDB complète
 - **Structure modulaire** : auth, users, teams, activities, scores, dashboard
 - **Gestion d'erreurs** améliorée avec retry automatique
 
@@ -34,16 +34,16 @@ La **Phase 2** adapte complètement l'interface web pour utiliser la nouvelle AP
 
 ```
 web/src/
-├── api.new.js                 # API modulaire pour MongoDB
+├── api.js                 # API modulaire pour MongoDB
 ├── context/
-│   └── AuthContext.new.js     # Contexte d'auth avec JWT
+│   └── AuthContext.js     # Contexte d'auth avec JWT
 ├── components/
 │   └── ProtectedRoute.js      # Protection des routes
 ├── pages/
-│   ├── Login.new.js          # Login/Register moderne
-│   ├── Dashboard.new.js      # Dashboard avec vraies données
-│   └── Teams.new.js          # Gestion complète des équipes
-└── App.new.js                # Routing avec permissions
+│   ├── Login.js          # Login/Register moderne
+│   ├── Dashboard.js      # Dashboard avec vraies données
+│   └── Teams.js          # Gestion complète des équipes
+└── App.js                # Routing avec permissions
 ```
 
 ## 🚀 Installation et Migration
@@ -211,7 +211,7 @@ password: 'password123'
 
 ### Thème et Couleurs
 ```javascript
-// web/src/App.new.js
+// web/src/App.js
 const theme = createTheme({
   palette: {
     primary: { main: '#1976d2' },    // Bleu principal
@@ -224,7 +224,7 @@ const theme = createTheme({
 
 ### Configuration API
 ```javascript
-// web/src/api.new.js
+// web/src/api.js
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 ```
 

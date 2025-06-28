@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -39,6 +40,7 @@ const Login = () => {
   const [localError, setLocalError] = useState(null);
 
   const { login, register, error, clearError, isAuthenticated } = useAuth();
+  const { notify } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -88,6 +90,7 @@ const Login = () => {
     
     if (!formData.login || !formData.password) {
       setLocalError('Veuillez remplir tous les champs');
+      notify('Veuillez remplir tous les champs', 'warning');
       return;
     }
 
@@ -96,9 +99,11 @@ const Login = () => {
 
     try {
       await login(formData.login, formData.password);
+      notify('Connexion réussie', 'success');
       // La redirection se fera automatiquement via useEffect
     } catch (err) {
       setLocalError(err.message || 'Erreur lors de la connexion');
+      notify(err.message || 'Erreur lors de la connexion', 'error');
     } finally {
       setLoading(false);
     }
@@ -110,16 +115,19 @@ const Login = () => {
     // Validation
     if (!formData.username || !formData.email || !formData.registerPassword) {
       setLocalError('Veuillez remplir tous les champs obligatoires');
+      notify('Veuillez remplir tous les champs obligatoires', 'warning');
       return;
     }
 
     if (formData.registerPassword !== formData.confirmPassword) {
       setLocalError('Les mots de passe ne correspondent pas');
+      notify('Les mots de passe ne correspondent pas', 'warning');
       return;
     }
 
     if (formData.registerPassword.length < 8) {
       setLocalError('Le mot de passe doit contenir au moins 8 caractères');
+      notify('Le mot de passe doit contenir au moins 8 caractères', 'warning');
       return;
     }
 
@@ -134,9 +142,11 @@ const Login = () => {
         firstName: formData.firstName,
         lastName: formData.lastName
       });
+      notify('Inscription réussie', 'success');
       // La redirection se fera automatiquement via useEffect
     } catch (err) {
       setLocalError(err.message || 'Erreur lors de l\'inscription');
+      notify(err.message || 'Erreur lors de l\'inscription', 'error');
     } finally {
       setLoading(false);
     }

@@ -18,29 +18,29 @@ async function migrateFrontend() {
     // API
     {
       old: path.join(srcDir, 'api.js'),
-      new: path.join(srcDir, 'api.new.js'),
+      new: path.join(srcDir, 'api.js'),
       backup: path.join(srcDir, 'api.backup.js')
     },
     // Contexte d'authentification
     {
       old: path.join(srcDir, 'context', 'AuthContext.js'),
-      new: path.join(srcDir, 'context', 'AuthContext.new.js'),
+      new: path.join(srcDir, 'context', 'AuthContext.js'),
       backup: path.join(srcDir, 'context', 'AuthContext.backup.js')
     },
     // Pages
     {
       old: path.join(srcDir, 'pages', 'Login.js'),
-      new: path.join(srcDir, 'pages', 'Login.new.js'),
+      new: path.join(srcDir, 'pages', 'Login.js'),
       backup: path.join(srcDir, 'pages', 'Login.backup.js')
     },
     {
       old: path.join(srcDir, 'pages', 'Dashboard.js'),
-      new: path.join(srcDir, 'pages', 'Dashboard.new.js'),
+      new: path.join(srcDir, 'pages', 'Dashboard.js'),
       backup: path.join(srcDir, 'pages', 'Dashboard.backup.js')
     },
     {
       old: path.join(srcDir, 'pages', 'Teams.js'),
-      new: path.join(srcDir, 'pages', 'Teams.new.js'),
+      new: path.join(srcDir, 'pages', 'Teams.js'),
       backup: path.join(srcDir, 'pages', 'Teams.backup.js')
     }
   ];
@@ -48,8 +48,8 @@ async function migrateFrontend() {
   for (const migration of migrations) {
     try {
       // Vérifier que le nouveau fichier existe
-      if (!fs.existsSync(migration.new)) {
-        console.log(`⚠️  Nouveau fichier non trouvé: ${path.basename(migration.new)}`);
+      if (!fs.existsSync(migration)) {
+        console.log(`⚠️  Nouveau fichier non trouvé: ${path.basename(migration)}`);
         continue;
       }
 
@@ -60,12 +60,12 @@ async function migrateFrontend() {
       }
 
       // Remplacer par le nouveau fichier
-      fs.copyFileSync(migration.new, migration.old);
+      fs.copyFileSync(migration, migration.old);
       console.log(`✅ Fichier migré: ${path.basename(migration.old)}`);
 
       // Supprimer le fichier temporaire
-      fs.unlinkSync(migration.new);
-      console.log(`🗑️  Fichier temporaire supprimé: ${path.basename(migration.new)}`);
+      fs.unlinkSync(migration);
+      console.log(`🗑️  Fichier temporaire supprimé: ${path.basename(migration)}`);
 
     } catch (error) {
       console.error(`❌ Erreur lors de la migration de ${path.basename(migration.old)}:`, error.message);

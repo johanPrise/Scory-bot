@@ -564,3 +564,34 @@
 {"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
 {"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
 {"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-19 17:33:59"}
+{"level":"info","message":"🚀 Démarrage du serveur API Scory-bot...","service":"scory-bot","timestamp":"2025-06-28 11:48:08"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-28 11:48:08"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-28 11:48:10","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée","service":"scory-bot","timestamp":"2025-06-28 11:48:10"}
+{"level":"info","message":"✅ Serveur API démarré avec succès","service":"scory-bot","timestamp":"2025-06-28 11:48:10"}
+{"level":"info","message":"🚀 Serveur API démarré sur le port 3001","service":"scory-bot","timestamp":"2025-06-28 11:48:10"}
+{"level":"info","message":"📍 Health check: http://localhost:3001/health","service":"scory-bot","timestamp":"2025-06-28 11:48:10"}
+{"level":"info","message":"📍 API Base URL: http://localhost:3001/api","service":"scory-bot","timestamp":"2025-06-28 11:48:10"}
+{"level":"info","message":"Signal SIGINT reçu. Arrêt du serveur API...","service":"scory-bot","timestamp":"2025-06-28 11:55:36"}
+{"level":"info","message":"Connexion à la base de données...","service":"scory-bot","timestamp":"2025-06-28 12:01:11"}
+{"level":"info","message":"✅ Connected to MongoDB","service":"scory-bot","timestamp":"2025-06-28 12:01:13","url":"mongodb+srv://***:***@bot-tg.v0mwc.mongodb.net/?retryWrites=true&w=majority&appName=bot-tg"}
+{"level":"info","message":"✅ Base de données connectée avec succès","service":"scory-bot","timestamp":"2025-06-28 12:01:13"}
+{"level":"info","message":"Configuration du bot...","service":"scory-bot","timestamp":"2025-06-28 12:01:13"}
+{"botId":7578616612,"botName":"Scorybot","botUsername":"scory_fr_bot","env":"development","level":"info","message":"[USER_ACTION] Bot démarré","service":"scory-bot","startTime":"2025-06-28T11:01:15.013Z","timestamp":"2025-06-28 12:01:15","userId":"system"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"info","message":"Configuration des commandes...","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"debug","message":"Commandes d'authentification configurées","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"debug","message":"Commandes d'activités configurées","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"debug","message":"Commandes de scores configurées","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"debug","message":"Commandes d'équipes configurées","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"debug","message":"Commandes utilitaires configurées","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"debug","message":"Commandes Web App configurées","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"info","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"debug","message":"Gestionnaires de callbacks configurés","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"info","message":"Toutes les commandes ont été configurées avec succès","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"info","message":"Démarrage du bot en mode polling...","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-28 12:01:15"}
+{"level":"warn","message":"Signal SIGINT reçu. Arrêt en cours...","service":"scory-bot","timestamp":"2025-06-28 12:03:31"}
+{"level":"info","message":"Arrêt du bot...","service":"scory-bot","timestamp":"2025-06-28 12:03:31"}
+{"level":"info","message":"✅ Bot arrêté avec succès","service":"scory-bot","timestamp":"2025-06-28 12:03:38"}

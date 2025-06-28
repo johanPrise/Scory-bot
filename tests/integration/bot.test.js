@@ -18,9 +18,9 @@ jest.mock('../../src/config/bot.js', () => ({
 }));
 
 // Import des commandes après les mocks
-import scoreService from '../../src/services/scoreService.new.js';
-import { teamService } from '../../src/services/teamService.new.js';
-import * as activityService from '../../src/services/activityService.new.js';
+import scoreService from '../../src/services/scoreService.js';
+import { teamService } from '../../src/services/teamService.js';
+import * as activityService from '../../src/services/activityService.js';
 
 describe('Bot Integration Tests', () => {
   let testUser;

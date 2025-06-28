@@ -6,6 +6,8 @@ import { bot, setupBot } from './config/bot.js';
 import { connectToDatabase } from './config/database.js';
 import { TELEGRAM_CONFIG, ENV_CONFIG } from './config/telegram.js';
 import logger, { logCriticalError, logUserAction } from './utils/logger.js';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -20,6 +22,11 @@ const config = {
 // Obtenir le chemin du répertoire actuel
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Importer l'app Express principale (à adapter selon votre structure)
+import expressApp from './api/index.js'; // Remplacez par le chemin réel de votre app Express
+
+let io; // Pour exposer l'instance Socket.IO
 
 /**
  * Fonction principale pour démarrer l'application
@@ -53,6 +60,22 @@ async function startApp() {
       // Vous devrez utiliser bot.setWebHook() et configurer un serveur Express
       logger.warn('Mode webhook non implémenté pour node-telegram-bot-api');
     }
+    
+    // 6. Démarrage du serveur HTTP + Socket.IO
+    const httpServer = http.createServer(expressApp);
+    io = new SocketIOServer(httpServer, {
+      cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+      }
+    });
+    // Exposer io globalement si besoin
+    expressApp.set('io', io);
+
+    const apiPort = process.env.API_PORT || 3001;
+    httpServer.listen(apiPort, () => {
+      logger.info(`🚀 API + Socket.IO démarrés sur le port ${apiPort}`);
+    });
     
     logger.info(`🤖 Bot démarré avec succès en mode ${env.toUpperCase()}`);
     
@@ -160,6 +183,9 @@ process.on('uncaughtException', (error) => {
   // (selon les bonnes pratiques Node.js)
   process.exit(1);
 });
+
+// Exporter l'instance io pour l'utiliser dans d'autres modules
+export { io };
 
 // Démarrer l'application
 startApp();

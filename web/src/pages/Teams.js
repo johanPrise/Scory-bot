@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { teams } from '../api';
+import { useNotification } from '../context/NotificationContext';
 import {
   Box,
   Typography,
@@ -347,6 +348,7 @@ const MembersDialog = ({ open, onClose, team, onAddMember, onRemoveMember, curre
 
 const Teams = () => {
   const { currentUser } = useAuth();
+  const { notify } = useNotification();
   const [teamsList, setTeamsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -379,14 +381,15 @@ const Teams = () => {
   };
 
   const handleCreateTeam = async (teamData) => {
+    setCreateLoading(true);
     try {
-      setCreateLoading(true);
       await teams.create(teamData);
       setCreateDialogOpen(false);
-      await loadTeams(); // Recharger la liste
+      await loadTeams();
+      notify('Équipe créée avec succès', 'success');
     } catch (err) {
-      console.error('Erreur lors de la création de l\'équipe:', err);
       setError(err.message || 'Erreur lors de la création de l\'équipe');
+      notify('Erreur lors de la création de l\'équipe', 'error');
     } finally {
       setCreateLoading(false);
     }
@@ -404,10 +407,12 @@ const Teams = () => {
 
     try {
       await teams.delete(team._id);
-      await loadTeams(); // Recharger la liste
+      await loadTeams();
+      notify('Équipe supprimée', 'success');
     } catch (err) {
       console.error('Erreur lors de la suppression de l\'équipe:', err);
       setError(err.message || 'Erreur lors de la suppression de l\'équipe');
+      notify('Erreur lors de la suppression de l\'équipe', 'error');
     }
   };
 
@@ -417,9 +422,11 @@ const Teams = () => {
       const teamDetails = await teams.getById(team._id, { includeMembers: 'true' });
       setSelectedTeam(teamDetails.team);
       setMembersDialogOpen(true);
+      notify('Membres de l\'équipe chargés', 'info');
     } catch (err) {
       console.error('Erreur lors du chargement des membres:', err);
       setError(err.message || 'Erreur lors du chargement des membres');
+      notify('Erreur lors du chargement des membres', 'error');
     }
   };
 
@@ -430,7 +437,9 @@ const Teams = () => {
       const teamDetails = await teams.getById(teamId, { includeMembers: 'true' });
       setSelectedTeam(teamDetails.team);
       await loadTeams(); // Recharger la liste principale
+      notify('Membre ajouté à l\'équipe', 'success');
     } catch (err) {
+      notify('Erreur lors de l\'ajout du membre', 'error');
       throw err; // Propager l'erreur pour la gestion dans le composant
     }
   };
@@ -442,9 +451,11 @@ const Teams = () => {
       const teamDetails = await teams.getById(teamId, { includeMembers: 'true' });
       setSelectedTeam(teamDetails.team);
       await loadTeams(); // Recharger la liste principale
+      notify('Membre retiré de l\'équipe', 'success');
     } catch (err) {
       console.error('Erreur lors de la suppression du membre:', err);
       setError(err.message || 'Erreur lors de la suppression du membre');
+      notify('Erreur lors de la suppression du membre', 'error');
     }
   };
 

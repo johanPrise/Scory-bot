@@ -16,30 +16,30 @@ async function migrateServices() {
   const migrations = [
     {
       old: 'scoreService.js',
-      new: 'scoreService.new.js',
+      new: 'scoreService.js',
       backup: 'scoreService.backup.js'
     },
     {
       old: 'teamService.js',
-      new: 'teamService.new.js',
+      new: 'teamService.js',
       backup: 'teamService.backup.js'
     },
     {
       old: 'activityService.js',
-      new: 'activityService.new.js',
+      new: 'activityService.js',
       backup: 'activityService.backup.js'
     }
   ];
 
   for (const migration of migrations) {
     const oldPath = path.join(servicesDir, migration.old);
-    const newPath = path.join(servicesDir, migration.new);
+    const newPath = path.join(servicesDir, migration);
     const backupPath = path.join(servicesDir, migration.backup);
 
     try {
       // Vérifier que le nouveau fichier existe
       if (!fs.existsSync(newPath)) {
-        console.log(`⚠️  Nouveau fichier non trouvé: ${migration.new}`);
+        console.log(`⚠️  Nouveau fichier non trouvé: ${migration}`);
         continue;
       }
 
@@ -55,7 +55,7 @@ async function migrateServices() {
 
       // Supprimer le fichier temporaire
       fs.unlinkSync(newPath);
-      console.log(`🗑️  Fichier temporaire supprimé: ${migration.new}`);
+      console.log(`🗑️  Fichier temporaire supprimé: ${migration}`);
 
     } catch (error) {
       console.error(`❌ Erreur lors de la migration de ${migration.old}:`, error.message);
