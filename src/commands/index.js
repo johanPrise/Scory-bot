@@ -13,49 +13,55 @@ import * as utilityCommands from './utils/index.js';
 import * as webAppCommands from './utils/webAppCommands.js';
 import { createActivityWithButtons } from './activities/createActivityWithButtons.js';
 import logger from '../utils/logger.js';
+import { createBotCommand, wrapCommandHandler } from './utils/botCommandUtils.js';
 
 // Configuration des commandes
-export const setupCommands = () => {
+export const setupCommands = async () => {
   try {
     logger.info('Configuration des commandes...');
     
+    // Obtenir les informations du bot pour récupérer son username
+    const botInfo = await bot.getMe();
+    const botUsername = botInfo.username;
+    
     // 1. Commandes d'authentification
-    bot.onText(/^\/start$/, authCommands.start);
-    bot.onText(/^\/link(?:\s+(.+))?$/, authCommands.link);
-    bot.onText(/^\/help$/, utilityCommands.help);
+    bot.onText(createBotCommand('start'), wrapCommandHandler(authCommands.start, botUsername));
+    bot.onText(createBotCommand('link', '(?:\\s+(.+))?'), wrapCommandHandler(authCommands.link, botUsername));
+    bot.onText(createBotCommand('help'), wrapCommandHandler(utilityCommands.help, botUsername));
     logger.debug('Commandes d\'authentification configurées');
 
     // 2. Commandes d'activités
-    bot.onText(/^\/createactivity\s+(.+)$/, activityCommands.createActivity);
-    bot.onText(/^\/create_activity$/, createActivityWithButtons);
-    bot.onText(/^\/addsubactivity\s+(\S+)\s+(.+)$/, activityCommands.addSubActivity);
-    bot.onText(/^\/activities$/, activityCommands.listActivities);
-    bot.onText(/^\/history$/, activityCommands.history);
+    bot.onText(createBotCommand('createactivity', '\\s+(.+)'), wrapCommandHandler(activityCommands.createActivity, botUsername));
+    bot.onText(createBotCommand('create_activity'), wrapCommandHandler(createActivityWithButtons, botUsername));
+    bot.onText(createBotCommand('addsubactivity', '\\s+(\\S+)\\s+(.+)'), wrapCommandHandler(activityCommands.addSubActivity, botUsername));
+    bot.onText(createBotCommand('activities'), wrapCommandHandler(activityCommands.listActivities, botUsername));
+    bot.onText(createBotCommand('history'), wrapCommandHandler(activityCommands.history, botUsername));
     logger.debug('Commandes d\'activités configurées');
 
     // 3. Configuration des commandes de scores (y compris les commandes avancées)
-    scoreCommands.setupScoreCommands();
+    scoreCommands.setupScoreCommands(botUsername);
     logger.debug('Commandes de scores configurées');
 
     // 4. Commandes d'équipes
-    bot.onText(/^\/createteam\s+(\S+)\s+(.+)$/, teamCommands.createTeam);
-    bot.onText(/^\/addtoteam\s+(\S+)\s+(\S+)\s+(.+)$/, teamCommands.addToTeam);
-    bot.onText(/^\/teamranking\s+(\S+)$/, teamCommands.getTeamRanking);
+    bot.onText(createBotCommand('createteam', '\\s+(\\S+)\\s+(.+)'), wrapCommandHandler(teamCommands.createTeam, botUsername));
+    bot.onText(createBotCommand('addtoteam', '\\s+(\\S+)\\s+(\\S+)\\s+(.+)'), wrapCommandHandler(teamCommands.addToTeam, botUsername));
+    bot.onText(createBotCommand('teamranking', '\\s+(\\S+)'), wrapCommandHandler(teamCommands.getTeamRanking, botUsername));
     logger.debug('Commandes d\'équipes configurées');
 
     // 5. Commandes utilitaires
-    bot.onText(/^\/stats\s+(\S+)$/, utilityCommands.getStats);
-    bot.onText(/^\/export\s+(\S+)$/, utilityCommands.exportData);
-    bot.onText(/^\/feedback\s+(\S+)\s+(.+)$/, utilityCommands.submitFeedback);
-    bot.onText(/^\/starttimer\s+(\S+)\s+(\d+)$/, utilityCommands.startTimer);
-    bot.onText(/^\/stoptimer\s+(\S+)$/, utilityCommands.stopTimer);
+    bot.onText(createBotCommand('stats', '\\s+(\\S+)'), wrapCommandHandler(utilityCommands.getStats, botUsername));
+    bot.onText(createBotCommand('export', '\\s+(\\S+)'), wrapCommandHandler(utilityCommands.exportData, botUsername));
+    bot.onText(createBotCommand('feedback', '\\s+(\\S+)\\s+(.+)'), wrapCommandHandler(utilityCommands.submitFeedback, botUsername));
+    bot.onText(createBotCommand('starttimer', '\\s+(\\S+)\\s+(\\d+)'), wrapCommandHandler(utilityCommands.startTimer, botUsername));
+    bot.onText(createBotCommand('stoptimer', '\\s+(\\S+)'), wrapCommandHandler(utilityCommands.stopTimer, botUsername));
     logger.debug('Commandes utilitaires configurées');
     
     // 6. Commandes Web App
-    bot.onText(/^\/admin$/, webAppCommands.openAdminDashboard);
-    bot.onText(/^\/scoremanager$/, webAppCommands.openScoreManager);
-    bot.onText(/^\/teamdashboard$/, webAppCommands.openTeamDashboard);
-    bot.onText(/^\/dashboard$/, webAppCommands.openMainDashboard);
+    bot.onText(createBotCommand('app'), wrapCommandHandler(webAppCommands.openApp, botUsername));
+    bot.onText(createBotCommand('admin'), wrapCommandHandler(webAppCommands.openAdminDashboard, botUsername));
+    bot.onText(createBotCommand('scoremanager'), wrapCommandHandler(webAppCommands.openScoreManager, botUsername));
+    bot.onText(createBotCommand('teamdashboard'), wrapCommandHandler(webAppCommands.openTeamDashboard, botUsername));
+    bot.onText(createBotCommand('dashboard'), wrapCommandHandler(webAppCommands.openMainDashboard, botUsername));
     logger.debug('Commandes Web App configurées');
     
     // Configuration des gestionnaires de callbacks

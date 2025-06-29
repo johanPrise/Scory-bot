@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Snackbar, Alert } from '@mui/material';
-import {FloatingFeedback} from './components/FloatingFeedback';
+import FloatingFeedback from './components/FloatingFeedback';
 import FloatingTimers from './components/FloatingTimers';
 // Contexte d'authentification mis à jour
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useNotification } from './context/NotificationContext';
+import socket from './socket';
 
 // Composants de protection des routes
 import ProtectedRoute, { PublicRoute, RoleBasedRoute } from './components/ProtectedRoute';
@@ -21,6 +23,9 @@ import Teams from './pages/Teams';
 import Activities from './pages/Activities';
 import Rankings from './pages/Rankings';
 import Settings from './pages/Settings';
+
+// Page Telegram Web App
+import TelegramDashboard from './pages/TelegramDashboard';
 
 // Pages pour le rôle 'creator' (super-admin)
 import CreatorDashboard from './pages/creator/Dashboard';
@@ -186,6 +191,74 @@ function RoleBasedRedirect() {
   }
 }
 
+// Composant pour gérer la connexion Socket.IO
+function SocketManager() {
+  const { currentUser } = useAuth();
+  const { notify } = useNotification();
+
+  useEffect(() => {
+    if (currentUser?.userId) {
+      // Connexion et abonnement à la room utilisateur
+      socket.auth = { userId: currentUser.userId };
+      socket.connect();
+      socket.emit('join', { room: `user:${currentUser.userId}` });
+    } else {
+      socket.disconnect();
+    }
+    return () => {
+      socket.off('score:status');
+      socket.disconnect();
+    };
+  }, [currentUser?.userId]);
+
+  useEffect(() => {
+    socket.on('score:status', (data) => {
+      if (data.status === 'approved') {
+        notify('Votre score a été approuvé !', 'success');
+      } else if (data.status === 'rejected') {
+        notify(`Votre score a été refusé : ${data.reason || ''}`, 'error');
+      }
+    });
+    socket.on('score:new', (data) => {
+      notify('Un nouveau score a été ajouté à votre équipe !', 'info');
+    });
+    socket.on('timer:ended', (data) => {
+      notify('Le timer de l’activité est terminé !', 'warning');
+    });
+    socket.on('feedback:new', (data) => {
+      notify('Nouveau feedback reçu !', 'info');
+    });
+    socket.on('activity:change', (data) => {
+      let msg = 'Activité modifiée.';
+      if (data.eventType === 'created') msg = `Nouvelle activité créée : ${data.name}`;
+      else if (data.eventType === 'updated') msg = `Activité modifiée : ${data.name}`;
+      else if (data.eventType === 'deleted') msg = `Activité supprimée : ${data.name}`;
+      notify(msg, 'info');
+    });
+    socket.on('subactivity:change', (data) => {
+      let msg = 'Sous-activité modifiée.';
+      if (data.eventType === 'created') msg = `Nouvelle sous-activité : ${data.subActivity?.name}`;
+      else if (data.eventType === 'updated') msg = `Sous-activité modifiée : ${data.subActivity?.name}`;
+      else if (data.eventType === 'deleted') msg = `Sous-activité supprimée : ${data.subActivity?.name}`;
+      notify(msg, 'info');
+    });
+    socket.on('team:added', (data) => {
+      notify(`Vous avez été ajouté à l'équipe : ${data.teamName}`, 'success');
+    });
+    return () => {
+      socket.off('score:status');
+      socket.off('score:new');
+      socket.off('timer:ended');
+      socket.off('feedback:new');
+      socket.off('activity:change');
+      socket.off('subactivity:change');
+      socket.off('team:added');
+    };
+  }, [notify]);
+
+  return null;
+}
+
 // Composant principal de l'application
 function AppContent() {
   const { currentUser } = useAuth();
@@ -194,6 +267,9 @@ function AppContent() {
     <>
       <GlobalNotifications />
       <Routes>
+        {/* Route Telegram Web App (accès libre) */}
+        <Route path="/telegram" element={<TelegramDashboard />} />
+        
         {/* Routes publiques */}
         <Route path="/login" element={
           <PublicRoute>
@@ -298,6 +374,7 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <Router>
+          <SocketManager />
           <AppContent />
           {/* Bouton flottant pour minuteurs, accessible partout */}
           <FloatingTimers />

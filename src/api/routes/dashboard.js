@@ -1,8 +1,8 @@
 import express from 'express';
-import User from '../../models/User.js';
-import Team from '../../models/Team.js';
-import { Activity } from '../../models/activity.js';
-import Score from '../../models/Score.js';
+import User from '../models/User.js';
+import Team from '../models/Team.js';
+import { Activity } from '../models/activity.js';
+import Score from '../models/Score.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import logger from '../../utils/logger.js';

@@ -13,11 +13,22 @@ const start = async (msg) => {
   const chatId = msg.chat.id;
 
   try {
-    await bot.sendMessage(chatId, MESSAGES.WELCOME);
+    await bot.sendMessage(chatId, MESSAGES.WELCOME, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Ouvrir l'interface web",
+              web_app: { url: "http://localhost:3000" }
+            }
+          ]
+        ]
+      }
+    });
     // Configurer les commandes du bot
     await bot.setMyCommands([
       { command: 'start', description: 'Démarrer le bot' },
-      { command: 'help', description: 'Afficher l\'aide' },
+      { command: 'help', description: "Afficher l'aide" },
       { command: 'link', description: 'Lier votre compte' },
       { command: 'activities', description: 'Voir les activités' }
     ]);

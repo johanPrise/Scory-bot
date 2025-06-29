@@ -1,5 +1,5 @@
 import { bot } from '../../config/bot.js';
-import { listActivities as listActivitiesService } from '../../services/activityService.js';
+import { listActivities as listActivitiesService } from '../../api/services/activityService.js';
 import logger from '../../utils/logger.js';
 import { handleError } from '../utils/helpers.js';
 

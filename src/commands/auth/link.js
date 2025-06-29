@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
 import { MESSAGES, EMOJIS } from '../../config/messages.js';
 import { handleError } from '../utils/helpers.js';
-import { authService } from '../../services/apiService.js';
+import { authService } from '../../api/services/apiService.js';
 
 /**
  * Commande /link - Lie un compte Telegram à un compte Scory existant

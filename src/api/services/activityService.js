@@ -1,7 +1,7 @@
 import { Activity } from '../models/activity.js';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
-import logger from '../utils/logger.js';
+import logger from '../../utils/logger.js';
 
 // Fonction utilitaire pour gérer les erreurs
 const handleError = (error, customMessage) => {

@@ -1,7 +1,10 @@
 // routes/timers.js
 import express from 'express';
-import Timer from '../../models/Timer.js';
+import Timer from '../models/Timer.js';
 import mongoose from 'mongoose';
+import { bot } from '../../config/bot.js'; // Import du bot Telegram
+import User from '../models/User.js';
+import { notifyActivityParticipantsTimerEnded } from '../utils/notifications.js';
 
 const router = express.Router();
 
@@ -44,6 +47,12 @@ router.post('/stop', async (req, res) => {
     timer.running = false;
     timer.endTime = new Date();
     await timer.save();
+
+    // Notifier tous les participants de l'activité
+    if (activityId) {
+      await notifyActivityParticipantsTimerEnded(req, activityId, timer);
+    }
+
     res.json({ timer });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Erreur serveur' });

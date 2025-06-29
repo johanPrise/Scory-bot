@@ -3,7 +3,7 @@ import Score from '../models/Score.js';
 import User from '../models/User.js';
 import Team from '../models/Team.js';
 import QuickChart from 'quickchart-js';
-import logger from '../utils/logger.js';
+import logger from '../../utils/logger.js';
 
 export const generateStatistics = async (activityId) => {
   const activity = await Activity.findById(activityId);

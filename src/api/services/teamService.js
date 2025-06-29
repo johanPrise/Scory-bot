@@ -1,6 +1,6 @@
 import Team from '../models/Team.js';
 import User from '../models/User.js';
-import logger from '../utils/logger.js';
+import logger from '../../utils/logger.js';
 
 // Rôles des membres de l'équipe
 export const TEAM_ROLES = {

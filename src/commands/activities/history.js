@@ -1,5 +1,5 @@
 import { bot } from '../../config/bot.js';
-import { getActivityHistory } from '../../services/activityService.js';
+import { getActivityHistory } from '../../api/services/activityService.js';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import logger from '../../utils/logger.js';

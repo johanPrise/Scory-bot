@@ -1,5 +1,5 @@
 import { bot } from '../../config/bot.js';
-import { addScore } from '../../services/scoreService.js';
+import { addScore } from '../../api/services/scoreService.js';
 import logger from '../../utils/logger.js';
 import { handleError } from '../utils/helpers.js';
 

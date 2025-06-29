@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
-import * as scoreService from '../../services/scoreService.js';
-import { Activity } from '../../models/activity.js';
-import User from '../../models/User.js';
+import * as scoreService from '../../api/services/scoreService.js';
+import { Activity } from '../../api/models/activity.js';
+import User from '../../api/models/User.js';
 import logger from '../../utils/logger.js';
 
 /**

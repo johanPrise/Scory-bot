@@ -24,7 +24,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Importer l'app Express principale (à adapter selon votre structure)
-import expressApp from './api/index.js'; // Remplacez par le chemin réel de votre app Express
+import { createApiApp } from './api/index.js';
 
 let io; // Pour exposer l'instance Socket.IO
 
@@ -61,7 +61,8 @@ async function startApp() {
       logger.warn('Mode webhook non implémenté pour node-telegram-bot-api');
     }
     
-    // 6. Démarrage du serveur HTTP + Socket.IO
+    // 6. Créer l'application Express et démarrer le serveur HTTP + Socket.IO
+    const expressApp = createApiApp();
     const httpServer = http.createServer(expressApp);
     io = new SocketIOServer(httpServer, {
       cors: {
@@ -87,13 +88,17 @@ async function startApp() {
     });
     
     // Essayer d'envoyer un message d'erreur avant de quitter
-    try {
-      await bot.sendMessage(
-        process.env.ADMIN_CHAT_ID, 
-        `❌ Erreur critique: ${error.message}\n\nStack: ${error.stack}`.substring(0, 4000)
-      );
-    } catch (e) {
-      console.error('Impossible d\'envoyer la notification d\'erreur:', e);
+    if (process.env.ADMIN_CHAT_ID) {
+      try {
+        await bot.sendMessage(
+          process.env.ADMIN_CHAT_ID, 
+          `❌ Erreur critique: ${error.message}\n\nStack: ${error.stack}`.substring(0, 4000)
+        );
+      } catch (e) {
+        console.error('Impossible d\'envoyer la notification d\'erreur:', e);
+      }
+    } else {
+      console.warn('ADMIN_CHAT_ID n\'est pas défini - impossible d\'envoyer la notification d\'erreur');
     }
     
     process.exit(1);
@@ -168,7 +173,7 @@ process.on('unhandledRejection', (reason, promise) => {
   });
   
   // En production, on peut notifier l'administrateur
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && process.env.ADMIN_CHAT_ID) {
     bot.sendMessage(
       process.env.ADMIN_CHAT_ID, 
       `${errorMsg}: ${reason?.message || 'Aucun détail'}`

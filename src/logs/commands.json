@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-06-19T16:28:40.655Z",
+  "lastUpdated": "2025-06-29T19:49:48.181Z",
   "environment": "development",
   "bot": "scory_fr_bot",
   "commands": [
@@ -17,6 +17,11 @@
       "command": "link",
       "description": "Lier votre compte Telegram à votre compte Scory",
       "usage": "/link <code>"
+    },
+    {
+      "command": "app",
+      "description": "🚀 Ouvrir l'application complète dans Telegram",
+      "usage": "/app "
     },
     {
       "command": "activities",

@@ -1,5 +1,5 @@
 import { bot } from '../../config/bot.js';
-import * as teamService from '../../services/teamService.js';
+import * as teamService from '../../api/services/teamService.js';
 import logger from '../../utils/logger.js';
 
 /**

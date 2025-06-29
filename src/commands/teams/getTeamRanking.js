@@ -1,5 +1,5 @@
 import { bot } from '../../config/bot.js';
-import { getTeamRanking as getTeamRankingService } from '../../services/teamService.js';
+import { getTeamRanking as getTeamRankingService } from '../../api/services/teamService.js';
 import logger from '../../utils/logger.js';
 import { handleError } from '../utils/helpers.js';
 

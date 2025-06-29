@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { teams } from '../api';
+import {
+  getGroupTeams,
+  addGroupTeam,
+  deleteGroupTeam,
+  getGroupMembers,
+  addGroupMember,
+  deleteGroupMember
+} from '../api';
 import { useNotification } from '../context/NotificationContext';
 import {
   Box,
@@ -21,6 +28,7 @@ import {
   ListItem,
   ListItemAvatar,
   ListItemText,
+  // ListItemSecondaryAction is deprecated in MUI v5+, prefer using secondaryAction prop on ListItem
   ListItemSecondaryAction,
   IconButton,
   Alert,
@@ -35,7 +43,6 @@ import {
   Add as AddIcon,
   Group as GroupIcon,
   Person as PersonIcon,
-  Settings as SettingsIcon,
   MoreVert as MoreVertIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -357,20 +364,13 @@ const Teams = () => {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [createLoading, setCreateLoading] = useState(false);
 
-  useEffect(() => {
-    loadTeams();
-  }, []);
-
-  const loadTeams = async () => {
+  const loadTeams = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await teams.getAll({
-        includeMembers: 'true',
-        includeStats: 'true'
-      });
-      
+      // Remplacer par un groupId réel selon ton contexte
+      const groupId = currentUser?.groupId || 'defaultGroupId';
+      const response = await getGroupTeams(groupId);
       setTeamsList(response.teams || []);
     } catch (err) {
       console.error('Erreur lors du chargement des équipes:', err);
@@ -378,12 +378,16 @@ const Teams = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentUser]);
+
+  useEffect(() => {
+    loadTeams();
+  }, [loadTeams]);
 
   const handleCreateTeam = async (teamData) => {
     setCreateLoading(true);
     try {
-      await teams.create(teamData);
+      await addGroupTeam(teamData);
       setCreateDialogOpen(false);
       await loadTeams();
       notify('Équipe créée avec succès', 'success');
@@ -406,7 +410,7 @@ const Teams = () => {
     }
 
     try {
-      await teams.delete(team._id);
+      await deleteGroupTeam(team._id);
       await loadTeams();
       notify('Équipe supprimée', 'success');
     } catch (err) {
@@ -419,7 +423,7 @@ const Teams = () => {
   const handleViewMembers = async (team) => {
     try {
       // Récupérer les détails complets de l'équipe avec les membres
-      const teamDetails = await teams.getById(team._id, { includeMembers: 'true' });
+      const teamDetails = await getGroupMembers(team._id, { includeMembers: 'true' });
       setSelectedTeam(teamDetails.team);
       setMembersDialogOpen(true);
       notify('Membres de l\'équipe chargés', 'info');
@@ -432,9 +436,9 @@ const Teams = () => {
 
   const handleAddMember = async (teamId, memberData) => {
     try {
-      await teams.members.add(teamId, memberData);
+      await addGroupMember(teamId, memberData);
       // Recharger les détails de l'équipe
-      const teamDetails = await teams.getById(teamId, { includeMembers: 'true' });
+      const teamDetails = await getGroupMembers(teamId, { includeMembers: 'true' });
       setSelectedTeam(teamDetails.team);
       await loadTeams(); // Recharger la liste principale
       notify('Membre ajouté à l\'équipe', 'success');
@@ -446,9 +450,9 @@ const Teams = () => {
 
   const handleRemoveMember = async (teamId, userId) => {
     try {
-      await teams.members.remove(teamId, userId);
+      await deleteGroupMember(teamId, userId);
       // Recharger les détails de l'équipe
-      const teamDetails = await teams.getById(teamId, { includeMembers: 'true' });
+      const teamDetails = await getGroupMembers(teamId, { includeMembers: 'true' });
       setSelectedTeam(teamDetails.team);
       await loadTeams(); // Recharger la liste principale
       notify('Membre retiré de l\'équipe', 'success');

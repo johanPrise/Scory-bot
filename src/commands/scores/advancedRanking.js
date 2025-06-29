@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
 import { MESSAGES } from '../../config/messages.js';
 import logger from '../../utils/logger.js';
-import { getRankingData } from '../../services/scoreService.js';
+import { getRankingData } from '../../api/services/scoreService.js';
 
 /**
  * Affiche un classement avancé avec filtres
@@ -116,6 +116,18 @@ async function sendFilterOptions(chatId) {
  * @param {Object} ctx - Contexte du callback
  */
 const handleRankingActions = async (ctx) => {
+  // Vérifier si c'est un callback_query
+  if (!ctx.update || !ctx.update.callback_query) {
+    console.error('handleRankingActions: ctx.update.callback_query est undefined');
+    return;
+  }
+  
+  // Vérifier si c'est un callback_query
+  if (!ctx.update || !ctx.update.callback_query) {
+    console.error('handleRankingActions: ctx.update.callback_query est undefined');
+    return;
+  }
+  
   const callbackData = ctx.update.callback_query.data;
   const chatId = ctx.chat?.id || ctx.update.callback_query.message.chat.id;
   
@@ -157,7 +169,6 @@ function getMedal(position) {
   return medals[position] || '🏅';
 }
 
-// Enregistrer le gestionnaire de callback
-bot.on('callback_query', handleRankingActions);
+// Note: Les callbacks sont maintenant gérés centralement dans callbackHandler.js
 
 export default advancedRanking;

@@ -1,11 +1,13 @@
 import express from 'express';
-import Score from '../../models/Score.js';
-import { Activity } from '../../models/activity.js';
-import User from '../../models/User.js';
-import Team from '../../models/Team.js';
+import Score from '../models/Score.js';
+import { Activity } from '../models/activity.js';
+import User from '../models/User.js';
+import Team from '../models/Team.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware, requireTeamPermission } from '../middleware/auth.js';
 import logger from '../../utils/logger.js';
+import { bot } from '../../config/bot.js'; // Import du bot Telegram
+import { notifyUserScoreStatus, notifyTeamMembersNewScore } from '../utils/notifications.js';
 
 const router = express.Router();
 
@@ -195,6 +197,11 @@ router.post('/', asyncHandler(async (req, res) => {
   if (teamId) {
     const team = await Team.findById(teamId);
     await team.updateScore(value);
+  }
+
+  // Notifier les membres de l'équipe si applicable
+  if (teamId) {
+    await notifyTeamMembersNewScore(req, teamId, score);
   }
 
   logger.info(`Score créé`, { 
@@ -1163,18 +1170,6 @@ async function checkTeamAccess(userId, teamId) {
   return team.members.some(member => 
     member.userId.toString() === userId.toString()
   );
-}
-
-// Helper pour notifier l'utilisateur via Socket.IO
-function notifyUserScoreStatus(req, score, status, extra = {}) {
-  const io = req.app.get('io');
-  if (io && score.user) {
-    io.to(`user:${score.user}`).emit('score:status', {
-      scoreId: score._id,
-      status,
-      ...extra
-    });
-  }
 }
 
 export default router;

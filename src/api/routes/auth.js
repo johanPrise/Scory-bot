@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import User from '../../models/User.js';
+import User from '../models/User.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware } from '../middleware/auth.js';
 import logger from '../../utils/logger.js';

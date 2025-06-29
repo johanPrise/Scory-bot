@@ -1,5 +1,5 @@
 import { bot } from '../../config/bot.js';
-import { getStatistics } from '../../services/statisticsService.js';
+import { getStatistics } from '../../api/services/statisticsService.js';
 import logger from '../../utils/logger.js';
 import { handleError } from './helpers.js';
 

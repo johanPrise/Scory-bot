@@ -2,6 +2,8 @@
 import express from 'express';
 import { saveFeedback } from '../services/feedbackService.js';
 import { saveGlobalFeedback } from '../services/globalFeedbackService.js';
+import { bot } from '../../config/bot.js'; // Import du bot Telegram
+import { sendTelegramNotificationToUser, notifyAdminsNewFeedback } from '../utils/notifications.js';
 
 const router = express.Router();
 
@@ -28,6 +30,8 @@ router.post('/', async (req, res) => {
     } else {
       feedback = await saveGlobalFeedback({ type, message, username, chatId });
     }
+    // Notifier les admins en temps réel
+    await notifyAdminsNewFeedback(req, feedback);
     res.status(201).json({ message: 'Feedback enregistré', feedback });
   } catch (err) {
     res.status(500).json({ error: err.message || 'Erreur serveur' });

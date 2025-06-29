@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
-import * as teamService from '../../services/teamService.js';
-import Team from '../../models/Team.js';
-import User from '../../models/User.js';
+import * as teamService from '../../api/services/teamService.js';
+import Team from '../../api/models/Team.js';
+import User from '../../api/models/User.js';
 import logger from '../../utils/logger.js';
 
 /**

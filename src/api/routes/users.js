@@ -1,5 +1,5 @@
 import express from 'express';
-import User from '../../models/User.js';
+import User from '../models/User.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware, requireRole } from '../middleware/auth.js';
 import logger from '../../utils/logger.js';
@@ -325,6 +325,60 @@ router.delete('/:id/teams/:teamId', requireRole('admin', 'superadmin'), asyncHan
   res.json({
     message: 'Utilisateur retiré de l\'équipe avec succès',
   });
+}));
+
+/**
+ * POST /api/users/link-telegram
+ * Lier un compte utilisateur à Telegram via un code
+ */
+router.post('/link-telegram', asyncHandler(async (req, res) => {
+  const { code } = req.body;
+  const user = req.user;
+  if (!code) {
+    throw createError(400, 'Code de liaison requis');
+  }
+  // Chercher un utilisateur temporaire avec ce code
+  const tgUser = await User.findOne({ 'telegram.linkCode': code, 'telegram.linked': false });
+  if (!tgUser || !tgUser.telegram || !tgUser.telegram.id) {
+    throw createError(404, 'Code de liaison invalide ou expiré');
+  }
+  // Vérifier si ce Telegram est déjà lié à un autre compte
+  const alreadyLinked = await User.findOne({ 'telegram.id': tgUser.telegram.id, 'telegram.linked': true });
+  if (alreadyLinked) {
+    throw createError(409, 'Ce compte Telegram est déjà lié à un autre utilisateur');
+  }
+  // Lier le compte : copier les infos Telegram
+  user.telegram = {
+    id: tgUser.telegram.id,
+    username: tgUser.telegram.username,
+    chatId: tgUser.telegram.chatId,
+    linked: true
+  };
+  // Nettoyer le code de liaison
+  user.telegram.linkCode = undefined;
+  await user.save();
+  // Désactiver le profil temporaire Telegram
+  tgUser.status = 'inactive';
+  tgUser.telegram.linked = false;
+  tgUser.telegram.linkCode = undefined;
+  await tgUser.save();
+  res.json({ message: 'Compte Telegram lié avec succès' });
+}));
+
+/**
+ * POST /api/users/unlink-telegram
+ * Délier le compte Telegram de l'utilisateur connecté
+ */
+router.post('/unlink-telegram', asyncHandler(async (req, res) => {
+  const user = req.user;
+  if (!user.telegram || !user.telegram.linked) {
+    throw createError(400, 'Aucun compte Telegram lié à ce profil');
+  }
+  user.telegram = {
+    linked: false
+  };
+  await user.save();
+  res.json({ message: 'Compte Telegram délié avec succès' });
 }));
 
 export default router;

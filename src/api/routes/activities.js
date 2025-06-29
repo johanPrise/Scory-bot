@@ -1,9 +1,12 @@
 import express from 'express';
-import { Activity } from '../../models/activity.js';
-import Team from '../../models/Team.js';
+import { Activity } from '../models/activity.js';
+import Team from '../models/Team.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware, requireTeamPermission } from '../middleware/auth.js';
 import logger from '../../utils/logger.js';
+import { bot } from '../../config/bot.js'; // Import du bot Telegram
+import User from '../models/User.js';
+import { notifyActivityMembers, notifyActivityMembersSubActivity } from '../utils/notifications.js';
 
 const router = express.Router();
 
@@ -177,6 +180,9 @@ router.post('/', asyncHandler(async (req, res) => {
     teamId 
   });
 
+  // Notifier les membres/admins
+  await notifyActivityMembers(req, activity, 'created');
+
   res.status(201).json({
     message: 'Activité créée avec succès',
     activity: {
@@ -233,6 +239,9 @@ router.put('/:id', asyncHandler(async (req, res) => {
     updatedBy: req.user.username
   });
 
+  // Notifier les membres/admins
+  await notifyActivityMembers(req, activity, 'updated');
+
   res.json({
     message: 'Activité mise à jour avec succès',
     activity: {
@@ -286,6 +295,9 @@ router.delete('/:id', asyncHandler(async (req, res) => {
     activityId: activity._id,
     deletedBy: req.user.username
   });
+
+  // Notifier les membres/admins
+  await notifyActivityMembers(req, activity, 'deleted');
 
   res.json({
     message: 'Activité supprimée avec succès',
@@ -346,6 +358,10 @@ router.post('/:id/subactivities', asyncHandler(async (req, res) => {
     createdBy: req.user.username
   });
 
+  // Notifier les membres/admins
+  const subActivity = activity.subActivities[activity.subActivities.length - 1];
+  await notifyActivityMembersSubActivity(req, activity, 'created', subActivity);
+
   res.status(201).json({
     message: 'Sous-activité ajoutée avec succès',
     subActivity: {
@@ -404,6 +420,9 @@ router.put('/:id/subactivities/:subId', asyncHandler(async (req, res) => {
     updatedBy: req.user.username
   });
 
+  // Notifier les membres/admins
+  await notifyActivityMembersSubActivity(req, activity, 'updated', subActivity);
+
   res.json({
     message: 'Sous-activité mise à jour avec succès',
     subActivity: {
@@ -444,12 +463,11 @@ router.delete('/:id/subactivities/:subId', asyncHandler(async (req, res) => {
 
   // Supprimer la sous-activité
   const subActivity = activity.subActivities.id(subId);
-  if (!subActivity) {
-    throw createError(404, 'Sous-activité non trouvée');
-  }
-
   activity.subActivities.pull(subId);
   await activity.save();
+
+  // Notifier les membres/admins
+  await notifyActivityMembersSubActivity(req, activity, 'deleted', subActivity);
 
   logger.info(`Sous-activité supprimée: ${subActivity.name}`, { 
     activityId: activity._id,

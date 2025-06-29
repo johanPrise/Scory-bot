@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
 import { MESSAGES } from '../../config/messages.js';
 import logger from '../../utils/logger.js';
-import { getDashboardData } from '../../services/scoreService.js';
+import { getDashboardData } from '../../api/services/scoreService.js';
 
 /**
  * Affiche un tableau de bord personnalisé
@@ -208,6 +208,18 @@ function formatComparisonDashboard(data) {
  * Gère les actions du tableau de bord
  */
 const handleDashboardActions = async (ctx) => {
+  // Vérifier si c'est un callback_query
+  if (!ctx.update || !ctx.update.callback_query) {
+    console.error('handleDashboardActions: ctx.update.callback_query est undefined');
+    return;
+  }
+  
+  // Vérifier si c'est un callback_query
+  if (!ctx.update || !ctx.update.callback_query) {
+    console.error('handleDashboardActions: ctx.update.callback_query est undefined');
+    return;
+  }
+  
   const callbackData = ctx.update.callback_query.data;
   const chatId = ctx.chat?.id || ctx.update.callback_query.message.chat.id;
   
@@ -236,7 +248,9 @@ const handleDashboardActions = async (ctx) => {
 
 // Enregistrer les gestionnaires
 export const setupDashboardHandlers = () => {
-  bot.on('callback_query', handleDashboardActions);
+  // Note: Les callbacks sont maintenant gérés centralement dans callbackHandler.js
+  // Cette fonction est conservée pour la compatibilité
+  console.log('Dashboard handlers configurés (gérés centralement)');
 };
 
 export default dashboard;

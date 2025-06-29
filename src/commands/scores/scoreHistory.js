@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
 import { MESSAGES } from '../../config/messages.js';
 import logger from '../../utils/logger.js';
-import { getScoreHistory } from '../../services/scoreService.js';
+import { getScoreHistory } from '../../api/services/scoreService.js';
 
 /**
  * Affiche l'historique des scores d'un utilisateur
@@ -130,6 +130,18 @@ async function sendFilterOptions(chatId, userId) {
  * @param {Object} ctx - Contexte du callback
  */
 const handleHistoryActions = async (ctx) => {
+  // Vérifier si c'est un callback_query
+  if (!ctx.update || !ctx.update.callback_query) {
+    console.error('handleHistoryActions: ctx.update.callback_query est undefined');
+    return;
+  }
+  
+  // Vérifier si c'est un callback_query
+  if (!ctx.update || !ctx.update.callback_query) {
+    console.error('handleHistoryActions: ctx.update.callback_query est undefined');
+    return;
+  }
+  
   const callbackData = ctx.update.callback_query.data;
   const chatId = ctx.chat?.id || ctx.update.callback_query.message.chat.id;
   
@@ -258,7 +270,6 @@ function getPeriodLabel(period) {
   return periods[period] || '';
 }
 
-// Enregistrer le gestionnaire de callback
-bot.on('callback_query', handleHistoryActions);
+// Note: Les callbacks sont maintenant gérés centralement dans callbackHandler.js
 
 export default scoreHistory;

@@ -1,9 +1,10 @@
 import express from 'express';
-import Team from '../../models/Team.js';
-import User from '../../models/User.js';
+import Team from '../models/Team.js';
+import User from '../models/User.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware, requireTeamPermission } from '../middleware/auth.js';
 import logger from '../../utils/logger.js';
+import { notifyUserAddedToTeam } from '../utils/notifications.js';
 
 const router = express.Router();
 
@@ -348,9 +349,11 @@ router.post('/:id/members', requireTeamPermission('manage_members'), asyncHandle
 
   // Ajouter le membre à l'équipe
   await team.addMember(user._id, user.username, isAdmin);
-  
   // Ajouter l'équipe à l'utilisateur
   await user.addToTeam(team._id, isAdmin ? 'admin' : 'member');
+
+  // Notifier l'utilisateur ajouté
+  await notifyUserAddedToTeam(req, user._id, team);
 
   logger.info(`Membre ajouté à l'équipe`, { 
     teamId: team._id,

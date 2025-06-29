@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth } from '../api.js';
+import { login as apiLogin, getCurrentUser } from '../api.js';
+
+// Fonctions non implémentées dans l'API
+const register = async () => { throw new Error('register non implémenté dans api.js'); };
+const updateProfile = async () => { throw new Error('updateProfile non implémenté dans api.js'); };
+const changePassword = async () => { throw new Error('changePassword non implémenté dans api.js'); };
+const linkTelegram = async () => { throw new Error('linkTelegram non implémenté dans api.js'); };
+const unlinkTelegram = async () => { throw new Error('unlinkTelegram non implémenté dans api.js'); };
 
 const AuthContext = createContext();
 
@@ -31,12 +38,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Vérifier la validité du token en récupérant le profil utilisateur
-      const userData = await auth.getCurrentUser();
+      const userData = await getCurrentUser();
       
       setCurrentUser({
         ...userData.user,
         token,
-        isAuthenticated: true
+        isAuthenticated: true,
+        userId: userData.user?._id || userData.user?.id // Ajout explicite de userId
       });
       
       setError(null);
@@ -58,7 +66,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const response = await auth.login(loginData, password);
+      const response = await apiLogin(loginData, password);
       
       const userData = {
         ...response.user,
@@ -82,117 +90,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Fonction d'inscription
-  const register = async (userData) => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Remplacée par stub
 
-      const response = await auth.register(userData);
-      
-      const newUser = {
-        ...response.user,
-        token: response.token,
-        isAuthenticated: true
-      };
+  // Fonction de mise à jour du profil
+  // Remplacée par stub
 
-      setCurrentUser(newUser);
-      
-      localStorage.setItem('token', response.token);
-      
-      return newUser;
-    } catch (error) {
-      console.error('Erreur d\'inscription:', error);
-      setError(error.message || 'Erreur d\'inscription');
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Fonction de changement de mot de passe
+  // Remplacée par stub
 
-  // Fonction de déconnexion
-  const logout = () => {
-    localStorage.removeItem('token');
-    setCurrentUser(null);
-    setError(null);
-    
-    // Rediriger vers la page de connexion
-    window.location.href = '/login';
-  };
+  // Fonction de liaison Telegram
+  // Remplacée par stub
 
-  // Mettre à jour le profil utilisateur
-  const updateProfile = async (profileData) => {
-    try {
-      setError(null);
-      
-      const response = await auth.updateProfile(profileData);
-      
-      setCurrentUser(prev => ({
-        ...prev,
-        ...response.user
-      }));
-      
-      return response.user;
-    } catch (error) {
-      console.error('Erreur de mise à jour du profil:', error);
-      setError(error.message || 'Erreur de mise à jour du profil');
-      throw error;
-    }
-  };
-
-  // Changer le mot de passe
-  const changePassword = async (currentPassword, newPassword) => {
-    try {
-      setError(null);
-      
-      await auth.changePassword(currentPassword, newPassword);
-      
-      return true;
-    } catch (error) {
-      console.error('Erreur de changement de mot de passe:', error);
-      setError(error.message || 'Erreur de changement de mot de passe');
-      throw error;
-    }
-  };
-
-  // Lier un compte Telegram
-  const linkTelegram = async (telegramData) => {
-    try {
-      setError(null);
-      
-      const response = await auth.linkTelegram(telegramData);
-      
-      setCurrentUser(prev => ({
-        ...prev,
-        telegram: response.telegram
-      }));
-      
-      return response.telegram;
-    } catch (error) {
-      console.error('Erreur de liaison Telegram:', error);
-      setError(error.message || 'Erreur de liaison Telegram');
-      throw error;
-    }
-  };
-
-  // Délier le compte Telegram
-  const unlinkTelegram = async () => {
-    try {
-      setError(null);
-      
-      await auth.unlinkTelegram();
-      
-      setCurrentUser(prev => ({
-        ...prev,
-        telegram: { id: undefined, username: undefined, chatId: undefined }
-      }));
-      
-      return true;
-    } catch (error) {
-      console.error('Erreur de déliaison Telegram:', error);
-      setError(error.message || 'Erreur de déliaison Telegram');
-      throw error;
-    }
-  };
+  // Fonction de déliaison Telegram
+  // Remplacée par stub
 
   // Vérifier les permissions
   const hasPermission = (permission) => {
@@ -238,6 +148,15 @@ export const AuthProvider = ({ children }) => {
 
   // Effacer les erreurs
   const clearError = () => setError(null);
+
+  // Fonction de déconnexion
+  const logout = () => {
+    localStorage.removeItem('token');
+    setCurrentUser(null);
+    setError(null);
+    // Rediriger vers la page de connexion
+    window.location.href = '/login';
+  };
 
   const value = {
     // État

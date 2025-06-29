@@ -29,10 +29,25 @@ export const setupCallbackHandlers = () => {
         // await handleTeamCallback(query, action);
         await bot.answerCallbackQuery(query.id, { text: "Fonctionnalité d'équipe en cours de développement" });
       }
-      else if (action.startsWith('settings_')) {
+      else if (action.startsWith('settings_') || action === 'settings') {
         // Callbacks de paramètres
         // await handleSettingsCallback(query, action);
         await bot.answerCallbackQuery(query.id, { text: "Fonctionnalité de paramètres en cours de développement" });
+      }
+      else if (action.startsWith('ranking_')) {
+        // Callbacks de classement avancé
+        await bot.answerCallbackQuery(query.id, { text: "Callback de classement détecté" });
+        logger.debug(`Callback ranking reçu: ${action}`);
+      }
+      else if (action.startsWith('history_')) {
+        // Callbacks d'historique des scores
+        await bot.answerCallbackQuery(query.id, { text: "Callback d'historique détecté" });
+        logger.debug(`Callback history reçu: ${action}`);
+      }
+      else if (action.startsWith('dashboard_')) {
+        // Callbacks du tableau de bord
+        await bot.answerCallbackQuery(query.id, { text: "Callback de dashboard détecté" });
+        logger.debug(`Callback dashboard reçu: ${action}`);
       }
       else {
         // Callback non reconnu

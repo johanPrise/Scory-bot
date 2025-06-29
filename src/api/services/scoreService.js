@@ -2,7 +2,7 @@ import Score from '../models/Score.js';
 import { Activity } from '../models/activity.js';
 import User from '../models/User.js';
 import Team from '../models/Team.js';
-import logger from '../utils/logger.js';
+import logger from '../../utils/logger.js';
 
 // Types de scores
 export const SCORE_TYPES = {

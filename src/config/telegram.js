@@ -60,6 +60,7 @@ export const TELEGRAM_CONFIG = {
     { command: 'start', description: 'Démarrer le bot et afficher le message de bienvenue' },
     { command: 'help', description: 'Afficher l\'aide et la liste des commandes disponibles' },
     { command: 'link', description: 'Lier votre compte Telegram à votre compte Scory' },
+    { command: 'app', description: '🚀 Ouvrir l\'application complète dans Telegram' },
     
     // Commandes d'activités
     { command: 'activities', description: 'Lister toutes vos activités' },

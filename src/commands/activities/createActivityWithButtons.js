@@ -1,5 +1,5 @@
 import { bot } from '../../config/bot.js';
-import { Activity } from '../../models/activity.js';
+import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
 import { createInlineKeyboard, createButton } from '../../utils/inlineButtons.js';
 import { handleError } from '../utils/helpers.js';

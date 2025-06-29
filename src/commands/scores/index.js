@@ -1,5 +1,6 @@
 // Import du bot
 import { bot } from '../../config/bot.js';
+import { createBotCommand, wrapCommandHandler } from '../utils/botCommandUtils.js';
 
 // Commandes de base
 import addScore from './addScore.js';
@@ -17,18 +18,19 @@ import { setupDashboardHandlers } from './dashboard.js';
 
 /**
  * Configure les gestionnaires de commandes de scores
+ * @param {string} botUsername - Nom d'utilisateur du bot
  */
-const setupScoreCommands = () => {
+const setupScoreCommands = (botUsername) => {
   // Commandes de base
-  bot.onText(/^\/score\s+(\S+)\s+(\S+)\s+(\d+)$/, addScore);
-  bot.onText(/^\/subscore\s+(\S+)\s+(\S+)\s+(\S+)\s+(\d+)$/, addSubScore);
-  bot.onText(/^\/ranking\s+(\S+)$/, getRanking);
-  bot.onText(/^\/subranking\s+(\S+)\s+(.+)$/, getSubRanking);
+  bot.onText(createBotCommand('score', '\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)'), wrapCommandHandler(addScore, botUsername));
+  bot.onText(createBotCommand('subscore', '\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)'), wrapCommandHandler(addSubScore, botUsername));
+  bot.onText(createBotCommand('ranking', '\\s+(\\S+)'), wrapCommandHandler(getRanking, botUsername));
+  bot.onText(createBotCommand('subranking', '\\s+(\\S+)\\s+(.+)'), wrapCommandHandler(getSubRanking, botUsername));
   
   // Commandes avancées
-  bot.onText(/^\/aranking(?:\s+(\S+)(?:\s+(\S+))?)?$/, advancedRanking);
-  bot.onText(/^\/shistory(?:\s+(\S+)(?:\s+(\S+))?)?$/, scoreHistory);
-  bot.onText(/^\/dashboard(?:\s+(\S+))?$/, dashboard);
+  bot.onText(createBotCommand('aranking', '(?:\\s+(\\S+)(?:\\s+(\\S+))?)?'), wrapCommandHandler(advancedRanking, botUsername));
+  bot.onText(createBotCommand('shistory', '(?:\\s+(\\S+)(?:\\s+(\\S+))?)?'), wrapCommandHandler(scoreHistory, botUsername));
+  bot.onText(createBotCommand('dashboard', '(?:\\s+(\\S+))?'), wrapCommandHandler(dashboard, botUsername));
   
   // Configurer les gestionnaires d'événements
   setupDashboardHandlers();
