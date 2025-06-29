@@ -24,8 +24,6 @@ import Activities from './pages/Activities';
 import Rankings from './pages/Rankings';
 import Settings from './pages/Settings';
 
-// Page Telegram Web App
-import TelegramDashboard from './pages/TelegramDashboard';
 
 // Pages pour le rôle 'creator' (super-admin)
 import CreatorDashboard from './pages/creator/Dashboard';
@@ -268,7 +266,6 @@ function AppContent() {
       <GlobalNotifications />
       <Routes>
         {/* Route Telegram Web App (accès libre) */}
-        <Route path="/telegram" element={<TelegramDashboard />} />
         
         {/* Routes publiques */}
         <Route path="/login" element={
