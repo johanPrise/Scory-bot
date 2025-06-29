@@ -264,9 +264,7 @@ function AppContent() {
   return (
     <>
       <GlobalNotifications />
-      <Routes>
-        {/* Route Telegram Web App (accès libre) */}
-        
+      <Routes>        
         {/* Routes publiques */}
         <Route path="/login" element={
           <PublicRoute>
