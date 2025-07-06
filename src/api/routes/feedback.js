@@ -1,5 +1,6 @@
 // routes/feedback.js
 import express from 'express';
+import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { saveFeedback } from '../services/feedbackService.js';
 import { saveGlobalFeedback } from '../services/globalFeedbackService.js';
 import { bot } from '../../config/bot.js'; // Import du bot Telegram
@@ -8,17 +9,16 @@ import { sendTelegramNotificationToUser, notifyAdminsNewFeedback } from '../util
 const router = express.Router();
 
 // POST /api/feedback
-router.post('/', async (req, res) => {
-  try {
+router.post('/', asyncHandler(async (req, res) => {
     const { type, message, activityId } = req.body;
     const user = req.user; // supposé injecté par le middleware d'auth
     if (!type || !message) {
-      return res.status(400).json({ error: 'Type et message requis' });
+      throw createError(400, 'Type et message requis');
     }
     // Optionnel : valider le type
     const validTypes = ['bug', 'feature', 'other'];
     if (!validTypes.includes(type)) {
-      return res.status(400).json({ error: 'Type de feedback invalide' });
+      throw createError(400, 'Type de feedback invalide');
     }
     // On peut lier à une activité ou non
     const username = user?.username || user?.email || 'Anonyme';
@@ -33,24 +33,17 @@ router.post('/', async (req, res) => {
     // Notifier les admins en temps réel
     await notifyAdminsNewFeedback(req, feedback);
     res.status(201).json({ message: 'Feedback enregistré', feedback });
-  } catch (err) {
-    res.status(500).json({ error: err.message || 'Erreur serveur' });
-  }
-});
+}));
 
 // GET /api/feedback/global (admin only)
-router.get('/global', async (req, res) => {
-  try {
+router.get('/global', asyncHandler(async (req, res) => {
     // Vérification permission admin
     if (!req.user || !['admin', 'superadmin'].includes(req.user.role)) {
-      return res.status(403).json({ error: 'Accès refusé' });
+      throw createError(403, 'Accès refusé');
     }
     const { getAllGlobalFeedback } = await import('../services/globalFeedbackService.js');
     const feedbacks = await getAllGlobalFeedback();
     res.json({ feedbacks });
-  } catch (err) {
-    res.status(500).json({ error: err.message || 'Erreur serveur' });
-  }
-});
+}));
 
 export default router;

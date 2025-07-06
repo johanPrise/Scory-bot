@@ -56,9 +56,26 @@ async function startApp() {
       logger.info('Bot en mode polling activé');
     } else if (config.webhook) {
       logger.info('Démarrage du bot en mode webhook...');
-      // Pour node-telegram-bot-api, le webhook doit être configuré différemment
-      // Vous devrez utiliser bot.setWebHook() et configurer un serveur Express
-      logger.warn('Mode webhook non implémenté pour node-telegram-bot-api');
+
+      // Définir l'URL publique du webhook (doit être HTTPS)
+      const WEBHOOK_PATH = '/telegram/webhook';
+      const publicUrl = process.env.WEBHOOK_PUBLIC_URL || process.env.PUBLIC_URL;
+
+      if (!publicUrl) {
+        logger.error('WEBHOOK_PUBLIC_URL (ou PUBLIC_URL) manquant – impossible de définir le webhook');
+      } else {
+        const webhookUrl = `${publicUrl}${WEBHOOK_PATH}`;
+        try {
+          await bot.setWebHook(webhookUrl, {
+            secret_token: config.WEBHOOK_OPTIONS.secretToken,
+            drop_pending_updates: config.WEBHOOK_OPTIONS.dropPendingUpdates,
+            max_connections: config.WEBHOOK_OPTIONS.maxConnections
+          });
+          logger.info(`✅ Webhook Telegram enregistré : ${webhookUrl}`);
+        } catch (err) {
+          logger.error('❌ Impossible de définir le webhook Telegram', err);
+        }
+      }
     }
     
     // 6. Créer l'application Express et démarrer le serveur HTTP + Socket.IO

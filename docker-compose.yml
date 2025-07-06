@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Service de l'application Scory Bot
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scory-bot-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongo:27017/scorybot
+      - JWT_SECRET=${JWT_SECRET:-your-jwt-secret}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - mongo
+    restart: unless-stopped
+    networks:
+      - scory-network
+    # Pour le développement avec nodemon
+    command: sh -c "npm install && npm run dev"
+
+  # Service MongoDB
+  mongo:
+    image: mongo:6.0
+    container_name: scory-bot-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=scorybot
+    networks:
+      - scory-network
+    restart: unless-stopped
+
+  # Interface d'administration MongoDB (optionnelle)
+  mongo-express:
+    image: mongo-express
+    container_name: scory-bot-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+    depends_on:
+      - mongo
+    networks:
+      - scory-network
+    restart: unless-stopped
+
+networks:
+  scory-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

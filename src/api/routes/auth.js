@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import User from '../models/User.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware } from '../middleware/auth.js';
@@ -68,6 +69,90 @@ router.post('/register', asyncHandler(async (req, res) => {
  * POST /api/auth/login
  * Connexion d'un utilisateur
  */
+router.post('/telegram', asyncHandler(async (req, res) => {
+  const { initData } = req.body;
+
+  if (!initData) {
+    throw createError(400, 'initData manquant');
+  }
+
+  // Étape 1 : parser initData (format querystring)
+  const params = new URLSearchParams(initData);
+  const hash = params.get('hash');
+  if (!hash) {
+    throw createError(400, 'hash manquant dans initData');
+  }
+  params.delete('hash');
+
+  // Construire la data_check_string (clés triées)
+  const dataCheckArray = [];
+  [...params.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([key, value]) => {
+    dataCheckArray.push(`${key}=${value}`);
+  });
+  const dataCheckString = dataCheckArray.join('\n');
+
+  // Calculer le HMAC-SHA256
+  const secretKey = crypto.createHash('sha256').update(process.env.TELEGRAM_BOT_TOKEN).digest();
+  const hmac = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+  if (hmac !== hash) {
+    throw createError(401, 'initData invalide (hash mismatch)');
+  }
+
+  // Récupérer le user JSON (Telegram renvoie une string JSON encodée)
+  const userJson = params.get('user');
+  if (!userJson) {
+    throw createError(400, 'user manquant dans initData');
+  }
+  let tgUser;
+  try {
+    tgUser = JSON.parse(userJson);
+  } catch (e) {
+    throw createError(400, 'user JSON invalide');
+  }
+
+  // Vérifier/idempotent : chercher ou créer l'utilisateur
+  let user = await User.findOne({ 'telegram.id': tgUser.id });
+  if (!user) {
+    // Création minimale
+    user = new User({
+      username: tgUser.username || `tg_${tgUser.id}`,
+      email: `${tgUser.id}@telegram.local`,
+      password: crypto.randomBytes(16).toString('hex'),
+      role: 'groupAdmin',
+      telegram: {
+        id: tgUser.id,
+        username: tgUser.username,
+        chatId: tgUser.id,
+      },
+      firstName: tgUser.first_name,
+      lastName: tgUser.last_name,
+      status: 'active',
+    });
+    await user.save();
+    logger.info('Nouvel utilisateur créé via Telegram WebApp', { userId: user._id, telegramId: tgUser.id });
+  }
+
+  // Générer le JWT
+  const token = jwt.sign(
+    { userId: user._id, username: user.username },
+    process.env.JWT_SECRET || 'default-secret',
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' },
+  );
+
+  res.json({
+    message: 'Authentification Telegram réussie',
+    token,
+    user: {
+      id: user._id,
+      username: user.username,
+      role: user.role,
+      telegram: user.telegram,
+    },
+  });
+}));
+
+// Route login classique
 router.post('/login', asyncHandler(async (req, res) => {
   const { login, password } = req.body; // login peut être username ou email
 

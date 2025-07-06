@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { bot } from '../config/bot.js';
 import rateLimit from 'express-rate-limit';
 import { connectToDatabase } from '../config/database.js';
 import logger from '../utils/logger.js';
@@ -14,6 +17,10 @@ import scoreRoutes from './routes/scores.js';
 import dashboardRoutes from './routes/dashboard.js';
 import feedbackRouter from './routes/feedback.js';
 import timersRouter from './routes/timers.js';
+
+// Déterminer __dirname (ESM)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Import des middlewares
 import { errorHandler } from './middleware/errorHandler.js';
@@ -38,13 +45,32 @@ export const createApiApp = () => {
     },
   }));
 
-  // Configuration CORS
-  app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  }));
+  // Configuration CORS améliorée
+  const defaultOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+  const envOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+    : [];
+  const allowedOrigins = [...defaultOrigins, ...envOrigins];
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Requêtes internes (postman, server-side) : pas d'origin → OK
+        if (!origin) return callback(null, true);
+
+        // Autoriser wildcard Telegram *.telegram.org
+        const telegramPattern = /^https:\/\/[a-zA-Z0-9_-]+\.telegram\.org$/;
+        if (telegramPattern.test(origin) || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        logger.warn(`CORS bloqué pour l'origine: ${origin}`);
+        return callback(new Error('Not allowed by CORS'));
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    })
+  );
 
   // Rate limiting
   const limiter = rateLimit({
@@ -64,6 +90,17 @@ export const createApiApp = () => {
 
   // Middleware de logging des requêtes
   app.use(requestLogger);
+
+  // Endpoint webhook Telegram (doit être avant 404)
+  app.post('/telegram/webhook', (req, res) => {
+    try {
+      bot.processUpdate(req.body);
+      res.sendStatus(200);
+    } catch (err) {
+      logger.error('Erreur lors du traitement du webhook Telegram', err);
+      res.sendStatus(500);
+    }
+  });
 
   // Health check endpoint
   app.get('/health', (req, res) => {
@@ -92,6 +129,18 @@ export const createApiApp = () => {
       path: req.originalUrl,
       method: req.method,
     });
+  });
+
+  // Serveur des fichiers statiques React
+  const webAppPath = path.join(__dirname, '../../web/build');
+  app.use(express.static(webAppPath));
+
+  // Fallback SPA – renvoie index.html pour toute autre route non API / webhook
+  app.get('*', (req, res, next) => {
+    if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/telegram')) {
+      return next();
+    }
+    res.sendFile(path.join(webAppPath, 'index.html'));
   });
 
   // Middleware de gestion d'erreurs (doit être en dernier)
