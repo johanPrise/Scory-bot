@@ -7,7 +7,7 @@ import { handleError } from '../utils/helpers.js';
 /**
  * Commande améliorée pour créer une activité avec interface interactive
  */
-export const createActivityWithButtons = async (msg) => {
+const createActivityWithButtons = async (msg) => {
   try {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
@@ -40,7 +40,7 @@ export const createActivityWithButtons = async (msg) => {
  * @param {Object} query - Objet de requête callback
  * @param {string} action - Action à effectuer
  */
-export const handleActivityCreationCallback = async (query, action) => {
+const handleActivityCreationCallback = async (query, action) => {
   try {
     const chatId = query.message.chat.id;
     const userId = query.from.id;
@@ -76,3 +76,5 @@ export const handleActivityCreationCallback = async (query, action) => {
     });
   }
 };
+
+export { createActivityWithButtons, handleActivityCreationCallback };

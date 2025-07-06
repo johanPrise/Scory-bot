@@ -50,7 +50,7 @@ const formatHistory = (history, userId) => {
  * Gère la commande /history pour afficher l'historique
  * Format: /history [nombre] [mois]
  */
-export default async (msg, match) => {
+const history = async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const [_, count = '10', period = 'day'] = match;
@@ -89,3 +89,6 @@ export default async (msg, match) => {
     handleError(chatId, error, 'Erreur lors de la récupération de l\'historique');
   }
 };
+
+// Export nommé pour la fonction history
+export { history };

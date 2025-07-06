@@ -42,7 +42,7 @@ const formatActivitiesList = (activities, includeSubActivities = false) => {
  * Gère la commande /activities pour lister les activités
  * Format: /activities [détails]
  */
-export default async (msg) => {
+const listActivities = async (msg) => {
   const chatId = msg.chat.id;
   const includeDetails = msg.text && msg.text.includes('détails');
 
@@ -78,3 +78,6 @@ export default async (msg) => {
     handleError(chatId, error, 'Erreur lors de la récupération de la liste des activités');
   }
 };
+
+// Export nommé pour la fonction listActivities
+export { listActivities };

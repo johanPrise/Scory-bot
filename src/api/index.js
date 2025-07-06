@@ -25,7 +25,7 @@ const __dirname = path.dirname(__filename);
 // Import des middlewares
 import { errorHandler } from './middleware/errorHandler.js';
 import { authMiddleware } from './middleware/auth.js';
-import { requestLogger } from './middleware/requestLogger.js';
+import requestLogger from './middleware/requestLogger.js';
 
 /**
  * Crée et configure l'application Express API

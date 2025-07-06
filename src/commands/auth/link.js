@@ -1,5 +1,6 @@
 import { bot } from '../../config/bot.js';
 import { MESSAGES, EMOJIS } from '../../config/messages.js';
+// Note: MESSAGES et EMOJIS sont des exports nommés
 import { handleError } from '../utils/helpers.js';
 import { authService } from '../../api/services/apiService.js';
 

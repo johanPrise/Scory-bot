@@ -1,5 +1,6 @@
 import { bot } from '../../config/bot.js';
 import { MESSAGES } from '../../config/messages.js';
+// Note: MESSAGES est un export nommé
 import logger from '../../utils/logger.js';
 import { getDashboardData } from '../../api/services/scoreService.js';
 

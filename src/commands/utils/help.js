@@ -1,5 +1,6 @@
 import { bot } from '../../config/bot.js';
 import { MESSAGES, EMOJIS } from '../../config/messages.js';
+// Note: MESSAGES est maintenant un export nommé, pas par défaut
 import { TELEGRAM_CONFIG } from '../../config/telegram.js';
 
 /**

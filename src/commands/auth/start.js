@@ -3,7 +3,7 @@
  * @param {Object} msg - L'objet message de Telegram
  */
 import { bot } from '../../config/bot.js';
-import { MESSAGES } from '../../config/messages.js';
+import MESSAGES from '../../config/messages.js';
 
 /**
  * Commande /start - Point d'entrée du bot
