@@ -11,7 +11,7 @@ import { useNotification } from './context/NotificationContext';
 import socket from './socket';
 
 // Composants de protection des routes
-import ProtectedRoute, { PublicRoute, RoleBasedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute, CreatorRoute, GroupAdminRoute } from './components/ProtectedRoute';
 
 // Layout mis à jour
 import Layout from './components/Layout';
@@ -267,9 +267,7 @@ function AppContent() {
       <Routes>        
         {/* Routes publiques */}
         <Route path="/login" element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
+          !currentUser ? <Login /> : <Navigate to="/" />
         } />
 
         {/* Route de redirection par défaut */}
@@ -317,34 +315,78 @@ function AppContent() {
         } />
 
         {/* Routes pour le rôle 'creator' (super-admin) */}
-        <Route path="/creator/*" element={
-          <ProtectedRoute requiredPermission="manage_users">
-            <Layout role="creator" />
-          </ProtectedRoute>
-        }>
-          <Route path="dashboard" element={<CreatorDashboard />} />
-          <Route path="groups" element={<CreatorGroups />} />
-          <Route path="users" element={<CreatorUsers />} />
-          <Route path="stats" element={<CreatorStats />} />
-          <Route path="settings" element={<CreatorSettings />} />
-          <Route index element={<Navigate to="dashboard" replace />} />
-        </Route>
+        <Route path="/creator" element={
+          <CreatorRoute>
+            <Layout role="creator">
+              <CreatorDashboard />
+            </Layout>
+          </CreatorRoute>
+        } />
+
+        <Route path="/creator/groups" element={
+          <CreatorRoute>
+            <Layout role="creator">
+              <CreatorGroups />
+            </Layout>
+          </CreatorRoute>
+        } />
+
+        <Route path="/creator/users" element={
+          <CreatorRoute>
+            <Layout role="creator">
+              <CreatorUsers />
+            </Layout>
+          </CreatorRoute>
+        } />
+
+        <Route path="/creator/stats" element={
+          <CreatorRoute>
+            <Layout role="creator">
+              <CreatorStats />
+            </Layout>
+          </CreatorRoute>
+        } />
+
+        <Route path="/creator/settings" element={
+          <CreatorRoute>
+            <Layout role="creator">
+              <CreatorSettings />
+            </Layout>
+          </CreatorRoute>
+        } />
 
         {/* Routes pour le rôle 'groupAdmin' (admin de groupe) */}
-        <Route path="/group/*" element={
-          <RoleBasedRoute 
-            allowedRoles={['groupAdmin']} 
-            currentUserRole={currentUser?.role}
-          >
-            <Layout role="groupAdmin" />
-          </RoleBasedRoute>
-        }>
-          <Route path="dashboard" element={<GroupDashboard />} />
-          <Route path="scores" element={<GroupScores />} />
-          <Route path="teams" element={<GroupTeams />} />
-          <Route path="settings" element={<GroupSettings />} />
-          <Route index element={<Navigate to="dashboard" replace />} />
-        </Route>
+        <Route path="/group/dashboard" element={
+          <GroupAdminRoute>
+            <Layout role="groupAdmin">
+              <GroupDashboard />
+            </Layout>
+          </GroupAdminRoute>
+        } />
+
+        <Route path="/group/scores" element={
+          <GroupAdminRoute>
+            <Layout role="groupAdmin">
+              <GroupScores />
+            </Layout>
+          </GroupAdminRoute>
+        } />
+
+        <Route path="/group/teams" element={
+          <GroupAdminRoute>
+            <Layout role="groupAdmin">
+              <GroupTeams />
+            </Layout>
+          </GroupAdminRoute>
+        } />
+
+        <Route path="/group/settings" element={
+          <GroupAdminRoute>
+            <Layout role="groupAdmin">
+              <GroupSettings />
+            </Layout>
+          </GroupAdminRoute>
+        } />
 
         {/* Route 404 */}
         <Route path="*" element={

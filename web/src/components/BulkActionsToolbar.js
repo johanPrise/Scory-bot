@@ -1,22 +1,25 @@
 import React from 'react';
-import { Toolbar, Tooltip, Checkbox, IconButton } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-import ClearIcon from '@mui/icons-material/Clear';
+import { Toolbar, Tooltip, IconButton, Typography, Box } from '@mui/material';
+import { Delete as DeleteIcon } from '@mui/icons-material';
 
-const BulkActionsToolbar = ({ allSelected, someSelected, onSelectAll, onBulkApprove, onBulkReject, disabled }) => (
-  <Toolbar>
-    <Tooltip title="Tout sélectionner">
-      <Checkbox
-        checked={allSelected}
-        indeterminate={someSelected && !allSelected}
-        onChange={e => onSelectAll(e.target.checked)}
-      />
-    </Tooltip>
-    <Tooltip title="Approuver sélection">
-      <IconButton onClick={onBulkApprove} disabled={disabled}><CheckIcon /></IconButton>
-    </Tooltip>
-    <Tooltip title="Rejeter sélection">
-      <IconButton onClick={onBulkReject} disabled={disabled}><ClearIcon /></IconButton>
+const BulkActionsToolbar = ({ numSelected, onDelete }) => (
+  <Toolbar
+    sx={{
+      pl: { sm: 2 },
+      pr: { xs: 1, sm: 1 },
+      bgcolor: 'primary.lighter',
+      borderRadius: 1,
+    }}
+  >
+    <Box sx={{ flex: '1 1 100%' }}>
+      <Typography color="inherit" variant="subtitle1" component="div">
+        {numSelected} sélectionné(s)
+      </Typography>
+    </Box>
+    <Tooltip title="Supprimer">
+      <IconButton onClick={onDelete}>
+        <DeleteIcon />
+      </IconButton>
     </Tooltip>
   </Toolbar>
 );

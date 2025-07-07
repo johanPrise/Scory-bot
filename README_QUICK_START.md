@@ -37,49 +37,48 @@ cp .env.example .env
 
 ### 4. **Démarrage des Services**
 
-#### Option A : Démarrage Complet (Recommandé)
+Le moyen le plus simple de démarrer l'application pour le développement est d'utiliser les commandes suivantes :
+
 ```bash
-# Terminal 1 : API Server (port 3001)
-npm run dev:api
+# Terminal 1 : Backend (API + Bot)
+# Lance le serveur avec rechargement automatique
+npm run dev
 
-# Terminal 2 : Frontend React (port 3000)
-cd web && npm start
-
-# Terminal 3 : Bot Telegram (optionnel)
-npm run dev:bot
-```
-
-#### Option B : Démarrage avec Mock Server
-```bash
-# Terminal 1 : Mock Server (port 3002) - pour tests frontend uniquement
-npm run dev:mock
-
-# Terminal 2 : Frontend React (port 3000)
-cd web && npm start
+# Terminal 2 : Frontend (Application React)
+# Doit être lancé depuis le dossier 'web'
+cd web
+npm start
 ```
 
 ## 🌐 **URLs d'Accès**
 
 | Service | URL | Description |
-|---------|-----|-------------|
+|---|---|---|
 | **Frontend** | http://localhost:3000 | Interface utilisateur |
 | **API** | http://localhost:3001/api | API REST principale |
 | **Health Check** | http://localhost:3001/health | Statut de l'API |
-| **Mock API** | http://localhost:3002/api | API de test (si utilisée) |
 
 ## 🔧 **Scripts Disponibles**
 
 ### Production
 ```bash
-npm start              # Démarre l'API principale
-npm run start:bot      # Démarre le bot Telegram
+# Démarre le serveur backend (API + Bot)
+npm start
 ```
 
 ### Développement
 ```bash
-npm run dev:api        # API avec rechargement automatique
-npm run dev:bot        # Bot avec rechargement automatique
-npm run dev:mock       # Serveur mock avec rechargement automatique
+# Démarre le serveur backend avec rechargement automatique (nodemon)
+npm run dev
+```
+
+### Frontend (depuis le dossier `/web`)
+```bash
+# Démarre le serveur de développement React
+npm start
+
+# Construit l'application pour la production
+npm run build
 ```
 
 ### Utilitaires
