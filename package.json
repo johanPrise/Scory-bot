@@ -4,15 +4,16 @@
   "description": "Scory Bot Application",
   "main": "api-server.js",
   "type": "module",
-"scripts": {
-  "start": "node src/app.js",
-  "dev": "nodemon src/app.js",
-  "build:web": "cd web && npm run build",
-  "migrate:services": "node migrate-services.js migrate",
-  "rollback:services": "node migrate-services.js rollback",
-  "validate:config": "node scripts/validate-config.js",
-  "test": "echo \"Error: no test specified\" && exit 1"
-},
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "build:web": "cd web && npm run build",
+    "migrate:services": "node migrate-services.js migrate",
+    "rollback:services": "node migrate-services.js rollback",
+    "validate:config": "node scripts/validate-config.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:mocha": "mocha tests/scoreService.test.js"
+  },
   "dependencies": {
     "axios": "^1.10.0",
     "bcryptjs": "^2.4.3",
@@ -34,6 +35,10 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
+    "@jest/globals": "^30.0.4",
+    "chai": "^5.2.1",
+    "jest": "^30.0.4",
+    "mocha": "^11.7.1",
     "nodemon": "^2.0.22"
   }
 }

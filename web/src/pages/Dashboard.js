@@ -149,35 +149,7 @@ const RecentActivityItem = ({ activity }) => {
   );
 };
 
-const TopPerformerItem = ({ performer, rank }) => (
-  <ListItem>
-    <ListItemAvatar>
-      <Avatar sx={{ bgcolor: rank <= 3 ? 'gold' : 'primary.main' }}>
-        {rank <= 3 ? <StarIcon /> : <PersonIcon />}
-      </Avatar>
-    </ListItemAvatar>
-    <ListItemText
-      primary={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body1" fontWeight="medium">
-            #{rank} {performer.username || performer.name}
-          </Typography>
-          {rank === 1 && <StarIcon color="warning" fontSize="small" />}
-        </Box>
-      }
-      secondary={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography variant="body2" color="textSecondary">
-            {performer.totalNormalizedScore || performer.totalScore} points
-          </Typography>
-          <Typography variant="caption" color="textSecondary">
-            ({performer.scoreCount} scores)
-          </Typography>
-        </Box>
-      }
-    />
-  </ListItem>
-);
+
 
 const Dashboard = () => {
   const { currentUser, hasPermission } = useAuth();
@@ -201,15 +173,15 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
 
-      const [statsData, activityData, performersData] = await Promise.all([
+      const [statsData, activityData] = await Promise.all([
         dashboard.getStats(period),
         dashboard.getRecentActivity(10),
-        dashboard.getTopPerformers({ period, scope: performerScope, limit: 5 })
+        
       ]);
 
       setStats(statsData.stats);
       setRecentActivity(activityData.activities);
-      setTopPerformers(performersData.performers);
+      
     } catch (err) {
       console.error('Erreur lors du chargement du dashboard:', err);
       setError(err.message || 'Erreur lors du chargement des données');
@@ -367,46 +339,7 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        {/* Top performers */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ height: 400 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h6">
-                  Top performers
-                </Typography>
-                <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <Select value={performerScope} onChange={handleScopeChange}>
-                    <MenuItem value="individual">Individuel</MenuItem>
-                    <MenuItem value="team">Équipes</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-              
-              {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                  <CircularProgress />
-                </Box>
-              ) : topPerformers.length > 0 ? (
-                <List sx={{ maxHeight: 300, overflow: 'auto' }}>
-                  {topPerformers.map((performer, index) => (
-                    <TopPerformerItem 
-                      key={index} 
-                      performer={performer} 
-                      rank={index + 1} 
-                    />
-                  ))}
-                </List>
-              ) : (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
-                  <Typography color="textSecondary">
-                    Aucun classement disponible
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
+        
       </Grid>
     </Box>
   );

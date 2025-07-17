@@ -7,7 +7,7 @@ import FloatingFeedback from './components/FloatingFeedback';
 import FloatingTimers from './components/FloatingTimers';
 // Contexte d'authentification mis à jour
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { useNotification } from './context/NotificationContext';
+import { NotificationProvider, useNotification } from './context/NotificationContext';
 import socket from './socket';
 
 // Composants de protection des routes

@@ -31,13 +31,52 @@ async function fetchAPI(endpoint, options = {}) {
 }
 
 // Authentification
-export const login = (username, password) => fetchAPI('/auth/login', {
+export const loginUser = (username, password) => fetchAPI('/auth/login', {
   method: 'POST',
   body: JSON.stringify({ username, password }),
 });
 
+// Authentification Telegram
+export const telegramLogin = (initData) => fetchAPI('/auth/telegram', {
+  method: 'POST',
+  body: JSON.stringify({ initData }),
+});
+
+// Inscription
+export const registerUser = (username, email, password, firstName, lastName) => fetchAPI('/auth/register', {
+  method: 'POST',
+  body: JSON.stringify({ username, email, password, firstName, lastName }),
+});
+
 // Récupérer les informations de l'utilisateur connecté
 export const getCurrentUser = () => fetchAPI('/auth/me');
+
+// Changer le mot de passe
+export const changePassword = (currentPassword, newPassword) => fetchAPI('/auth/change-password', {
+  method: 'POST',
+  body: JSON.stringify({ currentPassword, newPassword }),
+});
+
+// Lier/Délier Telegram
+export const linkTelegramAccount = (telegramId, telegramUsername, chatId) => fetchAPI('/auth/link-telegram', {
+  method: 'POST',
+  body: JSON.stringify({ telegramId, telegramUsername, chatId }),
+});
+
+export const unlinkTelegramAccount = () => fetchAPI('/auth/unlink-telegram', {
+  method: 'DELETE',
+});
+
+// Lier/Délier Telegram pour un utilisateur spécifique (admin)
+export const linkTelegramForUser = (userId, code) => fetchAPI(`/users/link-telegram`, {
+  method: 'POST',
+  body: JSON.stringify({ userId, code }),
+});
+
+export const unlinkTelegramForUser = (userId) => fetchAPI(`/users/unlink-telegram`, {
+  method: 'POST',
+  body: JSON.stringify({ userId }),
+});
 
 // Gestion des utilisateurs (pour le rôle creator)
 export const getUsers = () => fetchAPI('/users');
@@ -54,110 +93,108 @@ export const deleteUser = (userId) => fetchAPI(`/users/${userId}`, {
   method: 'DELETE',
 });
 
-// Gestion des groupes (pour le rôle creator)
-export const getGroups = () => fetchAPI('/groups');
-export const getGroupById = (groupId) => fetchAPI(`/groups/${groupId}`);
-export const createGroup = (group) => fetchAPI('/groups', {
+// Gestion des équipes d'utilisateurs (pour le rôle admin/superadmin)
+export const addUserToTeam = (userId, teamId, role = 'member') => fetchAPI(`/users/${userId}/teams/${teamId}`, {
   method: 'POST',
-  body: JSON.stringify(group),
+  body: JSON.stringify({ role }),
 });
-export const updateGroup = (groupId, group) => fetchAPI(`/groups/${groupId}`, {
+
+export const removeUserFromTeam = (userId, teamId) => fetchAPI(`/users/${userId}/teams/${teamId}`, {
+  method: 'DELETE',
+});
+
+// Gestion des groupes (pour le rôle creator)
+export const getTeams = () => fetchAPI('/teams');
+export const getTeamById = (teamId) => fetchAPI(`/teams/${teamId}`);
+export const createTeam = (team) => fetchAPI('/teams', {
+  method: 'POST',
+  body: JSON.stringify(team),
+});
+export const updateTeam = (teamId, team) => fetchAPI(`/teams/${teamId}`, {
   method: 'PUT',
-  body: JSON.stringify(group),
+  body: JSON.stringify(team),
 });
-export const deleteGroup = (groupId) => fetchAPI(`/groups/${groupId}`, {
+export const deleteTeam = (teamId) => fetchAPI(`/teams/${teamId}`, {
   method: 'DELETE',
 });
 
 // Gestion des admins de groupe (pour le rôle creator)
-export const getGroupAdmins = (groupId) => fetchAPI(`/groups/${groupId}/admins`);
-export const addGroupAdmin = (groupId, userId) => fetchAPI(`/groups/${groupId}/admins`, {
+export const getTeamAdmins = (teamId) => fetchAPI(`/teams/${teamId}/members?role=admin`);
+export const addTeamAdmin = (teamId, userId) => fetchAPI(`/teams/${teamId}/members`, {
   method: 'POST',
-  body: JSON.stringify({ userId }),
+  body: JSON.stringify({ userId, isAdmin: true }),
 });
-export const removeGroupAdmin = (groupId, userId) => fetchAPI(`/groups/${groupId}/admins/${userId}`, {
+export const removeTeamAdmin = (teamId, userId) => fetchAPI(`/teams/${teamId}/members/${userId}`, {
   method: 'DELETE',
 });
 
 // Gestion des membres de groupe (pour le rôle groupAdmin)
-export const getGroupMembers = (groupId) => fetchAPI(`/groups/${groupId}/members`);
-export const addGroupMember = (groupId, member) => fetchAPI(`/groups/${groupId}/members`, {
+export const getTeamMembers = (teamId) => fetchAPI(`/teams/${teamId}/members`);
+export const addTeamMember = (teamId, member) => fetchAPI(`/teams/${teamId}/members`, {
   method: 'POST',
   body: JSON.stringify(member),
 });
-export const updateGroupMember = (groupId, memberId, member) => fetchAPI(`/groups/${groupId}/members/${memberId}`, {
+export const updateTeamMember = (teamId, memberId, member) => fetchAPI(`/teams/${teamId}/members/${memberId}`, {
   method: 'PUT',
   body: JSON.stringify(member),
 });
-export const deleteGroupMember = (groupId, memberId) => fetchAPI(`/groups/${groupId}/members/${memberId}`, {
+export const deleteTeamMember = (teamId, memberId) => fetchAPI(`/teams/${teamId}/members/${memberId}`, {
   method: 'DELETE',
 });
 
 // Gestion des scores de groupe (pour le rôle groupAdmin)
-export const getGroupScores = (groupId) => fetchAPI(`/groups/${groupId}/scores`);
-export const addGroupScore = (groupId, score) => fetchAPI(`/groups/${groupId}/scores`, {
+export const getTeamScores = (teamId) => fetchAPI(`/scores/team?teamId=${teamId}`);
+export const addTeamScore = (teamId, score) => fetchAPI('/scores', {
   method: 'POST',
-  body: JSON.stringify(score),
+  body: JSON.stringify({ ...score, teamId }),
 });
-export const updateGroupScore = (groupId, scoreId, score) => fetchAPI(`/groups/${groupId}/scores/${scoreId}`, {
+export const updateTeamScore = (teamId, scoreId, score) => fetchAPI(`/scores/${scoreId}`, {
   method: 'PUT',
-  body: JSON.stringify(score),
+  body: JSON.stringify({ ...score, teamId }),
 });
-export const deleteGroupScore = (groupId, scoreId) => fetchAPI(`/groups/${groupId}/scores/${scoreId}`, {
+export const deleteTeamScore = (teamId, scoreId) => fetchAPI(`/scores/${scoreId}`, {
   method: 'DELETE',
 });
 
 // Gestion des équipes de groupe (pour le rôle groupAdmin)
-export const getGroupTeams = (groupId) => fetchAPI(`/groups/${groupId}/teams`);
-export const addGroupTeam = (groupId, team) => fetchAPI(`/groups/${groupId}/teams`, {
-  method: 'POST',
-  body: JSON.stringify(team),
-});
-export const updateGroupTeam = (groupId, teamId, team) => fetchAPI(`/groups/${groupId}/teams/${teamId}`, {
-  method: 'PUT',
-  body: JSON.stringify(team),
-});
-export const deleteGroupTeam = (groupId, teamId) => fetchAPI(`/groups/${groupId}/teams/${teamId}`, {
-  method: 'DELETE',
-});
+export const getTeamsByChatId = (chatId) => fetchAPI(`/teams?chatId=${chatId}`);
+
 
 // Gestion des paramètres de groupe (pour le rôle groupAdmin)
-export const getGroupSettings = (groupId) => fetchAPI(`/groups/${groupId}/settings`);
-export const updateGroupSettings = (groupId, settings) => fetchAPI(`/groups/${groupId}/settings`, {
+export const getTeamSettings = (teamId) => fetchAPI(`/teams/${teamId}`);
+export const updateTeamSettings = (teamId, settings) => fetchAPI(`/teams/${teamId}`, {
   method: 'PUT',
-  body: JSON.stringify(settings),
+  body: JSON.stringify({ settings }),
 });
 
 // Settings
-export const getSettings = async () => {
-  return fetchAPI('/settings', { method: 'GET' });
+export const getUserSettings = async () => {
+  return fetchAPI('/auth/me', { method: 'GET' });
 };
 
-export const updateSettings = async (settings) => {
-  return fetchAPI('/settings', {
+export const updateUserSettings = async (settings) => {
+  return fetchAPI('/auth/profile', {
     method: 'PUT',
-    body: JSON.stringify(settings),
+    body: JSON.stringify({ settings }),
   });
 };
 
 // Dashboard and Stats
 export const getDashboardStats = async () => {
-  return fetchAPI('/dashboard-stats', { method: 'GET' });
+  return fetchAPI('/dashboard/stats', { method: 'GET' });
 };
 
-export const getStatsData = async (timeRange) => {
-  return fetchAPI(`/stats?range=${timeRange}`, { method: 'GET' });
+export const getStatsData = async (period) => {
+  return fetchAPI(`/dashboard/stats?period=${period}`, { method: 'GET' });
 };
 
 // Tableau de bord
 export const dashboard = {
   getStats: (period = 'month') => fetchAPI(`/dashboard/stats?period=${period}`),
   getRecentActivity: (limit = 10) => fetchAPI(`/dashboard/activity?limit=${limit}`),
-  getTopPerformers: (options = {}) => {
-    const { period = 'month', scope = 'individual', limit = 5 } = options;
-    return fetchAPI(`/dashboard/top-performers?period=${period}&scope=${scope}&limit=${limit}`);
-  }
 };
+
+  
 
 // Scores
 export const scores = {
@@ -239,15 +276,7 @@ export const scores = {
   },
   
   // Actions en lot pour les administrateurs
-  bulkApprove: (scoreIds, comments = '') => fetchAPI('/scores/bulk/approve', {
-    method: 'PUT',
-    body: JSON.stringify({ scoreIds, comments })
-  }),
   
-  bulkReject: (scoreIds, reason, comments = '') => fetchAPI('/scores/bulk/reject', {
-    method: 'PUT',
-    body: JSON.stringify({ scoreIds, reason, comments })
-  }),
   
   // Export de données
   export: async (filters = {}, format = 'csv') => {
@@ -272,12 +301,14 @@ export const scores = {
   },
   
   // Historique des scores avec export
-  getHistory: (filters = {}) => {
+  getActivityHistory: (activityId, filters = {}) => {
     const queryParams = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) queryParams.append(key, value);
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, value);
+      }
     });
-    return fetchAPI(`/scores/history?${queryParams.toString()}`);
+    return fetchAPI(`/activities/${activityId}/history?${queryParams.toString()}`);
   }
 };
 
@@ -349,29 +380,37 @@ export const activities = {
       }
     });
     return fetchAPI(`/activities/history?${queryParams.toString()}`);
+  }
+};
+
+// Feedback
+export const feedback = {
+  send: (type, message, activityId) => fetchAPI('/feedback', {
+    method: 'POST',
+    body: JSON.stringify({ type, message, activityId }),
+  }),
+  getGlobal: () => fetchAPI('/feedback/global'),
+};
+
+// Timers
+export const timers = {
+  start: (name, duration, activityId) => fetchAPI('/timers/start', {
+    method: 'POST',
+    body: JSON.stringify({ name, duration, activityId }),
+  }),
+  stop: (name, activityId) => fetchAPI('/timers/stop', {
+    method: 'POST',
+    body: JSON.stringify({ name, activityId }),
+  }),
+  getAll: (activityId) => {
+    const queryParams = new URLSearchParams();
+    if (activityId) queryParams.append('activityId', activityId);
+    return fetchAPI(`/timers?${queryParams.toString()}`);
   },
+};
   
   // Statistiques d'une activité
-  getStats: (activityId, period = 'month') => fetchAPI(`/activities/${activityId}/stats?period=${period}`),
   
-  // Participants d'une activité
-  getParticipants: (activityId) => fetchAPI(`/activities/${activityId}/participants`),
-  
-  // Dupliquer une activité
-  duplicate: (activityId, newData = {}) => fetchAPI(`/activities/${activityId}/duplicate`, {
-    method: 'POST',
-    body: JSON.stringify(newData)
-  }),
-  
-  // Archiver/désarchiver une activité
-  archive: (activityId) => fetchAPI(`/activities/${activityId}/archive`, {
-    method: 'PUT'
-  }),
-  
-  unarchive: (activityId) => fetchAPI(`/activities/${activityId}/unarchive`, {
-    method: 'PUT'
-  })
-};
 
 // Compatibilité avec l'ancienne API
 export const fetchActivities = () => activities.getAll();

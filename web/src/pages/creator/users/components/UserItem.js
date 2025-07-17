@@ -14,11 +14,13 @@ import {
   Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  Telegram as TelegramIcon,
+  GroupAdd as GroupAddIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const UserItem = ({ user, onEdit, onDelete, isCurrentUser }) => {
+const UserItem = ({ user, onEdit, onDelete, onLinkTelegram, onManageTeams, isCurrentUser }) => {
   const { username, email, role, lastLogin, isActive } = user;
 
   const getRoleChip = (role) => {
@@ -60,6 +62,16 @@ const UserItem = ({ user, onEdit, onDelete, isCurrentUser }) => {
         <Tooltip title="Modifier">
           <IconButton size="small" onClick={onEdit}>
             <EditIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Lier Telegram">
+          <IconButton size="small" onClick={onLinkTelegram}>
+            <TelegramIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Gérer les équipes">
+          <IconButton size="small" onClick={onManageTeams}>
+            <GroupAddIcon fontSize="small" />
           </IconButton>
         </Tooltip>
         <Tooltip title={isCurrentUser ? "Vous ne pouvez pas vous supprimer" : "Supprimer"}>

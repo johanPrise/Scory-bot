@@ -19,6 +19,8 @@ const UsersTable = ({
   loading,
   onEdit,
   onDelete,
+  onLinkTelegram,
+  onManageTeams,
   currentUserId,
   page,
   rowsPerPage,
@@ -59,6 +61,8 @@ const UsersTable = ({
                   user={user}
                   onEdit={() => onEdit(user)}
                   onDelete={() => onDelete(user)}
+                  onLinkTelegram={() => onLinkTelegram(user)}
+                  onManageTeams={() => onManageTeams(user)}
                   isCurrentUser={user._id === currentUserId}
                 />
               ))
