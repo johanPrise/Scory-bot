@@ -410,13 +410,15 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AuthProvider>
-        <Router>
-          <SocketManager />
-          <AppContent />
-          {/* Bouton flottant pour minuteurs, accessible partout */}
-          <FloatingTimers />
-          <FloatingFeedback />
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <SocketManager />
+            <AppContent />
+            {/* Bouton flottant pour minuteurs, accessible partout */}
+            <FloatingTimers />
+            <FloatingFeedback />
+          </Router>
+        </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>
   );

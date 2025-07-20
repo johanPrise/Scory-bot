@@ -1,12 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, getCurrentUser } from '../api.js';
-
-// Fonctions non implémentées dans l'API
-const register = async () => { throw new Error('register non implémenté dans api.js'); };
-const updateProfile = async () => { throw new Error('updateProfile non implémenté dans api.js'); };
-const changePassword = async () => { throw new Error('changePassword non implémenté dans api.js'); };
-const linkTelegram = async () => { throw new Error('linkTelegram non implémenté dans api.js'); };
-const unlinkTelegram = async () => { throw new Error('unlinkTelegram non implémenté dans api.js'); };
+import { loginUser as apiLogin, getCurrentUser, registerUser, telegramLogin, changePassword, linkTelegramAccount, unlinkTelegramAccount, updateUserSettings } from '../api';
 
 const AuthContext = createContext();
 
@@ -89,20 +82,44 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Fonction d'inscription
-  // Remplacée par stub
-
-  // Fonction de mise à jour du profil
-  // Remplacée par stub
-
-  // Fonction de changement de mot de passe
-  // Remplacée par stub
-
-  // Fonction de liaison Telegram
-  // Remplacée par stub
-
-  // Fonction de déliaison Telegram
-  // Remplacée par stub
+  // Fonctions implémentées
+  const register = async (username, email, password, firstName, lastName) => {
+    const response = await registerUser(username, email, password, firstName, lastName);
+    const userData = {
+      ...response.user,
+      token: response.token,
+      isAuthenticated: true
+    };
+    setCurrentUser(userData);
+    localStorage.setItem('token', response.token);
+    return userData;
+  };
+  const updateProfile = async (settings) => {
+    await updateUserSettings(settings);
+    await checkAuthStatus();
+  };
+  const changePasswordLocal = async (currentPassword, newPassword) => {
+    await changePassword(currentPassword, newPassword);
+  };
+  const linkTelegram = async (telegramId, telegramUsername, chatId) => {
+    await linkTelegramAccount(telegramId, telegramUsername, chatId);
+    await checkAuthStatus();
+  };
+  const unlinkTelegram = async () => {
+    await unlinkTelegramAccount();
+    await checkAuthStatus();
+  };
+  const telegramLoginLocal = async (initData) => {
+    const response = await telegramLogin(initData);
+    const userData = {
+      ...response.user,
+      token: response.token,
+      isAuthenticated: true
+    };
+    setCurrentUser(userData);
+    localStorage.setItem('token', response.token);
+    return userData;
+  };
 
   // Vérifier les permissions
   const hasPermission = (permission) => {
@@ -167,13 +184,14 @@ export const AuthProvider = ({ children }) => {
     
     // Actions d'authentification
     login,
+    telegramLogin: telegramLoginLocal,
     register,
     logout,
     checkAuthStatus,
     
     // Actions de profil
     updateProfile,
-    changePassword,
+    changePassword: changePasswordLocal,
     linkTelegram,
     unlinkTelegram,
     

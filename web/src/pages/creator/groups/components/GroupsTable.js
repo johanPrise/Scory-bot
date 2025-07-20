@@ -7,7 +7,6 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  Box,
   CircularProgress,
   Typography,
   TablePagination,

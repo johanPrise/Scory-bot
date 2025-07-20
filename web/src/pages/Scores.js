@@ -273,7 +273,10 @@ const Scores = () => {
   };
   const handleBulkApprove = async () => {
     try {
-      await scores.bulkApprove(selectedScores);
+      // Process each score individually since bulk operations are no longer available
+      for (const scoreId of selectedScores) {
+        await scores.approve(scoreId);
+      }
       notify('Scores approuvés', 'success');
       setSelectedScores([]);
       loadScores();
@@ -283,7 +286,10 @@ const Scores = () => {
   };
   const handleBulkReject = async () => {
     try {
-      await scores.bulkReject(selectedScores, 'Rejeté par admin');
+      // Process each score individually since bulk operations are no longer available
+      for (const scoreId of selectedScores) {
+        await scores.reject(scoreId, 'Rejeté par admin');
+      }
       notify('Scores rejetés', 'success');
       setSelectedScores([]);
       loadScores();

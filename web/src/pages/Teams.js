@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
-  getGroupTeams,
-  addGroupTeam,
-  deleteGroupTeam,
-  getGroupMembers,
-  addGroupMember,
-  deleteGroupMember
+  getTeams,
+  createTeam,
+  deleteTeam,
+  getTeamMembers,
+  addTeamMember,
+  deleteTeamMember
 } from '../api';
 import { useNotification } from '../context/NotificationContext';
 import {
@@ -368,9 +368,7 @@ const Teams = () => {
     try {
       setLoading(true);
       setError(null);
-      // Remplacer par un groupId réel selon ton contexte
-      const groupId = currentUser?.groupId || 'defaultGroupId';
-      const response = await getGroupTeams(groupId);
+      const response = await getTeams();
       setTeamsList(response.teams || []);
     } catch (err) {
       console.error('Erreur lors du chargement des équipes:', err);
@@ -387,7 +385,7 @@ const Teams = () => {
   const handleCreateTeam = async (teamData) => {
     setCreateLoading(true);
     try {
-      await addGroupTeam(teamData);
+      await createTeam(teamData);
       setCreateDialogOpen(false);
       await loadTeams();
       notify('Équipe créée avec succès', 'success');
@@ -410,7 +408,7 @@ const Teams = () => {
     }
 
     try {
-      await deleteGroupTeam(team._id);
+      await deleteTeam(team._id);
       await loadTeams();
       notify('Équipe supprimée', 'success');
     } catch (err) {
@@ -423,7 +421,7 @@ const Teams = () => {
   const handleViewMembers = async (team) => {
     try {
       // Récupérer les détails complets de l'équipe avec les membres
-      const teamDetails = await getGroupMembers(team._id, { includeMembers: 'true' });
+      const teamDetails = await getTeamMembers(team._id);
       setSelectedTeam(teamDetails.team);
       setMembersDialogOpen(true);
       notify('Membres de l\'équipe chargés', 'info');
@@ -436,9 +434,9 @@ const Teams = () => {
 
   const handleAddMember = async (teamId, memberData) => {
     try {
-      await addGroupMember(teamId, memberData);
+      await addTeamMember(teamId, memberData);
       // Recharger les détails de l'équipe
-      const teamDetails = await getGroupMembers(teamId, { includeMembers: 'true' });
+      const teamDetails = await getTeamMembers(teamId);
       setSelectedTeam(teamDetails.team);
       await loadTeams(); // Recharger la liste principale
       notify('Membre ajouté à l\'équipe', 'success');
@@ -450,9 +448,9 @@ const Teams = () => {
 
   const handleRemoveMember = async (teamId, userId) => {
     try {
-      await deleteGroupMember(teamId, userId);
+      await deleteTeamMember(teamId, userId);
       // Recharger les détails de l'équipe
-      const teamDetails = await getGroupMembers(teamId, { includeMembers: 'true' });
+      const teamDetails = await getTeamMembers(teamId);
       setSelectedTeam(teamDetails.team);
       await loadTeams(); // Recharger la liste principale
       notify('Membre retiré de l\'équipe', 'success');

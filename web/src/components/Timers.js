@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Paper, TextField, Button, List, ListItem, ListItemText, IconButton, Chip, Stack, CircularProgress } from '@mui/material';
 import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import { timers } from '../api';
 
 function formatTime(ms) {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
@@ -25,9 +26,8 @@ const Timers = () => {
     const fetchTimers = async () => {
       setSyncing(true);
       try {
-        const res = await fetch('/api/timers');
-        const data = await res.json();
-        if (sync) setTimers(data.timers || []);
+        const data = await timers.getAll();
+        if (sync) setTimers(data || []);
       } catch (e) {
         // ignore
       } finally {
@@ -37,7 +37,7 @@ const Timers = () => {
     fetchTimers();
     intervalRef.current = setInterval(fetchTimers, 2000);
     return () => { sync = false; clearInterval(intervalRef.current); };
-  }, []);
+  }, [timers]);
 
   // Démarrer un timer via API
   const handleStart = async () => {
@@ -48,13 +48,7 @@ const Timers = () => {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/timers/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, duration })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur API');
+      await timers.start(name, Number(duration));
       setName('');
       setDuration('');
     } catch (e) {
@@ -68,13 +62,7 @@ const Timers = () => {
   const handleStop = async (timerName) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/timers/stop', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: timerName })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur API');
+      await timers.stop(timerName);
     } catch (e) {
       setError(e.message);
     } finally {

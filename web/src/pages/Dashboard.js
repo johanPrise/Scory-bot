@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTelegram } from '../context/TelegramContext';
-import { dashboard, scores } from '../api';
+import { dashboard } from '../api';
 import TelegramButton from '../components/TelegramButton';
 import {
   Grid,
-  Paper,
   Typography,
   Box,
   Card,
@@ -30,8 +29,7 @@ import {
   Group as GroupIcon,
   Timeline as TimelineIcon,
   TrendingUp as TrendingUpIcon,
-  Person as PersonIcon,
-  Star as StarIcon
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { useNotification } from '../context/NotificationContext';
 
@@ -157,16 +155,14 @@ const Dashboard = () => {
   const isTelegram = !!telegram;
   const [stats, setStats] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
-  const [topPerformers, setTopPerformers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [period, setPeriod] = useState('month');
-  const [performerScope, setPerformerScope] = useState('individual');
   const { notify } = useNotification();
 
   useEffect(() => {
     loadDashboardData();
-  }, [period, performerScope]);
+  }, [period]);
 
   const loadDashboardData = async () => {
     try {
@@ -193,10 +189,6 @@ const Dashboard = () => {
 
   const handlePeriodChange = (event) => {
     setPeriod(event.target.value);
-  };
-
-  const handleScopeChange = (event) => {
-    setPerformerScope(event.target.value);
   };
 
   if (error) {

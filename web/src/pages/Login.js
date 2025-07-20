@@ -39,7 +39,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
 
-  const { login, register, error, clearError, isAuthenticated } = useAuth();
+  const { login, register, telegramLogin, error, clearError, isAuthenticated } = useAuth();
   const { notify } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
@@ -329,9 +329,21 @@ const Login = () => {
           startIcon={<TelegramIcon />}
           sx={{ mb: 2 }}
           disabled={loading}
-          onClick={() => {
-            // TODO: Implémenter l'authentification Telegram
-            setLocalError('Authentification Telegram bientôt disponible');
+          onClick={async () => {
+            try {
+              const initData = window.Telegram?.WebApp?.initData;
+              if (!initData) {
+                setLocalError('Disponible uniquement dans l\'app Telegram');
+                return;
+              }
+              setLoading(true);
+              await telegramLogin(initData);
+              notify('Connexion Telegram réussie', 'success');
+            } catch (err) {
+              setLocalError(err.message || 'Erreur de connexion Telegram');
+            } finally {
+              setLoading(false);
+            }
           }}
         >
           Continuer avec Telegram

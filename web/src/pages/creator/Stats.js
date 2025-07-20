@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { getStats } from '../../api';
+import { getDashboardStats } from '../../api';
 import {
   Box,
   Container,
@@ -78,7 +78,7 @@ const Stats = () => {
   const fetchStats = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getStats({ timeRange });
+      const data = await getDashboardStats();
       setStats(data);
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -86,7 +86,7 @@ const Stats = () => {
     } finally {
       setLoading(false);
     }
-  }, [timeRange, notify]);
+  }, [notify]);
 
   useEffect(() => {
     if (currentUser) {
@@ -147,8 +147,8 @@ const Stats = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard 
-            title="Groupes" 
-            value={stats.totalGroups} 
+            title="Équipes" 
+            value={stats.totalTeams || stats.totalGroups} 
             icon={GroupIcon} 
             color="secondary" 
           />
@@ -204,7 +204,7 @@ const Stats = () => {
           <Paper sx={{ p: 2, height: '100%' }}>
             <Box display="flex" alignItems="center" mb={2}>
               <PieChartIcon color="action" sx={{ mr: 1 }} />
-              <Typography variant="h6">Répartition par groupe</Typography>
+              <Typography variant="h6">Répartition par équipe</Typography>
             </Box>
             <Box height={300}>
               <ResponsiveContainer width="100%" height="100%">

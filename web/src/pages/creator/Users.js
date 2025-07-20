@@ -70,10 +70,10 @@ const UsersPage = ({ notify }) => {
     handleOpenLinkTelegramDialog,
     handleCloseLinkTelegramDialog,
     handleLinkTelegram,
-    handleUnlinkTelegram,
     handleOpenManageTeamsDialog,
     handleCloseManageTeamsDialog,
     handleAddUserToTeam,
+    handleRemoveUserFromTeam
     } = useCreatorUsers(notify);
 
   const [telegramLinkCode, setTelegramLinkCode] = React.useState('');

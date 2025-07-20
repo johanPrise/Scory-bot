@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
-import { getSettings, updateSettings } from '../../api';
+import { getUserSettings, updateUserSettings, changePassword } from '../../api';
 import {
   Box,
   Container,
@@ -65,7 +65,7 @@ const a11yProps = (index) => ({
 });
 
 const Settings = () => {
-  const { currentUser, updateUserProfile } = useAuth();
+  const { currentUser, updateUserProfile, linkTelegram, unlinkTelegram } = useAuth();
   const { notify } = useNotification();
   
   const [tabValue, setTabValue] = useState(0);
@@ -98,6 +98,8 @@ const Settings = () => {
     // Intégrations
     telegramBotEnabled: false,
     telegramChatId: '',
+    telegramId: '',
+    telegramUsername: '',
     
     // API
     apiKey: '••••••••••••',
@@ -114,7 +116,7 @@ const Settings = () => {
     const loadSettings = async () => {
       try {
         setLoading(true);
-        const data = await getSettings();
+        const data = await getUserSettings();
         setSettings(prev => ({
           ...prev,
           ...data,
@@ -166,10 +168,15 @@ const Settings = () => {
         delete dataToSend.currentPassword;
         delete dataToSend.newPassword;
         delete dataToSend.confirmPassword;
+      } else if (dataToSend.currentPassword && dataToSend.newPassword) {
+        await changePassword(dataToSend.currentPassword, dataToSend.newPassword);
+        delete dataToSend.currentPassword;
+        delete dataToSend.newPassword;
+        delete dataToSend.confirmPassword;
       }
       
       // Appeler l'API de mise à jour
-      const updatedSettings = await updateSettings(dataToSend);
+      const updatedSettings = await updateUserSettings(dataToSend);
       
       // Mettre à jour l'état local
       setSettings(prev => ({
@@ -544,23 +551,71 @@ const Settings = () => {
                   </Box>
                   {settings.telegramBotEnabled && (
                     <Box mt={2}>
-                      <TextField
-                        fullWidth
-                        label="ID de chat Telegram"
-                        name="telegramChatId"
-                        value={settings.telegramChatId}
-                        onChange={handleChange}
-                        margin="normal"
-                        helperText="ID du chat où envoyer les notifications"
-                      />
-                      <Button 
-                        variant="outlined" 
-                        color="primary" 
-                        size="small"
-                        sx={{ mt: 1 }}
-                      >
-                        Lier le compte Telegram
-                      </Button>
+                      {currentUser.telegramId ? (
+                        <Box>
+                          <Typography>Compte lié : @{currentUser.telegramUsername}</Typography>
+                          <Button 
+                            variant="outlined" 
+                            color="error" 
+                            size="small"
+                            sx={{ mt: 1 }}
+                            onClick={async () => {
+                              try {
+                                await unlinkTelegram();
+                                notify('Compte Telegram délié', 'success');
+                              } catch (e) {
+                                notify('Erreur lors du déliage', 'error');
+                              }
+                            }}
+                          >
+                            Délier le compte
+                          </Button>
+                        </Box>
+                      ) : (
+                        <Box>
+                          <TextField
+                            fullWidth
+                            label="Telegram ID"
+                            name="telegramId"
+                            value={settings.telegramId}
+                            onChange={handleChange}
+                            margin="normal"
+                          />
+                          <TextField
+                            fullWidth
+                            label="Telegram Username"
+                            name="telegramUsername"
+                            value={settings.telegramUsername}
+                            onChange={handleChange}
+                            margin="normal"
+                          />
+                          <TextField
+                            fullWidth
+                            label="ID de chat Telegram"
+                            name="telegramChatId"
+                            value={settings.telegramChatId}
+                            onChange={handleChange}
+                            margin="normal"
+                            helperText="ID du chat où envoyer les notifications"
+                          />
+                          <Button 
+                            variant="outlined" 
+                            color="primary" 
+                            size="small"
+                            sx={{ mt: 1 }}
+                            onClick={async () => {
+                              try {
+                                await linkTelegram(settings.telegramId, settings.telegramUsername, settings.telegramChatId);
+                                notify('Compte Telegram lié', 'success');
+                              } catch (e) {
+                                notify('Erreur lors du liage', 'error');
+                              }
+                            }}
+                          >
+                            Lier le compte Telegram
+                          </Button>
+                        </Box>
+                      )}
                     </Box>
                   )}
                 </Box>

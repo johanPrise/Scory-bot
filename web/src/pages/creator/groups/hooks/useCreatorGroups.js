@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
-  getGroups,
-  createGroup,
-  updateGroup,
-  deleteGroup,
-  getGroupMembers,
-  addGroupMember,
-  removeGroupMember,
+  getTeams as getGroups,
+  createTeam as createGroup,
+  updateTeam as updateGroup,
+  deleteTeam as deleteGroup,
+  getTeamMembers as getGroupMembers,
+  addTeamMember as addGroupMember,
+  deleteTeamMember as removeGroupMember,
 } from '../../../../api';
 import { useAuth } from '../../../../context/AuthContext';
 
@@ -43,7 +43,7 @@ export const useCreatorGroups = (notify) => {
         search: searchTerm,
       };
       const data = await getGroups(params);
-      setGroups(data.teams || []); // API returns teams
+      setGroups(data || []);
     } catch (error) {
       console.error('Error fetching groups:', error);
       notify('Erreur lors du chargement des groupes', 'error');

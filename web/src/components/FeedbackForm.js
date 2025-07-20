@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Button, TextField, MenuItem, Typography, Alert } from '@mui/material';
+import { feedback } from '../api';
 
 const FEEDBACK_TYPES = [
   { value: 'bug', label: 'Bug' },
@@ -24,16 +25,7 @@ const FeedbackForm = ({ onSuccess, activityId }) => {
     }
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        },
-        body: JSON.stringify({ type, message, ...(activityId ? { activityId } : {}) })
-      });
-      if (!res.ok) throw new Error('Erreur lors de l\'envoi du feedback');
+      await feedback.send(type, message, activityId);
       setSuccess(true);
       setMessage('');
       if (onSuccess) onSuccess();

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Box, Typography, Paper, TextField, Button, List, ListItem, ListItemText, IconButton, Chip, Stack, CircularProgress } from '@mui/material';
 import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import { timers } from '../api';
 
 function formatTime(ms) {
   const totalSec = Math.max(0, Math.floor(ms / 1000));
@@ -24,9 +25,8 @@ const ActivityTimers = ({ activityId }) => {
     const fetchTimers = async () => {
       setSyncing(true);
       try {
-        const res = await fetch(`/api/timers?activityId=${activityId}`);
-        const data = await res.json();
-        if (sync) setTimers(data.timers || []);
+        const data = await timers.getAll(activityId);
+        if (sync) setTimers(data || []);
       } catch (e) {
         // ignore
       } finally {
@@ -36,7 +36,7 @@ const ActivityTimers = ({ activityId }) => {
     fetchTimers();
     intervalRef.current = setInterval(fetchTimers, 2000);
     return () => { sync = false; clearInterval(intervalRef.current); };
-  }, [activityId]);
+  }, [activityId, timers]);
 
   const handleStart = async () => {
     setError(null);
@@ -46,13 +46,7 @@ const ActivityTimers = ({ activityId }) => {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/timers/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, duration, activityId })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur API');
+      await timers.start(name, Number(duration), activityId);
       setName('');
       setDuration('');
     } catch (e) {
@@ -65,13 +59,7 @@ const ActivityTimers = ({ activityId }) => {
   const handleStop = async (timerName) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/timers/stop', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: timerName, activityId })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur API');
+      await timers.stop(timerName, activityId);
     } catch (e) {
       setError(e.message);
     } finally {
