@@ -75,6 +75,11 @@ export const TELEGRAM_CONFIG = {
     { command: 'createteam', description: '👥 Créer une équipe' },
     { command: 'addtoteam', description: '➕ Ajouter un membre à une équipe' },
     { command: 'teamranking', description: '🏅 Classement d\'une équipe' },
+
+    // Commandes de suppression
+    { command: 'deleteactivity', description: '🗑 Supprimer une activité' },
+    { command: 'deleteteam', description: '🗑 Supprimer une équipe' },
+    { command: 'deletescore', description: '🗑 Supprimer un score' },
     
     // Commandes Web App
     { command: 'app', description: '📱 Ouvrir l\'application' },

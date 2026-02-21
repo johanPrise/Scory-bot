@@ -145,6 +145,20 @@ export const getActivityHistory = (id, params = {}) => {
 export const addSubActivity = (activityId, data) =>
   apiRequest(`/activities/${activityId}/subactivities`, { method: 'POST', body: JSON.stringify(data) });
 
+export const deleteActivity = (id) =>
+  apiRequest(`/activities/${id}`, { method: 'DELETE' });
+
+export const deleteSubActivity = (activityId, subId) =>
+  apiRequest(`/activities/${activityId}/subactivities/${subId}`, { method: 'DELETE' });
+
+// ===== TEAMS (extended) =====
+export const deleteTeam = (id) =>
+  apiRequest(`/teams/${id}`, { method: 'DELETE' });
+
+// ===== SCORES (delete) =====
+export const deleteScore = (id) =>
+  apiRequest(`/scores/${id}`, { method: 'DELETE' });
+
 // ===== USER =====
 export const getUserProfile = () => apiRequest('/auth/me');
 export const updateProfile = (data) =>

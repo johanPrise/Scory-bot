@@ -1,21 +1,45 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../api';
+import { useToast } from '../components/Toast';
+
+function MembersFallback({ members }) {
+  const list = members || [];
+  if (list.length === 0) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">👥</div>
+        <div className="empty-state-text">Aucun membre</div>
+      </div>
+    );
+  }
+  return list.map((member) => (
+    <div className="list-item" key={member.userId || member.username}>
+      <div className="avatar" style={{ width: 40, height: 40, fontSize: 16 }}>
+        {(member.username || '?')[0].toUpperCase()}
+      </div>
+      <div className="list-item-content">
+        <div className="list-item-title">
+          {member.username || 'Membre'}
+          {member.isAdmin && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--tg-theme-accent-text-color)' }}>👑 Admin</span>}
+        </div>
+      </div>
+    </div>
+  ));
+}
 
 export default function TeamDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const [team, setTeam] = useState(null);
   const [members, setMembers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('members');
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (id) loadTeam();
-  }, [id]);
-
-  const loadTeam = async () => {
+  const loadTeam = useCallback(async () => {
     try {
       const [teamRes, membersRes, statsRes] = await Promise.allSettled([
         api.getTeam(id),
@@ -36,6 +60,36 @@ export default function TeamDetail() {
       console.error('Erreur chargement équipe:', err);
     } finally {
       setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (id) loadTeam();
+  }, [id, loadTeam]);
+
+  const handleDeleteTeam = async () => {
+    const tg = globalThis.Telegram?.WebApp;
+    const doDelete = async () => {
+      setDeleting(true);
+      try {
+        await api.deleteTeam(id);
+        tg?.HapticFeedback?.notificationOccurred('success');
+        toast.success('Équipe supprimée');
+        navigate('/teams');
+      } catch (err) {
+        tg?.HapticFeedback?.notificationOccurred('error');
+        toast.error(err.message || 'Erreur lors de la suppression');
+      } finally {
+        setDeleting(false);
+      }
+    };
+
+    if (tg?.showConfirm) {
+      tg.showConfirm(`Supprimer l'équipe "${team?.name}" ? Cette action est irréversible.`, async (confirmed) => {
+        if (confirmed) await doDelete();
+      });
+    } else if (globalThis.confirm(`Supprimer l'équipe "${team?.name}" ? Cette action est irréversible.`)) {
+      await doDelete();
     }
   };
 
@@ -122,6 +176,18 @@ export default function TeamDetail() {
         </div>
       )}
 
+      {/* Bouton supprimer l'équipe */}
+      <div className="slide-up-delay-1" style={{ marginBottom: 16 }}>
+        <button
+          className="btn btn-secondary"
+          style={{ width: '100%', color: '#e74c3c' }}
+          onClick={handleDeleteTeam}
+          disabled={deleting}
+        >
+          {deleting ? '⏳ Suppression...' : '🗑 Supprimer l\'équipe'}
+        </button>
+      </div>
+
       {/* Tabs */}
       <div className="chips-row slide-up-delay-1">
         <button className={`chip ${activeTab === 'members' ? 'active' : ''}`} onClick={() => setActiveTab('members')}>
@@ -160,26 +226,8 @@ export default function TeamDetail() {
                   </div>
                 );
               })
-            ) : (team.members || []).length > 0 ? (
-              // Fallback si les membres populés ne sont pas disponibles
-              (team.members || []).map((member, i) => (
-                <div className="list-item" key={i}>
-                  <div className="avatar" style={{ width: 40, height: 40, fontSize: 16 }}>
-                    {(member.username || '?')[0].toUpperCase()}
-                  </div>
-                  <div className="list-item-content">
-                    <div className="list-item-title">
-                      {member.username || 'Membre'}
-                      {member.isAdmin && <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--tg-theme-accent-text-color)' }}>👑 Admin</span>}
-                    </div>
-                  </div>
-                </div>
-              ))
             ) : (
-              <div className="empty-state">
-                <div className="empty-state-icon">👥</div>
-                <div className="empty-state-text">Aucun membre</div>
-              </div>
+              <MembersFallback members={team.members} />
             )}
           </div>
         )}

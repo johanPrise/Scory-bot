@@ -44,6 +44,17 @@ router.get('/', asyncHandler(async (req, res) => {
   if (teamId) filter.teamId = teamId;
   if (isActive !== undefined) filter['settings.isActive'] = isActive === 'true';
 
+  // Si aucun filtre chatId/teamId n'est fourni (webapp), montrer les activités
+  // créées par l'utilisateur ou celles de ses équipes
+  if (!chatId && !teamId && !search) {
+    const userTeams = await Team.find({ 'members.userId': req.userId }).select('_id');
+    const teamIds = userTeams.map(t => t._id);
+    filter.$or = [
+      { createdBy: req.userId },
+      ...(teamIds.length > 0 ? [{ teamId: { $in: teamIds } }] : [])
+    ];
+  }
+
   // Options de pagination et tri
   const options = {
     page: parseInt(page),

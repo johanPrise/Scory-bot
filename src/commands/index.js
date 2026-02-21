@@ -36,6 +36,7 @@ export const setupCommands = async () => {
     bot.onText(createBotCommand('addsubactivity', '(?:\\s+(\\S+)(?:\\s+(.+))?)?'), wrapCommandHandler(activityCommands.addSubActivity, botUsername));
     bot.onText(createBotCommand('activities'), wrapCommandHandler(activityCommands.listActivities, botUsername));
     bot.onText(createBotCommand('history', '(?:\\s+(\\d+))?(?:\\s+(\\S+))?'), wrapCommandHandler(activityCommands.history, botUsername));
+    bot.onText(createBotCommand('deleteactivity', '(?:\\s+(\\S+))?'), wrapCommandHandler(activityCommands.deleteActivity, botUsername));
     logger.debug('Commandes d\'activités configurées');
 
     // 3. Configuration des commandes de scores (y compris les commandes avancées)
@@ -46,6 +47,7 @@ export const setupCommands = async () => {
     bot.onText(createBotCommand('createteam', '(?:\\s+(\\S+)(?:\\s+(.+))?)?'), wrapCommandHandler(teamCommands.createTeam, botUsername));
     bot.onText(createBotCommand('addtoteam', '(?:\\s+(\\S+)(?:\\s+(\\S+)(?:\\s+(.+))?)?)?'), wrapCommandHandler(teamCommands.addToTeam, botUsername));
     bot.onText(createBotCommand('teamranking', '(?:\\s+(\\S+))?'), wrapCommandHandler(teamCommands.getTeamRanking, botUsername));
+    bot.onText(createBotCommand('deleteteam', '(?:\\s+(\\S+))?'), wrapCommandHandler(teamCommands.deleteTeam, botUsername));
     logger.debug('Commandes d\'équipes configurées');
 
     // 5. Commandes utilitaires
@@ -71,7 +73,7 @@ export const setupCommands = async () => {
     // 7. Handler de commandes inconnues (doit être APRÈS toutes les commandes)
     const knownCommands = TELEGRAM_CONFIG.COMMANDS.map(c => c.command);
     // Ajouter les commandes non listées dans le menu mais qui existent
-    const extraCommands = ['create_activity', 'subscore', 'subranking', 'aranking', 'shistory', 'export', 'feedback', 'starttimer', 'stoptimer', 'admin', 'scoremanager', 'teamdashboard'];
+    const extraCommands = ['create_activity', 'subscore', 'subranking', 'aranking', 'shistory', 'export', 'feedback', 'starttimer', 'stoptimer', 'admin', 'scoremanager', 'teamdashboard', 'deleteactivity', 'deleteteam', 'deletescore'];
     const allKnownCommands = [...knownCommands, ...extraCommands];
     
     bot.on('message', (msg) => {

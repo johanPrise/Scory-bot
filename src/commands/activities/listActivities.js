@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
 import { listActivities as listActivitiesService } from '../../api/services/activityService.js';
 import logger from '../../utils/logger.js';
-import { handleError } from '../utils/helpers.js';
+import { handleError, resolveUserId } from '../utils/helpers.js';
 
 /**
  * Formate la liste des activités pour l'affichage
@@ -44,6 +44,7 @@ const formatActivitiesList = (activities, includeSubActivities = false) => {
  */
 export default async (msg) => {
   const chatId = msg.chat.id;
+  const isPrivateChat = msg.chat.type === 'private';
   const includeDetails = msg.text && msg.text.includes('détails');
 
   try {
@@ -54,10 +55,18 @@ export default async (msg) => {
       { parse_mode: 'Markdown' }
     );
 
+    // En chat privé, résoudre l'ID utilisateur pour aussi montrer
+    // les activités créées par l'utilisateur dans d'autres chats (groupes)
+    let createdBy = null;
+    if (isPrivateChat) {
+      createdBy = await resolveUserId(msg.from.id);
+    }
+
     // Récupérer la liste des activités
     const activities = await listActivitiesService({
       includeSubActivities: includeDetails,
-      chatId
+      chatId: chatId.toString(),
+      createdBy
     });
 
     // Formater et envoyer la réponse
@@ -75,6 +84,6 @@ export default async (msg) => {
     logger.info(`Liste des activités affichée (${activities.length} activités)`);
 
   } catch (error) {
-    handleError(chatId, error, 'Erreur lors de la récupération de la liste des activités');
+    handleError(chatId, error, 'commande /activities');
   }
 };

@@ -1,6 +1,9 @@
 import { bot } from '../../config/bot.js';
 import logger from '../../utils/logger.js';
 import { handleActivityCreationCallback } from '../activities/createActivityWithButtons.js';
+import { handleDeleteActivityCallback } from '../activities/deleteActivity.js';
+import { handleDeleteTeamCallback } from '../teams/deleteTeam.js';
+import { handleDeleteScoreCallback } from '../scores/deleteScore.js';
 
 /**
  * Configure les gestionnaires de callbacks pour les boutons inline
@@ -18,7 +21,19 @@ export const setupCallbackHandlers = () => {
       if (action.startsWith('create_activity_type_')) {
         // Callbacks de création d'activité
         await handleActivityCreationCallback(query, action);
-      } 
+      }
+      else if (action.startsWith('delete_activity_')) {
+        // Callbacks de suppression d'activité
+        await handleDeleteActivityCallback(query);
+      }
+      else if (action.startsWith('delete_team_')) {
+        // Callbacks de suppression d'équipe
+        await handleDeleteTeamCallback(query);
+      }
+      else if (action.startsWith('delete_score_')) {
+        // Callbacks de suppression de score
+        await handleDeleteScoreCallback(query);
+      }
       else if (action.startsWith('score_')) {
         // Callbacks de gestion des scores
         // await handleScoreCallback(query, action);

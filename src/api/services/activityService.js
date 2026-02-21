@@ -100,13 +100,25 @@ export const addSubActivity = async ({ parentActivityId, name, description, crea
 /**
  * Récupère la liste des activités
  */
-export const listActivities = async ({ includeSubActivities = false, chatId, teamId }) => {
+export const listActivities = async ({ includeSubActivities = false, chatId, teamId, createdBy }) => {
   try {
-    logger.info('Fetching activities list', { includeSubActivities, chatId, teamId });
+    logger.info('Fetching activities list', { includeSubActivities, chatId, teamId, createdBy });
     
     // Construction du filtre
     const filter = {};
-    if (chatId) filter.chatId = chatId;
+
+    // Si on a à la fois chatId et createdBy, utiliser $or pour montrer
+    // les activités du chat actuel OU créées par l'utilisateur
+    if (chatId && createdBy) {
+      filter.$or = [
+        { chatId },
+        { createdBy }
+      ];
+    } else {
+      if (chatId) filter.chatId = chatId;
+      if (createdBy) filter.createdBy = createdBy;
+    }
+
     if (teamId) filter.teamId = teamId;
     
     const activities = await Activity.find(filter)

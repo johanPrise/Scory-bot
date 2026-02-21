@@ -15,6 +15,7 @@ export default function ActivityDetail() {
   const [showSubForm, setShowSubForm] = useState(false);
   const [subForm, setSubForm] = useState({ name: '', description: '', maxScore: 100 });
   const [submittingSub, setSubmittingSub] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const loadActivity = useCallback(async () => {
     try {
@@ -58,6 +59,59 @@ export default function ActivityDetail() {
       toast.error(err.message || 'Erreur');
     } finally {
       setSubmittingSub(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const tg = globalThis.Telegram?.WebApp;
+    if (tg?.showConfirm) {
+      tg.showConfirm(
+        `Supprimer l'activité "${activity?.name}" ? Cette action est irréversible.`,
+        async (confirmed) => {
+          if (!confirmed) return;
+          await performDelete();
+        }
+      );
+    } else if (globalThis.confirm(`Supprimer l'activité "${activity?.name}" ? Cette action est irréversible.`)) {
+      await performDelete();
+    }
+  };
+
+  const performDelete = async () => {
+    setDeleting(true);
+    try {
+      await api.deleteActivity(id);
+      globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+      toast.success('Activité supprimée');
+      navigate('/activities');
+    } catch (err) {
+      globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
+      toast.error(err.message || 'Erreur lors de la suppression');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteSubActivity = async (subId, subName) => {
+    const tg = globalThis.Telegram?.WebApp;
+    const doDelete = async () => {
+      try {
+        await api.deleteSubActivity(id, subId);
+        globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+        toast.success(`Sous-activité "${subName}" supprimée`);
+        loadActivity();
+      } catch (err) {
+        globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
+        toast.error(err.message || 'Erreur');
+      }
+    };
+
+    if (tg?.showConfirm) {
+      tg.showConfirm(`Supprimer la sous-activité "${subName}" ?`, async (confirmed) => {
+        if (confirmed) await doDelete();
+      });
+    } else if (globalThis.confirm(`Supprimer la sous-activité "${subName}" ?`)) {
+      await doDelete();
     }
   };
 
@@ -107,6 +161,15 @@ export default function ActivityDetail() {
           onClick={() => navigate(`/add-score?activityId=${id}`)}
         >
           🎯 Ajouter un score
+        </button>
+        <button
+          className="btn btn-secondary"
+          style={{ flex: 'none', padding: '10px 14px' }}
+          onClick={handleDelete}
+          disabled={deleting}
+          title="Supprimer l'activité"
+        >
+          {deleting ? '⏳' : '🗑'}
         </button>
       </div>
 
@@ -216,11 +279,20 @@ export default function ActivityDetail() {
             {subActivities.length > 0 ? (
               subActivities.map((sub, i) => (
                 <ListItem
-                  key={sub.name || i}
+                  key={sub._id || sub.name || i}
                   icon="📎"
                   title={sub.name}
                   subtitle={sub.description || 'Pas de description'}
                   value={`/${sub.maxScore || 100}`}
+                  trailing={
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteSubActivity(sub._id, sub.name); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 4, opacity: 0.6 }}
+                      title="Supprimer"
+                    >
+                      🗑
+                    </button>
+                  }
                 />
               ))
             ) : (
@@ -245,6 +317,36 @@ export default function ActivityDetail() {
                     (score.team ? ` · ${score.team.name}` : '')
                   }
                   value={`${score.value}/${score.maxPossible}`}
+                  trailing={
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const tg = globalThis.Telegram?.WebApp;
+                        const doDelete = async () => {
+                          try {
+                            await api.deleteScore(score._id);
+                            tg?.HapticFeedback?.notificationOccurred('success');
+                            toast.success('Score supprimé');
+                            loadActivity();
+                          } catch (err) {
+                            tg?.HapticFeedback?.notificationOccurred('error');
+                            toast.error(err.message || 'Erreur');
+                          }
+                        };
+                        if (tg?.showConfirm) {
+                          tg.showConfirm('Supprimer ce score ?', async (confirmed) => {
+                            if (confirmed) await doDelete();
+                          });
+                        } else if (globalThis.confirm('Supprimer ce score ?')) {
+                          await doDelete();
+                        }
+                      }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 4, opacity: 0.6 }}
+                      title="Supprimer"
+                    >
+                      🗑
+                    </button>
+                  }
                 />
               ))
             ) : (

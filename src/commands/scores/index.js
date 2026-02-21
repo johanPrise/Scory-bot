@@ -11,10 +11,11 @@ import getSubRanking from './getSubRanking.js';
 // Commandes avancées
 import advancedRanking from './advancedRanking.js';
 import scoreHistory from './scoreHistory.js';
-import dashboard from './dashboard.js';
+import dashboard, { setupDashboardHandlers } from './dashboard.js';
 
-// Gestionnaires
-import { setupDashboardHandlers } from './dashboard.js';
+// Commande de suppression
+import deleteScore from './deleteScore.js';
+export { handleDeleteScoreCallback } from './deleteScore.js';
 
 /**
  * Configure les gestionnaires de commandes de scores
@@ -30,6 +31,10 @@ const setupScoreCommands = (botUsername) => {
   // Commandes avancées
   bot.onText(createBotCommand('aranking', '(?:\\s+(\\S+)(?:\\s+(\\S+))?)?'), wrapCommandHandler(advancedRanking, botUsername));
   bot.onText(createBotCommand('shistory', '(?:\\s+(\\S+)(?:\\s+(\\S+))?)?'), wrapCommandHandler(scoreHistory, botUsername));
+  
+  // Commande de suppression
+  bot.onText(createBotCommand('deletescore', '(?:\\s+(\\S+))?'), wrapCommandHandler(deleteScore, botUsername));
+  
   // NOTE: /dashboard est géré dans webAppCommands (commands/index.js) pour ouvrir le Web App
   // Ne pas le ré-enregistrer ici pour éviter des réponses en double
   
