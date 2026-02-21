@@ -43,7 +43,8 @@ const formatSubRanking = (ranking, activityId, subActivity) => {
  */
 export default async (msg, match) => {
   const chatId = msg.chat.id;
-  const [_, activityId, subActivity] = match;
+  const activityId = match ? match[1] : undefined;
+  const subActivity = match ? match[2] : undefined;
 
   try {
     // Vérifier les paramètres

@@ -3,25 +3,29 @@ import * as teamService from '../../api/services/teamService.js';
 import Team from '../../api/models/Team.js';
 import User from '../../api/models/User.js';
 import logger from '../../utils/logger.js';
+import { resolveUserId } from '../utils/helpers.js';
 
 /**
  * Gère la commande /addtoteam
- * Format: /addtoteam @utilisateur nom_équipe
+ * Format: /addtoteam @utilisateur nom_équipe [admin]
  */
 export const addToTeam = async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const [_, targetUser, teamName, ...rest] = match;
-  const isAdmin = rest.includes('admin');
+  const targetUser = match[1];
+  const teamName = match[2];
+  const isAdmin = match[3] && match[3].includes('admin');
 
   try {
     // Vérifier les paramètres
     if (!targetUser || !teamName) {
       return bot.sendMessage(
         chatId,
-        '❌ Format incorrect. Utilisez: /addtoteam @utilisateur nom_équipe [admin]\n' +
-        'Exemple: /addtoteam @john ÉquipeA\n' +
-        'Pour ajouter comme admin: /addtoteam @john ÉquipeA admin',
+        '❌ Format incorrect. Utilisez:\n' +
+        '`/addtoteam @utilisateur nom_équipe [admin]`\n\n' +
+        'Exemples:\n' +
+        '`/addtoteam @john ÉquipeA`\n' +
+        '`/addtoteam @john ÉquipeA admin`',
         { parse_mode: 'Markdown' }
       );
     }
@@ -86,7 +90,14 @@ export const addToTeam = async (msg, match) => {
     }
 
     // Vérifier si l'utilisateur qui ajoute est admin ou propriétaire
-    const adder = await User.findById(userId.toString());
+    const adderMongoId = await resolveUserId(userId);
+    if (!adderMongoId) {
+      return bot.editMessageText(
+        '❌ Vous devez d\'abord vous inscrire avec /start',
+        { chat_id: chatId, message_id: loadingMsg.message_id }
+      );
+    }
+    const adder = await User.findById(adderMongoId);
     const isAdderAdmin = adder.isTeamAdmin(team._id);
     const isAdderOwner = adder.isTeamOwner(team._id);
 
@@ -114,7 +125,7 @@ export const addToTeam = async (msg, match) => {
     // Ajouter le membre à l'équipe
     const updatedTeam = await teamService.addMemberToTeam(team._id.toString(), userIdToAdd, {
       isAdmin: isAdmin,
-      addedBy: userId.toString()
+      addedBy: adderMongoId.toString()
     });
 
     // Réponse de succès

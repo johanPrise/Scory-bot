@@ -10,14 +10,13 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
     minlength: [3, 'Le nom d\'utilisateur doit contenir au moins 3 caractères'],
-    maxlength: [30, 'Le nom d\'utilisateur ne peut pas dépasser 30 caractères'],
-    match: [/^[a-zA-Z0-9_-]+$/, 'Le nom d\'utilisateur ne peut contenir que des lettres, chiffres, tirets et underscores']
+    maxlength: [50, 'Le nom d\'utilisateur ne peut pas dépasser 50 caractères']
   },
   
   email: {
     type: String,
-    required: [true, 'L\'email est requis'],
     unique: true,
+    sparse: true, // Permet plusieurs documents sans email (utilisateurs Telegram)
     trim: true,
     lowercase: true,
     match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Veuillez entrer un email valide']
@@ -25,7 +24,6 @@ const userSchema = new mongoose.Schema({
   
   password: {
     type: String,
-    required: [true, 'Le mot de passe est requis'],
     minlength: [8, 'Le mot de passe doit contenir au moins 8 caractères'],
     select: false // Ne pas renvoyer le mot de passe par défaut
   },
@@ -160,13 +158,13 @@ const userSchema = new mongoose.Schema({
 });
 
 // Index pour les recherches fréquentes
-userSchema.index({ 'telegram.id': 1 });
+// L'index sur telegram.id est déjà défini dans le schéma (index: true, sparse: true)
 userSchema.index({ 'teams.team': 1 });
 userSchema.index({ status: 1 });
 
 // Middleware pour hacher le mot de passe avant la sauvegarde
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password') || !this.password) return next();
   
   try {
     const salt = await bcrypt.genSalt(10);
@@ -179,6 +177,7 @@ userSchema.pre('save', async function(next) {
 
 // Méthode pour vérifier le mot de passe
 userSchema.methods.comparePassword = async function(candidatePassword) {
+  if (!this.password) return false;
   return bcrypt.compare(candidatePassword, this.password);
 };
 

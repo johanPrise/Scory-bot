@@ -10,19 +10,27 @@ import logger from '../../utils/logger.js';
 export const addSubActivity = async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const [_, parentActivityName, subActivityName, scoreMaxStr, ...descriptionParts] = match;
-  const description = descriptionParts.join(' ');
-  const maxScore = parseInt(scoreMaxStr, 10) || 100;
+  const parentActivityName = match[1];
+  const subActivityInfo = match[2]; // Peut contenir "nom score_max description"
 
   try {
     // Vérifier les paramètres
-    if (!parentActivityName || !subActivityName) {
+    if (!parentActivityName || !subActivityInfo) {
       return bot.sendMessage(
         chatId,
-        '❌ Format incorrect. Utilisez: /addsubactivity activité_parent nom_sous_activité [score_max] [description]\n' +
-        'Exemple: /addsubactivity course 5km 100 Course de 5 kilomètres'
+        '❌ Format incorrect. Utilisez:\n' +
+        '`/addsubactivity activité_parent nom_sous_activité [score_max] [description]`\n\n' +
+        'Exemple: `/addsubactivity course 5km 100 Course de 5 kilomètres`',
+        { parse_mode: 'Markdown' }
       );
     }
+
+    // Séparer les parties de subActivityInfo
+    const parts = subActivityInfo.trim().split(/\s+/);
+    const subActivityName = parts[0];
+    const scoreMaxStr = parts[1];
+    const description = parts.slice(2).join(' ');
+    const maxScore = parseInt(scoreMaxStr, 10) || 100;
 
     // Afficher un message de chargement
     const loadingMsg = await bot.sendMessage(
@@ -48,15 +56,13 @@ export const addSubActivity = async (msg, match) => {
     }
 
     // Ajouter la sous-activité via le service
-    const updatedActivity = await activityService.addSubActivity(
-      parentActivity._id.toString(),
-      subActivityName,
-      maxScore,
-      {
-        description: description || '',
-        createdBy: userId.toString()
-      }
-    );
+    const updatedActivity = await activityService.addSubActivity({
+      parentActivityId: parentActivity._id.toString(),
+      name: subActivityName,
+      description: description || '',
+      createdBy: userId.toString(),
+      chatId: chatId.toString()
+    });
 
     // Trouver la sous-activité ajoutée
     const addedSubActivity = updatedActivity.subActivities.find(sub => 

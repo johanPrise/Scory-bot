@@ -1,6 +1,7 @@
 import { bot } from '../../config/bot.js';
 import * as teamService from '../../api/services/teamService.js';
 import logger from '../../utils/logger.js';
+import { resolveUserId } from '../utils/helpers.js';
 
 /**
  * Gère la commande /createteam
@@ -9,8 +10,8 @@ import logger from '../../utils/logger.js';
 export const createTeam = async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const [_, teamName, ...descriptionParts] = match;
-  const description = descriptionParts.join(' ');
+  const teamName = match[1];
+  const description = match[2] || '';
 
   try {
     // Vérifier que le nom de l'équipe est fourni
@@ -18,7 +19,8 @@ export const createTeam = async (msg, match) => {
       return bot.sendMessage(
         chatId,
         '❌ Veuillez spécifier un nom pour l\'équipe.\n' +
-        'Exemple: /createteam ÉquipeA Une super équipe',
+        'Format: `/createteam nom_équipe [description]`\n' +
+        'Exemple: `/createteam ÉquipeA Une super équipe`',
         { parse_mode: 'Markdown' }
       );
     }
@@ -30,9 +32,21 @@ export const createTeam = async (msg, match) => {
       { parse_mode: 'Markdown' }
     );
 
+    // Résoudre l'ID Telegram en ObjectId MongoDB
+    const mongoUserId = await resolveUserId(userId);
+    if (!mongoUserId) {
+      return bot.editMessageText(
+        '❌ Vous devez d\'abord vous inscrire avec /start',
+        { chat_id: chatId, message_id: loadingMsg.message_id }
+      );
+    }
+
     // Appeler le service pour créer l'équipe
-    const team = await teamService.createTeam(teamName, chatId.toString(), userId.toString(), {
-      description: description || undefined
+    const team = await teamService.createTeam({
+      name: teamName,
+      description: description || undefined,
+      createdBy: mongoUserId,
+      chatId: chatId.toString()
     });
 
     // Envoyer le message de confirmation

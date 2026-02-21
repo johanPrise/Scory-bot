@@ -16,7 +16,6 @@ const teamSchema = new mongoose.Schema({
   },
   chatId: {
     type: String,
-    required: [true, 'L\'ID du chat est requis'],
     index: true
   },
   createdBy: {
@@ -137,8 +136,8 @@ teamSchema.methods.updateScore = function(points) {
 
 // Middleware pour générer un code d'invitation avant la sauvegarde
 teamSchema.pre('save', async function(next) {
-  if (this.settings.isPrivate && !this.settings.joinCode) {
-    // Générer un code alphanumérique de 8 caractères
+  if (!this.settings.joinCode) {
+    // Générer un code alphanumérique de 8 caractères pour toutes les équipes
     this.settings.joinCode = Math.random().toString(36).substring(2, 10).toUpperCase();
   }
   next();

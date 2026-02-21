@@ -6,8 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { TELEGRAM_CONFIG, ENV_CONFIG } from './telegram.js';
 import { logCriticalError, logUserAction } from '../utils/logger.js';
-import User from '../api/models/User.js';
-import crypto from 'crypto';
+
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -70,13 +69,21 @@ export async function setupBot() {
     // Vérifier la connexion à l'API Telegram
     const botInfo = await bot.getMe();
     
-    // Définir les commandes du bot
+    // Purger TOUTES les anciennes commandes pour tous les scopes
+    // Cela supprime le cache de commandes obsolètes côté Telegram
+    await bot.deleteMyCommands(); // scope par défaut (default)
+    await bot.deleteMyCommands({ scope: { type: 'all_private_chats' } });
+    await bot.deleteMyCommands({ scope: { type: 'all_group_chats' } });
+    await bot.deleteMyCommands({ scope: { type: 'all_chat_administrators' } });
+    console.log('🧹 Anciennes commandes supprimées de Telegram');
+    
+    // Définir les nouvelles commandes du bot
     await bot.setMyCommands(BOT_COMMANDS);
     
     // Enregistrer les commandes dans un fichier pour référence
     await saveCommandsToFile();
     
-    // Configurer le menu des commandes
+    // Configurer le menu des commandes pour les chats privés
     await bot.setMyCommands(BOT_COMMANDS, { scope: { type: 'all_private_chats' } });
     
     // Afficher les informations de démarrage
@@ -204,49 +211,7 @@ function getCommandUsage(command) {
   return usages[cmd] || '';
 }
 
-// Génère un code de liaison unique (6 caractères alphanumériques)
-function generateLinkCode() {
-  return crypto.randomBytes(3).toString('hex').toUpperCase();
-}
 
-// Gestion de la commande /start et /link
-bot.onText(/^\/(start|link)(?:\s+(\w+))?/, async (msg, match) => {
-  const chatId = msg.chat.id;
-  const telegramId = msg.from.id?.toString();
-  const telegramUsername = msg.from.username;
-  const firstName = msg.from.first_name;
-  // Recherche d'un utilisateur déjà lié à ce Telegram
-  let user = await User.findOne({ 'telegram.id': telegramId });
-  if (user && user.telegram && user.telegram.linked) {
-    await bot.sendMessage(chatId, `✅ Ton compte est déjà lié à l'application !`);
-    return;
-  }
-  // Générer un code de liaison unique
-  const linkCode = generateLinkCode();
-  // Si l'utilisateur existe, mettre à jour le code, sinon créer un profil temporaire
-  if (user) {
-    user.telegram.linkCode = linkCode;
-    user.telegram.username = telegramUsername;
-    user.telegram.chatId = chatId;
-    user.telegram.linked = false;
-    await user.save();
-  } else {
-    // Création d'un profil temporaire (sera fusionné lors de la liaison réelle)
-    user = new User({
-      username: `tg_${telegramUsername || telegramId}`,
-      email: `${telegramId}@telegram.scory-bot.com`,
-      password: crypto.randomBytes(12).toString('hex'),
-      telegram: {
-        id: telegramId,
-        username: telegramUsername,
-        chatId,
-        linkCode,
-        linked: false
-      },
-      firstName,
-      status: 'inactive'
-    });
-    await user.save();
-  }
-  await bot.sendMessage(chatId, `Pour lier ton compte, copie ce code dans l'application web :\n\n🔗 <b>${linkCode}</b>\n\nVa dans ton profil > Lier Telegram, et colle ce code.\n\nSi tu as déjà lié ton compte, tu peux ignorer ce message.`, { parse_mode: 'HTML' });
-});
+
+// Note: le handler /start est enregistré dans src/commands/index.js
+// via src/commands/auth/start.js (auto-crée l'utilisateur)

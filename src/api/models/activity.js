@@ -87,9 +87,13 @@ const activitySchema = new mongoose.Schema({
     trim: true,
     maxlength: [1000, 'La description ne peut pas dépasser 1000 caractères']
   },
+  type: {
+    type: String,
+    enum: ['game', 'sport', 'education', 'creative', 'other'],
+    default: 'other'
+  },
   chatId: {
     type: String,
-    required: [true, 'L\'ID du chat est requis'],
     index: true
   },
   createdBy: {

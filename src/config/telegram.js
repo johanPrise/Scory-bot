@@ -54,53 +54,31 @@ export const TELEGRAM_CONFIG = {
     }
   },
 
-  // Configuration des commandes du bot avec des catégories
+  // Configuration des commandes du bot (uniquement les commandes réellement implémentées)
   COMMANDS: [
     // Commandes de base
-    { command: 'start', description: 'Démarrer le bot et afficher le message de bienvenue' },
-    { command: 'help', description: 'Afficher l\'aide et la liste des commandes disponibles' },
-    { command: 'link', description: 'Lier votre compte Telegram à votre compte Scory' },
-    { command: 'app', description: '🚀 Ouvrir l\'application complète dans Telegram' },
+    { command: 'start', description: '🚀 Démarrer le bot' },
+    { command: 'help', description: '❓ Afficher l\'aide et les commandes disponibles' },
     
     // Commandes d'activités
-    { command: 'activities', description: 'Lister toutes vos activités' },
-    { command: 'activity', description: 'Gérer une activité spécifique' },
-    { command: 'create_activity', description: 'Créer une nouvelle activité' },
-    { command: 'join_activity', description: 'Rejoindre une activité existante' },
+    { command: 'activities', description: '📋 Lister toutes vos activités' },
+    { command: 'createactivity', description: '➕ Créer une nouvelle activité' },
+    { command: 'addsubactivity', description: '📎 Ajouter une sous-activité' },
+    { command: 'history', description: '📜 Historique des activités' },
     
     // Commandes de scores et classements
-    { command: 'score', description: 'Enregistrer un score pour une activité' },
-    { command: 'scores', description: 'Voir les scores d\'une activité' },
-    { command: 'ranking', description: 'Voir le classement d\'une activité' },
-    { command: 'leaderboard', description: 'Voir le classement général' },
+    { command: 'score', description: '📊 Enregistrer un score' },
+    { command: 'ranking', description: '🏆 Voir le classement' },
+    { command: 'stats', description: '📈 Statistiques d\'une activité' },
     
     // Commandes d'équipes
-    { command: 'teams', description: 'Lister les équipes' },
-    { command: 'create_team', description: 'Créer une nouvelle équipe' },
-    { command: 'join_team', description: 'Rejoindre une équipe' },
-    { command: 'team', description: 'Gérer votre équipe' },
+    { command: 'createteam', description: '👥 Créer une équipe' },
+    { command: 'addtoteam', description: '➕ Ajouter un membre à une équipe' },
+    { command: 'teamranking', description: '🏅 Classement d\'une équipe' },
     
-    // Commandes de paramètres
-    { command: 'settings', description: 'Afficher et modifier vos paramètres' },
-    { command: 'profile', description: 'Afficher et modifier votre profil' },
-    { command: 'notifications', description: 'Gérer vos préférences de notification' },
-    
-    // Commandes d'administration (uniquement pour les administrateurs)
-    { command: 'admin', description: 'Commandes d\'administration' },
-    { command: 'users', description: 'Gérer les utilisateurs (admin)' },
-    { command: 'broadcast', description: 'Envoyer une annonce à tous les utilisateurs (admin)' },
-    
-    // Commandes d'aide et support
-    { command: 'tutorial', description: 'Voir le tutoriel d\'utilisation' },
-    { command: 'support', description: 'Contacter le support technique' },
-    { command: 'feedback', description: 'Donner votre avis sur le bot' },
-    { command: 'report', description: 'Signaler un problème ou un abus' },
-    
-    // Commandes système
-    { command: 'status', description: 'Voir l\'état du bot' },
-    { command: 'uptime', description: 'Voir depuis combien de temps le bot est en ligne' },
-    { command: 'version', description: 'Afficher la version du bot' },
-    { command: 'changelog', description: 'Afficher les dernières modifications' }
+    // Commandes Web App
+    { command: 'app', description: '📱 Ouvrir l\'application' },
+    { command: 'dashboard', description: '📈 Tableau de bord principal' },
   ],
 
   // Paramètres de limitation de débit (rate limiting)

@@ -824,3 +824,216 @@
 {"level":"info","message":"Bot en mode polling activé","service":"scory-bot","timestamp":"2025-06-29 21:11:10"}
 {"level":"info","message":"🤖 Bot démarré avec succès en mode DEVELOPMENT","service":"scory-bot","timestamp":"2025-06-29 21:11:10"}
 {"level":"info","message":"🚀 API + Socket.IO démarrés sur le port 3001","service":"scory-bot","timestamp":"2025-06-29 21:11:10"}
+[2026-02-21 08:05:53] [INFO] 🚀 Démarrage du serveur API Scory-bot...
+[2026-02-21 08:05:53] [INFO] Connexion à la base de données...
+[2026-02-21 08:05:58] [ERROR] ❌ Échec de connexion MongoDB: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017
+[2026-02-21 08:25:38] [INFO] 🚀 Démarrage du serveur API Scory-bot...
+[2026-02-21 08:25:38] [INFO] Connexion à la base de données...
+[2026-02-21 08:25:39] [ERROR] ❌ Échec de connexion MongoDB: bad auth : authentication failed
+[2026-02-21 08:50:21] [INFO] 🚀 Démarrage du serveur API Scory-bot...
+[2026-02-21 08:59:05] [INFO] 🚀 Démarrage du serveur API Scory-bot...
+[2026-02-21 08:59:05] [INFO] Connexion à la base de données...
+[2026-02-21 08:59:06] [ERROR] ❌ Échec de connexion MongoDB: bad auth : authentication failed
+[2026-02-21 09:00:50] [INFO] 🚀 Démarrage du serveur API Scory-bot...
+[2026-02-21 09:00:50] [INFO] Connexion à la base de données...
+[2026-02-21 09:00:51] [ERROR] ❌ Échec de connexion MongoDB: bad auth : authentication failed
+[2026-02-21 09:01:06] [INFO] 🚀 Démarrage du serveur API Scory-bot...
+[2026-02-21 09:01:06] [INFO] Connexion à la base de données...
+[2026-02-21 09:01:08] [INFO] ✅ MongoDB connecté: mongodb+srv://***@bot-tg.v0mwc.mongodb.net/?appName=bot-tg
+[2026-02-21 09:01:08] [INFO] ✅ Base de données connectée
+[2026-02-21 09:01:08] [INFO] ✅ Serveur API démarré avec succès
+[2026-02-21 09:01:08] [INFO] 🚀 Serveur API démarré sur le port 3001
+[2026-02-21 09:01:08] [INFO] 📍 Health check: http://localhost:3001/health
+[2026-02-21 09:01:08] [INFO] 📍 API Base URL: http://localhost:3001/api
+[2026-02-21 10:52:57] [INFO] Signal SIGINT reçu. Arrêt du serveur API...
+[2026-02-21 10:59:16] [INFO] 🚀 Démarrage de Scory-bot (API + Bot)...
+[2026-02-21 10:59:16] [INFO] Connexion à la base de données...
+[2026-02-21 10:59:18] [INFO] ✅ MongoDB connecté: mongodb+srv://***@bot-tg.v0mwc.mongodb.net/?appName=bot-tg
+[2026-02-21 10:59:18] [INFO] ✅ Base de données connectée
+[2026-02-21 10:59:18] [INFO] Configuration des commandes...
+[2026-02-21 10:59:18] [INFO] 🚀 Serveur API démarré sur le port 3001
+[2026-02-21 10:59:18] [INFO] 📍 Health check: http://localhost:3001/health
+[2026-02-21 10:59:18] [INFO] 📍 API Base URL: http://localhost:3001/api
+[2026-02-21 10:59:19] [DEBUG] Commandes d'authentification configurées
+[2026-02-21 10:59:19] [DEBUG] Commandes d'activités configurées
+[2026-02-21 10:59:19] [DEBUG] Commandes de scores configurées
+[2026-02-21 10:59:19] [DEBUG] Commandes d'équipes configurées
+[2026-02-21 10:59:19] [DEBUG] Commandes utilitaires configurées
+[2026-02-21 10:59:19] [DEBUG] Commandes Web App configurées
+[2026-02-21 10:59:19] [INFO] Gestionnaires de callbacks configurés
+[2026-02-21 10:59:19] [DEBUG] Gestionnaires de callbacks configurés
+[2026-02-21 10:59:19] [INFO] Toutes les commandes ont été configurées avec succès
+[2026-02-21 10:59:19] [INFO] ✅ Commandes du bot configurées
+[2026-02-21 10:59:19] [INFO] ✅ Menu des commandes Telegram mis à jour
+[2026-02-21 10:59:19] [INFO] ✅ Scory-bot démarré — API + Bot prêts !
+[2026-02-21 11:04:53] [INFO] 🚀 Démarrage de Scory-bot (API + Bot)...
+[2026-02-21 11:04:53] [INFO] Connexion à la base de données...
+[2026-02-21 11:04:55] [INFO] ✅ MongoDB connecté: mongodb+srv://***@bot-tg.v0mwc.mongodb.net/?appName=bot-tg
+[2026-02-21 11:04:55] [INFO] ✅ Base de données connectée
+[2026-02-21 11:04:55] [INFO] Configuration des commandes...
+[2026-02-21 11:04:55] [INFO] 🚀 Serveur API démarré sur le port 3001
+[2026-02-21 11:04:55] [INFO] 📍 Health check: http://localhost:3001/health
+[2026-02-21 11:04:55] [INFO] 📍 API Base URL: http://localhost:3001/api
+[2026-02-21 11:04:55] [DEBUG] Commandes d'authentification configurées
+[2026-02-21 11:04:55] [DEBUG] Commandes d'activités configurées
+[2026-02-21 11:04:55] [DEBUG] Commandes de scores configurées
+[2026-02-21 11:04:55] [DEBUG] Commandes d'équipes configurées
+[2026-02-21 11:04:55] [DEBUG] Commandes utilitaires configurées
+[2026-02-21 11:04:55] [DEBUG] Commandes Web App configurées
+[2026-02-21 11:04:55] [INFO] Gestionnaires de callbacks configurés
+[2026-02-21 11:04:55] [DEBUG] Gestionnaires de callbacks configurés
+[2026-02-21 11:04:55] [INFO] Toutes les commandes ont été configurées avec succès
+[2026-02-21 11:04:55] [INFO] ✅ Commandes du bot configurées
+[2026-02-21 11:04:55] [INFO] ✅ Menu des commandes Telegram mis à jour
+[2026-02-21 11:04:55] [INFO] ✅ Scory-bot démarré — API + Bot prêts !
+[2026-02-21 11:04:59] [INFO] /start par 1222647766 (Johan-is)
+[2026-02-21 11:16:41] [INFO] 🚀 Démarrage de Scory-bot (API + Bot)...
+[2026-02-21 11:16:41] [INFO] Connexion à la base de données...
+[2026-02-21 11:16:43] [INFO] ✅ MongoDB connecté: mongodb+srv://***@bot-tg.v0mwc.mongodb.net/?appName=bot-tg
+[2026-02-21 11:16:43] [INFO] ✅ Base de données connectée
+[2026-02-21 11:16:43] [INFO] Configuration des commandes...
+[2026-02-21 11:16:43] [INFO] 🚀 Serveur API démarré sur le port 3001
+[2026-02-21 11:16:43] [INFO] 📍 Health check: http://localhost:3001/health
+[2026-02-21 11:16:43] [INFO] 📍 API Base URL: http://localhost:3001/api
+[2026-02-21 11:16:43] [DEBUG] Commandes d'authentification configurées
+[2026-02-21 11:16:43] [DEBUG] Commandes d'activités configurées
+[2026-02-21 11:16:43] [DEBUG] Commandes de scores configurées
+[2026-02-21 11:16:43] [DEBUG] Commandes d'équipes configurées
+[2026-02-21 11:16:43] [DEBUG] Commandes utilitaires configurées
+[2026-02-21 11:16:43] [DEBUG] Commandes Web App configurées
+[2026-02-21 11:16:43] [INFO] Gestionnaires de callbacks configurés
+[2026-02-21 11:16:43] [DEBUG] Gestionnaires de callbacks configurés
+[2026-02-21 11:16:43] [INFO] Toutes les commandes ont été configurées avec succès
+[2026-02-21 11:16:43] [INFO] ✅ Commandes du bot configurées
+[2026-02-21 11:16:43] [INFO] ✅ Menu des commandes Telegram mis à jour
+[2026-02-21 11:16:43] [INFO] ✅ Scory-bot démarré — API + Bot prêts !
+[2026-02-21 11:16:52] [ERROR] Erreur /start: User validation failed: password: Le mot de passe est requis, email: L'email est requis {"errors":{"password":{"name":"ValidatorError","message":"Le mot de passe est requis","properties":{"message":"Le mot de passe est requis","type":"required","path":"password"},"kind":"required","path":"password"},"email":{"name":"ValidatorError","message":"L'email est requis","properties":{"message":"L'email est requis","type":"required","path":"email"},"kind":"required","path":"email"}},"_message":"User validation failed","stack":"ValidationError: User validation failed: password: Le mot de passe est requis, email: L'email est requis\n    at Document.invalidate (/Users/yoricksenpai/Scory-bot/node_modules/mongoose/lib/document.js:3352:32)\n    at /Users/yoricksenpai/Scory-bot/node_modules/mongoose/lib/document.js:3113:17\n    at /Users/yoricksenpai/Scory-bot/node_modules/mongoose/lib/schemaType.js:1407:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)"}
+[2026-02-21 11:16:56] [ERROR] Erreur /start: User validation failed: password: Le mot de passe est requis, email: L'email est requis {"errors":{"password":{"name":"ValidatorError","message":"Le mot de passe est requis","properties":{"message":"Le mot de passe est requis","type":"required","path":"password"},"kind":"required","path":"password"},"email":{"name":"ValidatorError","message":"L'email est requis","properties":{"message":"L'email est requis","type":"required","path":"email"},"kind":"required","path":"email"}},"_message":"User validation failed","stack":"ValidationError: User validation failed: password: Le mot de passe est requis, email: L'email est requis\n    at Document.invalidate (/Users/yoricksenpai/Scory-bot/node_modules/mongoose/lib/document.js:3352:32)\n    at /Users/yoricksenpai/Scory-bot/node_modules/mongoose/lib/document.js:3113:17\n    at /Users/yoricksenpai/Scory-bot/node_modules/mongoose/lib/schemaType.js:1407:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)"}
+[2026-02-21 11:31:12] [INFO] 🚀 Démarrage de Scory-bot (API + Bot)...
+[2026-02-21 11:31:12] [INFO] Connexion à la base de données...
+[2026-02-21 11:31:14] [INFO] ✅ MongoDB connecté: mongodb+srv://***@bot-tg.v0mwc.mongodb.net/?appName=bot-tg
+[2026-02-21 11:31:14] [INFO] ✅ Base de données connectée
+[2026-02-21 11:31:14] [INFO] Configuration des commandes...
+[2026-02-21 11:31:14] [INFO] 🚀 Serveur API démarré sur le port 3001
+[2026-02-21 11:31:14] [INFO] 📍 Health check: http://localhost:3001/health
+[2026-02-21 11:31:14] [INFO] 📍 API Base URL: http://localhost:3001/api
+[2026-02-21 11:31:14] [DEBUG] Commandes d'authentification configurées
+[2026-02-21 11:31:14] [DEBUG] Commandes d'activités configurées
+[2026-02-21 11:31:14] [DEBUG] Commandes de scores configurées
+[2026-02-21 11:31:14] [DEBUG] Commandes d'équipes configurées
+[2026-02-21 11:31:14] [DEBUG] Commandes utilitaires configurées
+[2026-02-21 11:31:14] [DEBUG] Commandes Web App configurées
+[2026-02-21 11:31:14] [INFO] Gestionnaires de callbacks configurés
+[2026-02-21 11:31:14] [DEBUG] Gestionnaires de callbacks configurés
+[2026-02-21 11:31:14] [INFO] Toutes les commandes ont été configurées avec succès
+[2026-02-21 11:31:14] [INFO] ✅ Commandes du bot configurées
+[2026-02-21 11:31:14] [INFO] ✅ Menu des commandes Telegram mis à jour
+[2026-02-21 11:31:14] [INFO] ✅ Scory-bot démarré — API + Bot prêts !
+[2026-02-21 11:31:28] [INFO] Nouvel utilisateur créé: 1222647766 (Johan-is)
+[2026-02-21 11:31:32] [INFO] /help par 1222647766
+[2026-02-21 11:32:56] [INFO] Fetching activity history {"userId":1222647766,"limit":10,"period":"day","chatId":1222647766}
+[2026-02-21 11:32:56] [ERROR] Error fetching activity history: Cast to ObjectId failed for value "1222647766" (type number) at path "createdBy" for model "Activity" {"error":{"stringValue":"\"1222647766\"","valueType":"number","kind":"ObjectId","value":1222647766,"path":"createdBy","reason":{},"name":"CastError","message":"Cast to ObjectId failed for value \"1222647766\" (type number) at path \"createdBy\" for model \"Activity\""}}
+[2026-02-21 11:32:56] [ERROR] Erreur dans commande: {}
+[2026-02-21 11:32:56] [ERROR] Impossible d'envoyer le message d'erreur: bot.sendMessage is not a function {"stack":"TypeError: bot.sendMessage is not a function\n    at handleError (file:///Users/yoricksenpai/Scory-bot/src/commands/utils/helpers.js:17:15)\n    at default (file:///Users/yoricksenpai/Scory-bot/src/commands/activities/history.js:89:5)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"}
+[2026-02-21 11:33:46] [INFO] 🚀 Démarrage de Scory-bot (API + Bot)...
+[2026-02-21 11:33:46] [INFO] Connexion à la base de données...
+[2026-02-21 11:33:48] [INFO] ✅ MongoDB connecté: mongodb+srv://***@bot-tg.v0mwc.mongodb.net/?appName=bot-tg
+[2026-02-21 11:33:48] [INFO] ✅ Base de données connectée
+[2026-02-21 11:33:48] [INFO] Configuration des commandes...
+[2026-02-21 11:33:48] [INFO] 🚀 Serveur API démarré sur le port 3001
+[2026-02-21 11:33:48] [INFO] 📍 Health check: http://localhost:3001/health
+[2026-02-21 11:33:48] [INFO] 📍 API Base URL: http://localhost:3001/api
+[2026-02-21 11:33:48] [DEBUG] Commandes d'authentification configurées
+[2026-02-21 11:33:48] [DEBUG] Commandes d'activités configurées
+[2026-02-21 11:33:48] [DEBUG] Commandes de scores configurées
+[2026-02-21 11:33:48] [DEBUG] Commandes d'équipes configurées
+[2026-02-21 11:33:48] [DEBUG] Commandes utilitaires configurées
+[2026-02-21 11:33:48] [DEBUG] Commandes Web App configurées
+[2026-02-21 11:33:48] [INFO] Gestionnaires de callbacks configurés
+[2026-02-21 11:33:48] [DEBUG] Gestionnaires de callbacks configurés
+[2026-02-21 11:33:48] [INFO] Toutes les commandes ont été configurées avec succès
+[2026-02-21 11:33:48] [INFO] ✅ Commandes du bot configurées
+[2026-02-21 11:33:48] [INFO] ✅ Menu des commandes Telegram mis à jour
+[2026-02-21 11:33:48] [INFO] ✅ Scory-bot démarré — API + Bot prêts !
+[2026-02-21 11:33:53] [ERROR] Erreur lors de l'ouverture de l'application: ETELEGRAM: 400 Bad Request: inline keyboard button Web App URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Only HTTPS links are allowed {"code":"ETELEGRAM","response":{"statusCode":400,"body":{"ok":false,"error_code":400,"description":"Bad Request: inline keyboard button Web App URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Only HTTPS links are allowed"},"headers":{"server":"nginx/1.18.0","date":"Sat, 21 Feb 2026 10:33:53 GMT","content-type":"application/json","content-length":"262","connection":"keep-alive","strict-transport-security":"max-age=31536000; includeSubDomains; preload","access-control-allow-origin":"*","access-control-expose-headers":"Content-Length,Content-Type,Date,Server,Connection"},"request":{"uri":{"protocol":"https:","slashes":true,"auth":null,"host":"api.telegram.org","port":443,"hostname":"api.telegram.org","hash":null,"search":null,"query":null,"pathname":"/bot7578616612:AAGkalbfjUMNZ--Bv_Ci1Sz_CJRY0QK_R8I/sendMessage","path":"/bot7578616612:AAGkalbfjUMNZ--Bv_Ci1Sz_CJRY0QK_R8I/sendMessage","href":"https://api.telegram.org/bot7578616612:AAGkalbfjUMNZ--Bv_Ci1Sz_CJRY0QK_R8I/sendMessage"},"method":"POST","headers":{"content-type":"application/x-www-form-urlencoded","content-length":1994}}},"stack":"Error: ETELEGRAM: 400 Bad Request: inline keyboard button Web App URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Only HTTPS links are allowed\n    at /Users/yoricksenpai/Scory-bot/node_modules/node-telegram-bot-api/src/telegram.js:316:15\n    at tryCatcher (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/util.js:16:23)\n    at Promise._settlePromiseFromHandler (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:547:31)\n    at Promise._settlePromise (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:604:18)\n    at Promise._settlePromise0 (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:649:10)\n    at Promise._settlePromises (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:729:18)\n    at _drainQueueStep (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:93:12)\n    at _drainQueue (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:86:9)\n    at Async._drainQueues (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:102:5)\n    at Async.drainQueues (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:15:14)\n    at process.processImmediate (node:internal/timers:485:21)"}
+[2026-02-21 11:33:53] [ERROR] Erreur dans commande: {}
+[2026-02-21 11:33:53] [ERROR] Impossible d'envoyer le message d'erreur: bot.sendMessage is not a function {"stack":"TypeError: bot.sendMessage is not a function\n    at handleError (file:///Users/yoricksenpai/Scory-bot/src/commands/utils/helpers.js:17:15)\n    at openApp (file:///Users/yoricksenpai/Scory-bot/src/commands/utils/webAppCommands.js:189:11)"}
+[2026-02-21 11:34:13] [INFO] 🚀 Démarrage de Scory-bot (API + Bot)...
+[2026-02-21 11:34:13] [INFO] Connexion à la base de données...
+[2026-02-21 11:34:15] [INFO] ✅ MongoDB connecté: mongodb+srv://***@bot-tg.v0mwc.mongodb.net/?appName=bot-tg
+[2026-02-21 11:34:15] [INFO] ✅ Base de données connectée
+[2026-02-21 11:34:15] [INFO] Configuration des commandes...
+[2026-02-21 11:34:15] [INFO] 🚀 Serveur API démarré sur le port 3001
+[2026-02-21 11:34:15] [INFO] 📍 Health check: http://localhost:3001/health
+[2026-02-21 11:34:15] [INFO] 📍 API Base URL: http://localhost:3001/api
+[2026-02-21 11:34:15] [DEBUG] Commandes d'authentification configurées
+[2026-02-21 11:34:15] [DEBUG] Commandes d'activités configurées
+[2026-02-21 11:34:15] [DEBUG] Commandes de scores configurées
+[2026-02-21 11:34:15] [DEBUG] Commandes d'équipes configurées
+[2026-02-21 11:34:15] [DEBUG] Commandes utilitaires configurées
+[2026-02-21 11:34:15] [DEBUG] Commandes Web App configurées
+[2026-02-21 11:34:15] [INFO] Gestionnaires de callbacks configurés
+[2026-02-21 11:34:15] [DEBUG] Gestionnaires de callbacks configurés
+[2026-02-21 11:34:15] [INFO] Toutes les commandes ont été configurées avec succès
+[2026-02-21 11:34:15] [INFO] ✅ Commandes du bot configurées
+[2026-02-21 11:34:15] [INFO] ✅ Menu des commandes Telegram mis à jour
+[2026-02-21 11:34:15] [INFO] ✅ Scory-bot démarré — API + Bot prêts !
+[2026-02-21 11:34:18] [INFO] Fetching activities list {"includeSubActivities":false,"chatId":1222647766}
+[2026-02-21 11:34:18] [INFO] Fetched 0 activities {"chatId":1222647766}
+[2026-02-21 11:34:18] [INFO] Liste des activités affichée (0 activités)
+[2026-02-21 11:43:55] [ERROR] Erreur lors de l'ouverture de l'application: ETELEGRAM: 400 Bad Request: inline keyboard button Web App URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Only HTTPS links are allowed {"code":"ETELEGRAM","response":{"statusCode":400,"body":{"ok":false,"error_code":400,"description":"Bad Request: inline keyboard button Web App URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Only HTTPS links are allowed"},"headers":{"server":"nginx/1.18.0","date":"Sat, 21 Feb 2026 10:43:55 GMT","content-type":"application/json","content-length":"262","connection":"keep-alive","strict-transport-security":"max-age=31536000; includeSubDomains; preload","access-control-allow-origin":"*","access-control-expose-headers":"Content-Length,Content-Type,Date,Server,Connection"},"request":{"uri":{"protocol":"https:","slashes":true,"auth":null,"host":"api.telegram.org","port":443,"hostname":"api.telegram.org","hash":null,"search":null,"query":null,"pathname":"/bot7578616612:AAGkalbfjUMNZ--Bv_Ci1Sz_CJRY0QK_R8I/sendMessage","path":"/bot7578616612:AAGkalbfjUMNZ--Bv_Ci1Sz_CJRY0QK_R8I/sendMessage","href":"https://api.telegram.org/bot7578616612:AAGkalbfjUMNZ--Bv_Ci1Sz_CJRY0QK_R8I/sendMessage"},"method":"POST","headers":{"content-type":"application/x-www-form-urlencoded","content-length":1994}}},"stack":"Error: ETELEGRAM: 400 Bad Request: inline keyboard button Web App URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Only HTTPS links are allowed\n    at /Users/yoricksenpai/Scory-bot/node_modules/node-telegram-bot-api/src/telegram.js:316:15\n    at tryCatcher (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/util.js:16:23)\n    at Promise._settlePromiseFromHandler (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:547:31)\n    at Promise._settlePromise (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:604:18)\n    at Promise._settlePromise0 (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:649:10)\n    at Promise._settlePromises (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:729:18)\n    at _drainQueueStep (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:93:12)\n    at _drainQueue (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:86:9)\n    at Async._drainQueues (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:102:5)\n    at Async.drainQueues (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:15:14)\n    at process.processImmediate (node:internal/timers:485:21)"}
+[2026-02-21 11:43:55] [ERROR] Erreur dans commande: {}
+[2026-02-21 11:43:55] [ERROR] Impossible d'envoyer le message d'erreur: bot.sendMessage is not a function {"stack":"TypeError: bot.sendMessage is not a function\n    at handleError (file:///Users/yoricksenpai/Scory-bot/src/commands/utils/helpers.js:17:15)\n    at openApp (file:///Users/yoricksenpai/Scory-bot/src/commands/utils/webAppCommands.js:189:11)"}
+[2026-02-21 11:44:16] [INFO] /help par 1222647766
+[2026-02-21 11:44:22] [INFO] Fetching activities list {"includeSubActivities":false,"chatId":1222647766}
+[2026-02-21 11:44:23] [INFO] Fetched 0 activities {"chatId":1222647766}
+[2026-02-21 11:44:23] [INFO] Liste des activités affichée (0 activités)
+[2026-02-21 11:44:39] [INFO] Utilisateur 1222647766 a initié la création d'une activité dans le chat 1222647766
+[2026-02-21 11:44:47] [DEBUG] Callback reçu: create_activity_type_game de vanishingguy (1222647766)
+[2026-02-21 11:44:47] [INFO] Utilisateur 1222647766 a sélectionné le type d'activité game
+[2026-02-21 11:45:13] [INFO] Fetching activity history {"userId":1222647766,"limit":10,"period":"day","chatId":1222647766}
+[2026-02-21 11:45:13] [ERROR] Error fetching activity history: Cast to ObjectId failed for value "1222647766" (type number) at path "createdBy" for model "Activity" {"error":{"stringValue":"\"1222647766\"","valueType":"number","kind":"ObjectId","value":1222647766,"path":"createdBy","reason":{},"name":"CastError","message":"Cast to ObjectId failed for value \"1222647766\" (type number) at path \"createdBy\" for model \"Activity\""}}
+[2026-02-21 11:45:13] [ERROR] Erreur dans commande: {}
+[2026-02-21 11:45:13] [ERROR] Impossible d'envoyer le message d'erreur: bot.sendMessage is not a function {"stack":"TypeError: bot.sendMessage is not a function\n    at handleError (file:///Users/yoricksenpai/Scory-bot/src/commands/utils/helpers.js:17:15)\n    at default (file:///Users/yoricksenpai/Scory-bot/src/commands/activities/history.js:89:5)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"}
+[2026-02-21 11:46:02] [INFO] 🚀 Démarrage de Scory-bot (API + Bot)...
+[2026-02-21 11:46:02] [INFO] Connexion à la base de données...
+[2026-02-21 11:46:04] [INFO] ✅ MongoDB connecté: mongodb+srv://***@bot-tg.v0mwc.mongodb.net/?appName=bot-tg
+[2026-02-21 11:46:04] [INFO] ✅ Base de données connectée
+[2026-02-21 11:46:04] [INFO] Configuration des commandes...
+[2026-02-21 11:46:04] [INFO] 🚀 Serveur API démarré sur le port 3001
+[2026-02-21 11:46:04] [INFO] 📍 Health check: http://localhost:3001/health
+[2026-02-21 11:46:04] [INFO] 📍 API Base URL: http://localhost:3001/api
+[2026-02-21 11:46:04] [DEBUG] Commandes d'authentification configurées
+[2026-02-21 11:46:04] [DEBUG] Commandes d'activités configurées
+[2026-02-21 11:46:04] [DEBUG] Commandes de scores configurées
+[2026-02-21 11:46:04] [DEBUG] Commandes d'équipes configurées
+[2026-02-21 11:46:04] [DEBUG] Commandes utilitaires configurées
+[2026-02-21 11:46:04] [DEBUG] Commandes Web App configurées
+[2026-02-21 11:46:04] [INFO] Gestionnaires de callbacks configurés
+[2026-02-21 11:46:04] [DEBUG] Gestionnaires de callbacks configurés
+[2026-02-21 11:46:04] [INFO] Toutes les commandes ont été configurées avec succès
+[2026-02-21 11:46:04] [INFO] ✅ Commandes du bot configurées
+[2026-02-21 11:46:05] [INFO] ✅ Menu des commandes Telegram mis à jour
+[2026-02-21 11:46:05] [INFO] ✅ Scory-bot démarré — API + Bot prêts !
+[2026-02-21 12:32:48] [ERROR] Erreur de polling: EFATAL: Error: read ECONNRESET {"code":"EFATAL","stack":"RequestError: Error: read ECONNRESET\n    at new RequestError (/Users/yoricksenpai/Scory-bot/node_modules/request-promise-core/lib/errors.js:14:15)\n    at plumbing.callback (/Users/yoricksenpai/Scory-bot/node_modules/request-promise-core/lib/plumbing.js:87:29)\n    at Request.RP$callback [as _callback] (/Users/yoricksenpai/Scory-bot/node_modules/request-promise-core/lib/plumbing.js:46:31)\n    at self.callback (/Users/yoricksenpai/Scory-bot/node_modules/@cypress/request/request.js:183:22)\n    at Request.emit (node:events:519:28)\n    at Request.onRequestError (/Users/yoricksenpai/Scory-bot/node_modules/@cypress/request/request.js:869:8)\n    at ClientRequest.emit (node:events:519:28)\n    at emitErrorEvent (node:_http_client:107:11)\n    at TLSSocket.socketErrorListener (node:_http_client:574:5)\n    at TLSSocket.emit (node:events:519:28)\n    at emitErrorNT (node:internal/streams/destroy:170:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:129:3)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)"}
+[2026-02-21 12:39:23] [INFO] MongoDB reconnecté
+[2026-02-21 12:39:23] [INFO] MongoDB reconnecté
+[2026-02-21 12:39:33] [WARN] MongoDB déconnecté
+[2026-02-21 12:39:33] [INFO] MongoDB reconnecté
+[2026-02-21 12:42:04] [INFO] /help par 1222647766
+[2026-02-21 12:42:13] [ERROR] Erreur lors de l'ouverture de l'application: ETELEGRAM: 400 Bad Request: inline keyboard button URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Wrong HTTP URL {"code":"ETELEGRAM","response":{"statusCode":400,"body":{"ok":false,"error_code":400,"description":"Bad Request: inline keyboard button URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Wrong HTTP URL"},"headers":{"server":"nginx/1.18.0","date":"Sat, 21 Feb 2026 11:42:13 GMT","content-type":"application/json","content-length":"240","connection":"keep-alive","strict-transport-security":"max-age=31536000; includeSubDomains; preload","access-control-allow-origin":"*","access-control-expose-headers":"Content-Length,Content-Type,Date,Server,Connection"},"request":{"uri":{"protocol":"https:","slashes":true,"auth":null,"host":"api.telegram.org","port":443,"hostname":"api.telegram.org","hash":null,"search":null,"query":null,"pathname":"/bot7578616612:AAGkalbfjUMNZ--Bv_Ci1Sz_CJRY0QK_R8I/sendMessage","path":"/bot7578616612:AAGkalbfjUMNZ--Bv_Ci1Sz_CJRY0QK_R8I/sendMessage","href":"https://api.telegram.org/bot7578616612:AAGkalbfjUMNZ--Bv_Ci1Sz_CJRY0QK_R8I/sendMessage"},"method":"POST","headers":{"content-type":"application/x-www-form-urlencoded","content-length":1884}}},"stack":"Error: ETELEGRAM: 400 Bad Request: inline keyboard button URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Wrong HTTP URL\n    at /Users/yoricksenpai/Scory-bot/node_modules/node-telegram-bot-api/src/telegram.js:316:15\n    at tryCatcher (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/util.js:16:23)\n    at Promise._settlePromiseFromHandler (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:547:31)\n    at Promise._settlePromise (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:604:18)\n    at Promise._settlePromise0 (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:649:10)\n    at Promise._settlePromises (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:729:18)\n    at _drainQueueStep (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:93:12)\n    at _drainQueue (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:86:9)\n    at Async._drainQueues (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:102:5)\n    at Async.drainQueues (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:15:14)\n    at process.processImmediate (node:internal/timers:485:21)"}
+[2026-02-21 12:42:13] [ERROR] Erreur dans Une erreur s'est produite lors de l'ouverture de l'application.: ETELEGRAM: 400 Bad Request: inline keyboard button URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Wrong HTTP URL {"stack":"Error: ETELEGRAM: 400 Bad Request: inline keyboard button URL 'http://localhost:3000?telegram_id=1222647766&first_name=Johan-is&username=vanishingguy&source=telegram_bot&chat_id=1222647766' is invalid: Wrong HTTP URL\n    at /Users/yoricksenpai/Scory-bot/node_modules/node-telegram-bot-api/src/telegram.js:316:15\n    at tryCatcher (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/util.js:16:23)\n    at Promise._settlePromiseFromHandler (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:547:31)\n    at Promise._settlePromise (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:604:18)\n    at Promise._settlePromise0 (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:649:10)\n    at Promise._settlePromises (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/promise.js:729:18)\n    at _drainQueueStep (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:93:12)\n    at _drainQueue (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:86:9)\n    at Async._drainQueues (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:102:5)\n    at Async.drainQueues (/Users/yoricksenpai/Scory-bot/node_modules/bluebird/js/release/async.js:15:14)\n    at process.processImmediate (node:internal/timers:485:21)"}
+[2026-02-21 12:42:19] [INFO] Fetching activities list {"includeSubActivities":false,"chatId":1222647766}
+[2026-02-21 12:42:19] [INFO] Fetched 0 activities {"chatId":1222647766}
+[2026-02-21 12:42:19] [INFO] Liste des activités affichée (0 activités)
+[2026-02-21 12:42:28] [INFO] Utilisateur 1222647766 a initié la création d'une activité dans le chat 1222647766
+[2026-02-21 12:42:31] [DEBUG] Callback reçu: create_activity_type_game de vanishingguy (1222647766)
+[2026-02-21 12:42:31] [INFO] Utilisateur 1222647766 a sélectionné le type d'activité game
+[2026-02-21 12:42:49] [INFO] Fetching activity history {"userId":"69998980dfa03944b96b807b","limit":10,"period":"day","chatId":"1222647766"}
+[2026-02-21 12:42:49] [INFO] Fetched 0 history entries {"userId":"69998980dfa03944b96b807b","period":"day"}
+[2026-02-21 12:42:49] [INFO] Historique affiché (0 entrées)
+[2026-02-21 12:43:08] [INFO] Stats consultées par 1222647766
+[2026-02-21 12:43:25] [INFO] Getting team ranking for chat 1222647766 {"activityName":null}
+[2026-02-21 12:43:25] [INFO] Team ranking displayed for chat 1222647766
+[2026-02-21 12:43:39] [ERROR] Erreur lors de la récupération des données du tableau de bord: Cannot read properties of undefined (reading 'getRankings') {"error":{"message":"Cannot read properties of undefined (reading 'getRankings')","status":500,"code":"SCORE_SERVICE_ERROR","context":{"period":"month"},"stack":"TypeError: Cannot read properties of undefined (reading 'getRankings')\n    at getDashboardData (file:///Users/yoricksenpai/Scory-bot/src/api/services/scoreService.js:463:40)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async dashboard (file:///Users/yoricksenpai/Scory-bot/src/commands/scores/dashboard.js:21:27)"},"context":{"period":"month"}}
+[2026-02-21 12:43:39] [ERROR] Erreur dans dashboard: Erreur lors de la récupération des données du tableau de bord {"status":500,"details":{"message":"Cannot read properties of undefined (reading 'getRankings')","status":500,"code":"SCORE_SERVICE_ERROR","context":{"period":"month"},"stack":"TypeError: Cannot read properties of undefined (reading 'getRankings')\n    at getDashboardData (file:///Users/yoricksenpai/Scory-bot/src/api/services/scoreService.js:463:40)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async dashboard (file:///Users/yoricksenpai/Scory-bot/src/commands/scores/dashboard.js:21:27)"},"stack":"Error: Erreur lors de la récupération des données du tableau de bord\n    at handleScoreError (file:///Users/yoricksenpai/Scory-bot/src/api/services/scoreService.js:48:24)\n    at getDashboardData (file:///Users/yoricksenpai/Scory-bot/src/api/services/scoreService.js:479:14)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async dashboard (file:///Users/yoricksenpai/Scory-bot/src/commands/scores/dashboard.js:21:27)"}

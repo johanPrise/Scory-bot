@@ -1,5 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
@@ -7,6 +8,130 @@ import { authMiddleware } from '../middleware/auth.js';
 import logger from '../../utils/logger.js';
 
 const router = express.Router();
+
+/**
+ * Valide les données initData de Telegram WebApp
+ * @see https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
+ */
+function validateTelegramInitData(initData, botToken) {
+  try {
+    const params = new URLSearchParams(initData);
+    const hash = params.get('hash');
+    if (!hash) return null;
+
+    params.delete('hash');
+    const dataCheckArr = [];
+    for (const [key, value] of params.entries()) {
+      dataCheckArr.push(`${key}=${value}`);
+    }
+    dataCheckArr.sort();
+    const dataCheckString = dataCheckArr.join('\n');
+
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+    const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+    if (computedHash !== hash) return null;
+
+    // Extraire les données utilisateur
+    const userString = params.get('user');
+    if (!userString) return null;
+
+    return JSON.parse(userString);
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * POST /api/auth/telegram-login
+ * Authentification via Telegram WebApp initData
+ */
+router.post('/telegram-login', asyncHandler(async (req, res) => {
+  const { initData } = req.body;
+
+  if (!initData) {
+    throw createError(400, 'initData Telegram requis');
+  }
+
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (!botToken) {
+    throw createError(500, 'Configuration du bot manquante');
+  }
+
+  // Valider les données Telegram
+  const telegramUser = validateTelegramInitData(initData, botToken);
+  if (!telegramUser) {
+    throw createError(401, 'Données Telegram invalides ou expirées');
+  }
+
+  // Chercher ou créer l'utilisateur
+  let user = await User.findOne({ 'telegram.id': String(telegramUser.id) });
+
+  if (!user) {
+    // Créer un nouvel utilisateur à partir des données Telegram
+    const username = telegramUser.username || `tg_${telegramUser.id}`;
+    
+    // Vérifier l'unicité du username
+    let finalUsername = username;
+    let counter = 1;
+    while (await User.findOne({ username: finalUsername })) {
+      finalUsername = `${username}_${counter}`;
+      counter++;
+    }
+
+    user = new User({
+      username: finalUsername,
+      firstName: telegramUser.first_name || '',
+      lastName: telegramUser.last_name || '',
+      telegram: {
+        id: String(telegramUser.id),
+        username: telegramUser.username || '',
+        linked: true,
+      },
+      status: 'active',
+    });
+
+    await user.save();
+    logger.info(`Nouvel utilisateur Telegram créé: ${finalUsername}`, { 
+      userId: user._id, 
+      telegramId: telegramUser.id 
+    });
+  } else {
+    // Mettre à jour les infos Telegram
+    user.telegram.username = telegramUser.username || user.telegram.username;
+    user.firstName = telegramUser.first_name || user.firstName;
+    user.lastName = telegramUser.last_name || user.lastName;
+    user.lastLogin = new Date();
+    user.lastIp = req.ip;
+    await user.save();
+  }
+
+  // Générer le token JWT
+  const token = jwt.sign(
+    { userId: user._id, username: user.username },
+    process.env.JWT_SECRET || 'default-secret',
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
+
+  res.json({
+    message: 'Connexion Telegram réussie',
+    token,
+    user: {
+      id: user._id,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      stats: user.stats,
+      teams: user.teams,
+      telegram: {
+        id: user.telegram.id,
+        username: user.telegram.username,
+        linked: user.telegram.linked,
+      },
+    },
+  });
+}));
 
 /**
  * POST /api/auth/register
@@ -256,6 +381,7 @@ router.post('/link-telegram', authMiddleware, asyncHandler(async (req, res) => {
     id: telegramId,
     username: telegramUsername,
     chatId: chatId,
+    linked: true,
   };
 
   await user.save();

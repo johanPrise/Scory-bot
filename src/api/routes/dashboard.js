@@ -3,14 +3,137 @@ import User from '../models/User.js';
 import Team from '../models/Team.js';
 import { Activity } from '../models/activity.js';
 import Score from '../models/Score.js';
-import { asyncHandler, createError } from '../middleware/errorHandler.js';
-import { authMiddleware, requireRole } from '../middleware/auth.js';
-import logger from '../../utils/logger.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Toutes les routes nécessitent une authentification
 router.use(authMiddleware);
+
+/**
+ * GET /api/dashboard
+ * Récupérer les données complètes du dashboard (stats + activité récente)
+ */
+router.get('/', asyncHandler(async (req, res) => {
+  const { period = 'month' } = req.query;
+  const userId = req.userId;
+
+  // Calculer la date de début selon la période
+  let startDate;
+  const now = new Date();
+  
+  switch (period) {
+    case 'day':
+      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      break;
+    case 'week':
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case 'month':
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    case 'year':
+      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      startDate = null;
+  }
+
+  const dateFilter = startDate ? { createdAt: { $gte: startDate } } : {};
+
+  // Statistiques personnelles
+  const user = await User.findById(userId).populate('teams.team', 'name');
+  const [userScores, userActivities, userRanking, recentScores] = await Promise.all([
+    Score.countDocuments({ user: userId, status: 'approved', ...dateFilter }),
+    Activity.countDocuments({ createdBy: userId, ...dateFilter }),
+    getUserRankingForDashboard(userId, period),
+    Score.find({ user: userId, status: 'approved' })
+      .populate('activity', 'name description')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean()
+  ]);
+
+  res.json({
+    stats: {
+      personal: {
+        scores: userScores,
+        activitiesCreated: userActivities,
+        teamsCount: user.teams?.length || 0,
+        totalScore: user.stats?.totalScore || 0,
+        ranking: userRanking
+      }
+    },
+    recentScores,
+    period,
+    generatedAt: new Date().toISOString()
+  });
+}));
+
+/**
+ * Fonction utilitaire pour obtenir le classement d'un utilisateur (dashboard)
+ */
+async function getUserRankingForDashboard(userId, period = 'month') {
+  let startDate;
+  const now = new Date();
+  
+  switch (period) {
+    case 'day':
+      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      break;
+    case 'week':
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case 'month':
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    case 'year':
+      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      startDate = null;
+  }
+
+  const match = {
+    status: 'approved',
+    context: 'individual',
+    user: { $exists: true },
+    ...(startDate && { createdAt: { $gte: startDate } })
+  };
+
+  const pipeline = [
+    { $match: match },
+    {
+      $group: {
+        _id: '$user',
+        totalNormalizedScore: { $sum: '$normalizedScore' }
+      }
+    },
+    { $sort: { totalNormalizedScore: -1 } },
+    {
+      $group: {
+        _id: null,
+        users: { $push: { userId: '$_id', score: '$totalNormalizedScore' } }
+      }
+    }
+  ];
+
+  const result = await Score.aggregate(pipeline);
+  
+  if (!result.length) {
+    return { position: null, total: 0 };
+  }
+
+  const users = result[0].users;
+  const userIndex = users.findIndex(u => u.userId.toString() === userId.toString());
+  
+  return {
+    position: userIndex >= 0 ? userIndex + 1 : null,
+    total: users.length,
+    score: userIndex >= 0 ? users[userIndex].score : 0
+  };
+}
 
 /**
  * GET /api/dashboard/stats
@@ -112,7 +235,7 @@ router.get('/stats', asyncHandler(async (req, res) => {
       createdBy: userId,
       ...dateFilter
     }),
-    getUserRanking(userId, period)
+    getUserRankingForDashboard(userId, period),
   ]);
 
   const personalStats = {
@@ -153,17 +276,17 @@ router.get('/recent-activity', asyncHandler(async (req, res) => {
         .populate('team', 'name')
         .populate('activity', 'name')
         .sort({ createdAt: -1 })
-        .limit(parseInt(limit) / 3),
+        .limit(Number.parseInt(limit) / 3),
       
       Team.find()
         .populate('createdBy', 'username firstName lastName')
         .sort({ createdAt: -1 })
-        .limit(parseInt(limit) / 3),
+        .limit(Number.parseInt(limit) / 3),
       
       Activity.find()
         .populate('createdBy', 'username firstName lastName')
         .sort({ createdAt: -1 })
-        .limit(parseInt(limit) / 3)
+        .limit(Number.parseInt(limit) / 3)
     ]);
 
     // Formater les activités
@@ -204,7 +327,7 @@ router.get('/recent-activity', asyncHandler(async (req, res) => {
       })
         .populate('activity', 'name')
         .sort({ createdAt: -1 })
-        .limit(parseInt(limit) / 2),
+        .limit(Number.parseInt(limit) / 2),
       
       Score.find({ 
         team: { $in: userTeamIds }, 
@@ -214,7 +337,7 @@ router.get('/recent-activity', asyncHandler(async (req, res) => {
         .populate('team', 'name')
         .populate('activity', 'name')
         .sort({ createdAt: -1 })
-        .limit(parseInt(limit) / 2)
+        .limit(Number.parseInt(limit) / 2)
     ]);
 
     activities = [
@@ -239,76 +362,12 @@ router.get('/recent-activity', asyncHandler(async (req, res) => {
 
   // Trier par date et limiter
   activities.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  activities = activities.slice(0, parseInt(limit));
+  activities = activities.slice(0, Number.parseInt(limit));
 
   res.json({
     activities,
     total: activities.length
   });
 }));
-
-/**
- * Fonction utilitaire pour obtenir le classement d'un utilisateur
- */
-async function getUserRanking(userId, period = 'month') {
-  let startDate;
-  const now = new Date();
-  
-  switch (period) {
-    case 'day':
-      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      break;
-    case 'week':
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case 'month':
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      break;
-    case 'year':
-      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-      break;
-    default:
-      startDate = null;
-  }
-
-  const match = {
-    status: 'approved',
-    context: 'individual',
-    user: { $exists: true },
-    ...(startDate && { createdAt: { $gte: startDate } })
-  };
-
-  const pipeline = [
-    { $match: match },
-    {
-      $group: {
-        _id: '$user',
-        totalNormalizedScore: { $sum: '$normalizedScore' }
-      }
-    },
-    { $sort: { totalNormalizedScore: -1 } },
-    {
-      $group: {
-        _id: null,
-        users: { $push: { userId: '$_id', score: '$totalNormalizedScore' } }
-      }
-    }
-  ];
-
-  const result = await Score.aggregate(pipeline);
-  
-  if (!result.length) {
-    return { position: null, total: 0 };
-  }
-
-  const users = result[0].users;
-  const userIndex = users.findIndex(u => u.userId.toString() === userId.toString());
-  
-  return {
-    position: userIndex >= 0 ? userIndex + 1 : null,
-    total: users.length,
-    score: userIndex >= 0 ? users[userIndex].score : 0
-  };
-}
 
 export default router;

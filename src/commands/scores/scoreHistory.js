@@ -17,13 +17,19 @@ const scoreHistory = async (ctx, match) => {
     // Afficher un message de chargement
     const loadingMsg = await bot.sendMessage(chatId, '🔄 Chargement de l\'historique...');
 
+    // Résoudre l'ID Telegram en ObjectId MongoDB
+    const { resolveUserId } = await import('../utils/helpers.js');
+    const mongoUserId = await resolveUserId(userId);
+
     // Récupérer l'historique des scores
-    const historyData = await getScoreHistory({
-      userId,
-      period,
+    const historyResult = await getScoreHistory({
+      userId: mongoUserId || userId,
       activityId,
-      limit: 10 // Limiter à 10 entrées par défaut
+      limit: 10
     });
+
+    // Le service retourne { scores, total, hasMore }
+    const historyData = historyResult?.scores || [];
 
     // Formater et envoyer l'historique
     const formattedHistory = formatHistory(historyData, period);
@@ -49,7 +55,7 @@ const scoreHistory = async (ctx, match) => {
 
 /**
  * Formate les données d'historique en message Markdown
- * @param {Array} historyData - Données d'historique
+ * @param {Array} historyData - Documents Score peuplés
  * @param {string} period - Période de l'historique
  * @returns {string} Message formaté
  */
@@ -64,7 +70,7 @@ function formatHistory(historyData, period) {
   let activityCount = 0;
 
   historyData.forEach((entry, index) => {
-    const date = new Date(entry.timestamp).toLocaleDateString('fr-FR', {
+    const date = new Date(entry.createdAt || entry.timestamp).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -72,17 +78,19 @@ function formatHistory(historyData, period) {
       minute: '2-digit'
     });
     
+    const activityName = entry.activity?.name || 'Activité inconnue';
+    
     message += `📅 *${date}*\n`;
-    message += `🏷️ Activité: *${entry.activityName}*\n`;
+    message += `🏷️ Activité: *${activityName}*\n`;
     message += `🎯 Score: *${entry.value} pts*\n`;
     
-    if (entry.comments) {
-      message += `💬 Commentaire: ${entry.comments}\n`;
+    if (entry.metadata?.comments) {
+      message += `💬 Commentaire: ${entry.metadata.comments}\n`;
     }
     
     message += '\n';
     
-    totalScore += entry.value;
+    totalScore += entry.value || 0;
     activityCount++;
   });
 

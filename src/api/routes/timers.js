@@ -5,8 +5,13 @@ import mongoose from 'mongoose';
 import { bot } from '../../config/bot.js'; // Import du bot Telegram
 import User from '../models/User.js';
 import { notifyActivityParticipantsTimerEnded } from '../utils/notifications.js';
+import { authMiddleware } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
+
+// Toutes les routes nécessitent une authentification
+router.use(authMiddleware);
 
 // POST /api/timers/start
 router.post('/start', async (req, res) => {
@@ -16,7 +21,7 @@ router.post('/start', async (req, res) => {
       return res.status(400).json({ error: 'Nom et durée valides requis' });
     }
     // Un timer actif du même nom pour la même activité ?
-    const existing = await Timer.findOne({ name, activityId, running: true });
+    const existing = await Timer.findOne({ name: String(name), activityId: activityId ? String(activityId) : undefined, running: true });
     if (existing) {
       return res.status(400).json({ error: 'Un timer avec ce nom est déjà actif pour cette activité' });
     }
@@ -40,7 +45,7 @@ router.post('/start', async (req, res) => {
 router.post('/stop', async (req, res) => {
   try {
     const { name, activityId } = req.body;
-    const timer = await Timer.findOne({ name, activityId, running: true });
+    const timer = await Timer.findOne({ name: String(name), activityId: activityId ? String(activityId) : undefined, running: true });
     if (!timer) {
       return res.status(404).json({ error: 'Timer non trouvé ou déjà arrêté' });
     }

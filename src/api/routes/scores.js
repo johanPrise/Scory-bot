@@ -75,8 +75,14 @@ router.get('/', asyncHandler(async (req, res) => {
  * GET /api/scores/:id
  * Récupérer un score par son ID
  */
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', asyncHandler(async (req, res, next) => {
   const { id } = req.params;
+
+  // Si l'ID n'est pas un ObjectId MongoDB valide, passer à la route suivante
+  // (permet à /rankings, /personal, /pending, /team, /export d'être atteints)
+  if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+    return next('route');
+  }
 
   const score = await Score.findById(id)
     .populate('user', 'username firstName lastName avatar')

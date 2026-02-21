@@ -3,6 +3,7 @@ import * as scoreService from '../../api/services/scoreService.js';
 import { Activity } from '../../api/models/activity.js';
 import User from '../../api/models/User.js';
 import logger from '../../utils/logger.js';
+import { resolveUserId } from '../utils/helpers.js';
 
 /**
  * Gère la commande /score pour ajouter un score
@@ -11,8 +12,10 @@ import logger from '../../utils/logger.js';
 export const addScore = async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const [_, targetUser, activityName, pointsStr, ...commentParts] = match;
-  const comments = commentParts.join(' ');
+  const targetUser = match[1];
+  const activityName = match[2];
+  const pointsStr = match[3];
+  const comments = match[4] || '';
   const points = parseInt(pointsStr, 10);
 
   try {
@@ -20,8 +23,10 @@ export const addScore = async (msg, match) => {
     if (!targetUser || !activityName || isNaN(points)) {
       return bot.sendMessage(
         chatId,
-        '❌ Format incorrect. Utilisez: /score @utilisateur activité points [commentaire]\n' +
-        'Exemple: /score @john course 10 Très bonne performance'
+        '📊 *Enregistrer un score*\n\n' +
+        'Format: `/score @utilisateur activité points [commentaire]`\n\n' +
+        'Exemple: `/score @john course 10 Très bonne performance`',
+        { parse_mode: 'Markdown' }
       );
     }
 
@@ -53,19 +58,20 @@ export const addScore = async (msg, match) => {
       
       userIdToScore = userToScore._id;
     } else {
-      // Considérer comme un ID direct
-      userIdToScore = targetUser;
-      userToScore = await User.findById(userIdToScore);
+      // Considérer comme un ID Telegram ou un nom d'utilisateur
+      userToScore = await User.findOne({ 'telegram.id': String(targetUser) });
       
       if (!userToScore) {
         return bot.editMessageText(
-          `❌ Utilisateur avec ID ${targetUser} non trouvé.`,
+          `❌ Utilisateur "${targetUser}" non trouvé. Utilisez @nom_utilisateur.`,
           {
             chat_id: chatId,
             message_id: loadingMsg.message_id
           }
         );
       }
+      
+      userIdToScore = userToScore._id;
     }
 
     // Rechercher l'activité par nom
@@ -84,9 +90,13 @@ export const addScore = async (msg, match) => {
       );
     }
 
-    // Ajouter le score
-    const score = await scoreService.addScore(userIdToScore, activity._id, points, {
-      awardedBy: userId,
+    // Ajouter le score via le service
+    const score = await scoreService.addScore({
+      type: 'individual',
+      entityId: userIdToScore.toString(),
+      activityId: activity._id.toString(),
+      value: points,
+      awardedBy: userId.toString(),
       chatId: chatId.toString(),
       messageId: msg.message_id.toString(),
       comments: comments || undefined

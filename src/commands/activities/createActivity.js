@@ -1,6 +1,7 @@
 import { bot } from '../../config/bot.js';
 import * as activityService from '../../api/services/activityService.js';
 import logger from '../../utils/logger.js';
+import { resolveUserId } from '../utils/helpers.js';
 
 /**
  * Gère la commande /createactivity pour créer une nouvelle activité
@@ -9,18 +10,28 @@ import logger from '../../utils/logger.js';
 export const createActivity = async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const [_, name, ...descriptionParts] = match;
-  const description = descriptionParts.join(' ');
+  const input = match[1]; // Tout le texte après la commande
 
   try {
     // Vérifier les paramètres
-    if (!name) {
+    if (!input) {
       return bot.sendMessage(
         chatId,
-        '❌ Format incorrect. Utilisez: /createactivity nom_activité [description]\n' +
-        'Exemple: /createactivity course Course à pied du matin'
+        '➕ *Créer une activité*\n\n' +
+        'Tapez la commande avec le nom dans le même message :\n' +
+        '`/createactivity nom_activité [description]`\n\n' +
+        '📌 *Exemples :*\n' +
+        '`/createactivity course`\n' +
+        '`/createactivity course Course à pied du matin`\n\n' +
+        '💡 Vous pouvez aussi utiliser /create\\_activity pour le mode interactif avec boutons.',
+        { parse_mode: 'Markdown' }
       );
     }
+
+    // Séparer le nom (premier mot) de la description (reste)
+    const parts = input.trim().split(/\s+/);
+    const name = parts[0];
+    const description = parts.slice(1).join(' ');
 
     // Afficher un message de chargement
     const loadingMsg = await bot.sendMessage(
@@ -29,11 +40,20 @@ export const createActivity = async (msg, match) => {
       { parse_mode: 'Markdown' }
     );
 
+    // Résoudre l'ID Telegram en ObjectId MongoDB
+    const mongoUserId = await resolveUserId(userId);
+    if (!mongoUserId) {
+      return bot.editMessageText(
+        '❌ Vous devez d\'abord vous inscrire avec /start',
+        { chat_id: chatId, message_id: loadingMsg.message_id }
+      );
+    }
+
     // Créer l'activité via le service
     const activity = await activityService.createActivity({
       name,
       description: description || '',
-      createdBy: userId.toString(),
+      createdBy: mongoUserId,
       chatId: chatId.toString()
     });
 

@@ -43,18 +43,46 @@ export function isCommandForBot(text, botName) {
  * Wrapper pour les handlers de commandes qui vérifie le contexte
  * @param {Function} handler - Le handler original de la commande
  * @param {string} botUsername - Le nom d'utilisateur du bot (sans @)
+ * @param {Object} options - Options supplémentaires
+ * @param {string} options.scope - 'private' | 'group' | 'both' (défaut: 'both')
  * @returns {Function} Handler wrappé qui vérifie le contexte
  */
-export function wrapCommandHandler(handler, botUsername) {
+export function wrapCommandHandler(handler, botUsername, options = {}) {
+  const { scope = 'both' } = options;
+  
   return async (msg, match) => {
     const chatType = msg.chat.type;
-    const text = msg.text;
+    const text = msg.text || '';
+    const chatId = msg.chat.id;
     const isPrivateChat = chatType === 'private';
     const isGroupChat = ['group', 'supergroup'].includes(chatType);
     
+    // Ajuster le match pour retirer le groupe de capture du bot mention
+    // Original:  [fullMatch, botMention, param1, param2, ...]
+    // Ajusté:    [fullMatch, param1, param2, ...]
+    const adjustedMatch = match ? [match[0], ...match.slice(2)] : match;
+    
+    // Vérifier la portée de la commande
+    if (scope === 'private' && isGroupChat) {
+      const { bot } = await import('../../config/bot.js');
+      return bot.sendMessage(chatId, '💬 Cette commande est disponible uniquement en message privé avec le bot.');
+    }
+    if (scope === 'group' && isPrivateChat) {
+      const { bot } = await import('../../config/bot.js');
+      return bot.sendMessage(chatId, '👥 Cette commande est disponible uniquement dans les groupes.');
+    }
+    
     // Dans les chats privés: accepter toutes les commandes
     if (isPrivateChat) {
-      return handler(msg, match);
+      try {
+        return await handler(msg, adjustedMatch);
+      } catch (error) {
+        const { bot } = await import('../../config/bot.js');
+        const logger = (await import('../../utils/logger.js')).default;
+        const cmdName = text.split(/[\s@]/)[0] || '/commande';
+        logger.error(`Erreur dans ${cmdName}:`, { message: error.message, stack: error.stack });
+        return bot.sendMessage(chatId, `❌ Une erreur est survenue lors de l'exécution de ${cmdName}. Veuillez réessayer.\n\n_Détail: ${error.message}_`, { parse_mode: 'Markdown' });
+      }
     }
     
     // Dans les groupes: accepter SEULEMENT les commandes avec @bot_name
@@ -72,10 +100,25 @@ export function wrapCommandHandler(handler, botUsername) {
       }
       
       // La commande est pour ce bot, traiter
-      return handler(msg, match);
+      try {
+        return await handler(msg, adjustedMatch);
+      } catch (error) {
+        const { bot } = await import('../../config/bot.js');
+        const logger = (await import('../../utils/logger.js')).default;
+        const cmdName = text.split(/[\s@]/)[0] || '/commande';
+        logger.error(`Erreur dans ${cmdName}:`, { message: error.message, stack: error.stack });
+        return bot.sendMessage(chatId, `❌ Une erreur est survenue lors de l'exécution de ${cmdName}. Veuillez réessayer.\n\n_Détail: ${error.message}_`, { parse_mode: 'Markdown' });
+      }
     }
     
     // Pour les autres types de chat (channel, etc.), traiter normalement
-    return handler(msg, match);
+    try {
+      return await handler(msg, adjustedMatch);
+    } catch (error) {
+      const { bot } = await import('../../config/bot.js');
+      const logger = (await import('../../utils/logger.js')).default;
+      logger.error(`Erreur dans commande:`, { message: error.message, stack: error.stack });
+      return bot.sendMessage(chatId, `❌ Une erreur est survenue. Veuillez réessayer.`);
+    }
   };
 }

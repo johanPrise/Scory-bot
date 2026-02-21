@@ -125,21 +125,26 @@ router.post('/', asyncHandler(async (req, res) => {
   const createdBy = req.userId;
 
   // Validation des champs requis
-  if (!name || !chatId) {
-    throw createError(400, 'Nom et chatId sont requis');
+  if (!name) {
+    throw createError(400, 'Le nom de l\'équipe est requis');
   }
 
-  // Vérifier si une équipe avec ce nom existe déjà dans ce chat
-  const existingTeam = await Team.findOne({ name, chatId });
+  // Utiliser chatId fourni ou générer un identifiant webapp
+  const effectiveChatId = chatId || `webapp_${req.userId}`;
+
+  // Vérifier si une équipe avec ce nom existe déjà
+  const existingTeam = chatId 
+    ? await Team.findOne({ name, chatId }) 
+    : await Team.findOne({ name, createdBy });
   if (existingTeam) {
-    throw createError(409, 'Une équipe avec ce nom existe déjà dans ce chat');
+    throw createError(409, 'Une équipe avec ce nom existe déjà');
   }
 
   // Créer l'équipe
   const team = new Team({
     name,
     description,
-    chatId,
+    chatId: effectiveChatId,
     createdBy,
     settings: {
       maxMembers: 10,
@@ -162,7 +167,7 @@ router.post('/', asyncHandler(async (req, res) => {
   logger.info(`Équipe créée: ${name}`, { 
     teamId: team._id,
     createdBy: req.user.username,
-    chatId 
+    chatId: effectiveChatId
   });
 
   res.status(201).json({
@@ -172,9 +177,61 @@ router.post('/', asyncHandler(async (req, res) => {
       name: team.name,
       description: team.description,
       chatId: team.chatId,
+      joinCode: team.settings.joinCode,
       settings: team.settings,
       stats: team.stats,
     },
+  });
+}));
+
+/**
+ * POST /api/teams/join
+ * Rejoindre une équipe avec un code d'invitation
+ */
+router.post('/join', asyncHandler(async (req, res) => {
+  const { joinCode } = req.body;
+  const userId = req.userId;
+
+  if (!joinCode) {
+    throw createError(400, 'Code d\'invitation requis');
+  }
+
+  // Chercher l'équipe par code
+  const team = await Team.findOne({ 'settings.joinCode': joinCode.toUpperCase() });
+  if (!team) {
+    throw createError(404, 'Code d\'invitation invalide ou équipe introuvable');
+  }
+
+  // Vérifier si l'utilisateur est déjà membre
+  const isMember = team.members.some(m => m.userId.toString() === userId.toString());
+  if (isMember) {
+    throw createError(409, 'Vous êtes déjà membre de cette équipe');
+  }
+
+  // Vérifier la limite de membres
+  if (team.members.length >= team.settings.maxMembers) {
+    throw createError(400, 'L\'équipe a atteint sa capacité maximale');
+  }
+
+  // Ajouter le membre
+  await team.addMember(userId, req.user.username, false);
+  await req.user.addToTeam(team._id, 'member');
+
+  logger.info(`Utilisateur a rejoint l'équipe`, {
+    teamId: team._id,
+    teamName: team.name,
+    userId,
+    username: req.user.username
+  });
+
+  res.json({
+    message: `Vous avez rejoint l'équipe "${team.name}"`,
+    team: {
+      id: team._id,
+      name: team.name,
+      description: team.description,
+      memberCount: team.members.length + 1,
+    }
   });
 }));
 

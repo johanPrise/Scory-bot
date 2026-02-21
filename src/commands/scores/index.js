@@ -22,15 +22,16 @@ import { setupDashboardHandlers } from './dashboard.js';
  */
 const setupScoreCommands = (botUsername) => {
   // Commandes de base
-  bot.onText(createBotCommand('score', '\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)'), wrapCommandHandler(addScore, botUsername));
-  bot.onText(createBotCommand('subscore', '\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)'), wrapCommandHandler(addSubScore, botUsername));
-  bot.onText(createBotCommand('ranking', '\\s+(\\S+)'), wrapCommandHandler(getRanking, botUsername));
-  bot.onText(createBotCommand('subranking', '\\s+(\\S+)\\s+(.+)'), wrapCommandHandler(getSubRanking, botUsername));
+  bot.onText(createBotCommand('score', '(?:\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)(?:\\s+(.+))?)?'), wrapCommandHandler(addScore, botUsername));
+  bot.onText(createBotCommand('subscore', '(?:\\s+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\d+))?'), wrapCommandHandler(addSubScore, botUsername));
+  bot.onText(createBotCommand('ranking', '(?:\\s+(\\S+))?'), wrapCommandHandler(getRanking, botUsername));
+  bot.onText(createBotCommand('subranking', '(?:\\s+(\\S+)(?:\\s+(.+))?)?'), wrapCommandHandler(getSubRanking, botUsername));
   
   // Commandes avancées
   bot.onText(createBotCommand('aranking', '(?:\\s+(\\S+)(?:\\s+(\\S+))?)?'), wrapCommandHandler(advancedRanking, botUsername));
   bot.onText(createBotCommand('shistory', '(?:\\s+(\\S+)(?:\\s+(\\S+))?)?'), wrapCommandHandler(scoreHistory, botUsername));
-  bot.onText(createBotCommand('dashboard', '(?:\\s+(\\S+))?'), wrapCommandHandler(dashboard, botUsername));
+  // NOTE: /dashboard est géré dans webAppCommands (commands/index.js) pour ouvrir le Web App
+  // Ne pas le ré-enregistrer ici pour éviter des réponses en double
   
   // Configurer les gestionnaires d'événements
   setupDashboardHandlers();

@@ -1,122 +1,90 @@
 import { bot } from '../../config/bot.js';
-import { MESSAGES, EMOJIS } from '../../config/messages.js';
 import { TELEGRAM_CONFIG } from '../../config/telegram.js';
+import logger from '../../utils/logger.js';
 
 /**
- * Commande /help - Affiche l'aide et la liste des commandes disponibles
- * @param {Object} msg - L'objet message de Telegram
+ * Commande /help - Affiche l'aide contextuelle (group vs inbox)
  */
 const help = async (msg) => {
   const chatId = msg.chat.id;
-  const isPrivateChat = msg.chat.type === 'private';
-
-  // Construire le message d'aide de base
-  let helpMessage = MESSAGES.HELP + '\n\n';
-
-  // Organiser les commandes par catégories
-  const commands = TELEGRAM_CONFIG.COMMANDS;
-  
-  // Commandes de base
-  const basicCommands = commands.filter(cmd => 
-    ['start', 'help', 'link'].includes(cmd.command)
-  );
-  
-  // Commandes d'activités
-  const activityCommands = commands.filter(cmd => 
-    ['activities', 'activity', 'create_activity', 'join_activity'].includes(cmd.command)
-  );
-  
-  // Commandes de scores
-  const scoreCommands = commands.filter(cmd => 
-    ['score', 'scores', 'ranking', 'leaderboard'].includes(cmd.command)
-  );
-  
-  // Commandes d'équipes
-  const teamCommands = commands.filter(cmd => 
-    ['teams', 'create_team', 'join_team', 'team'].includes(cmd.command)
-  );
-  
-  // Commandes utilitaires
-  const utilityCommands = commands.filter(cmd => 
-    ['settings', 'profile', 'notifications', 'tutorial', 'support', 'feedback'].includes(cmd.command)
-  );
-
-  // Construire le message par catégories
-  if (basicCommands.length) {
-    helpMessage += '*🏠 Commandes de base :*\n';
-    helpMessage += basicCommands.map(cmd => `/${cmd.command} - ${cmd.description}`).join('\n') + '\n\n';
-  }
-  
-  if (activityCommands.length) {
-    helpMessage += '*🎯 Activités :*\n';
-    helpMessage += activityCommands.map(cmd => `/${cmd.command} - ${cmd.description}`).join('\n') + '\n\n';
-  }
-  
-  if (scoreCommands.length) {
-    helpMessage += '*🏆 Scores & Classements :*\n';
-    helpMessage += scoreCommands.map(cmd => `/${cmd.command} - ${cmd.description}`).join('\n') + '\n\n';
-  }
-  
-  if (teamCommands.length) {
-    helpMessage += '*👥 Équipes :*\n';
-    helpMessage += teamCommands.map(cmd => `/${cmd.command} - ${cmd.description}`).join('\n') + '\n\n';
-  }
-  
-  if (utilityCommands.length) {
-    helpMessage += '*⚙️ Paramètres & Support :*\n';
-    helpMessage += utilityCommands.map(cmd => `/${cmd.command} - ${cmd.description}`).join('\n') + '\n\n';
-  }
-  
-  // Ajouter le nombre total de commandes
-  helpMessage += `_Total : ${commands.length} commandes disponibles_`;
-
-  // Ajouter des exemples si c'est un chat privé
-  if (isPrivateChat) {
-    helpMessage += '\n\n*Exemples :*\n';
-    helpMessage += '• /start - Démarrer le bot\n';
-    helpMessage += '• /link ABC123 - Lier votre compte avec le code ABC123\n';
-    helpMessage += '• /createactivity "Tournoi d\'échecs" - Créer une nouvelle activité\n';
-  }
+  const chatType = msg.chat.type;
+  const isPrivate = chatType === 'private';
+  const isGroup = ['group', 'supergroup'].includes(chatType);
 
   try {
-    // Envoyer le message d'aide avec un clavier contextuel
-    await bot.sendMessage(chatId, helpMessage, {
-      parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: `${EMOJIS.BOOK} Documentation`, url: 'https://docs.scory-bot.com' },
-            { text: `${EMOJIS.GEAR} Paramètres`, callback_data: 'settings' }
-          ],
-          [
-            { text: `${EMOJIS.PEOPLE} Support`, url: 'https://t.me/scory_support' }
-          ]
-        ]
-      }
-    });
+    const sections = [
+      '❓ *Aide — Commandes Scory*',
+      '',
+    ];
 
-    // Si c'est un chat de groupe, envoyer un message supplémentaire
-    if (!isPrivateChat) {
-      await bot.sendMessage(
-        chatId,
-        `${EMOJIS.INFO} *Astuce :* Envoyez-moi un message privé pour une assistance plus détaillée !`,
-        { parse_mode: 'Markdown' }
+    if (isPrivate) {
+      // -- AIDE INBOX --
+      sections.push(
+        '💬 _Vous êtes en conversation privée._',
+        '_Toutes les commandes fonctionnent ici sans @mention._',
+        '',
+        '*🏠 Commandes de base :*',
+        '/start — Démarrer / s\'inscrire',
+        '/help — Cette aide',
+        '/stats — Statistiques globales',
+        '/app — Ouvrir la Mini App',
+        '/dashboard — Tableau de bord',
+        '',
+        '*🎯 Activités :*',
+        '/activities — Lister les activités',
+        '/createactivity `nom` `[description]` — Créer une activité',
+        '/create\\_activity — Créer (mode interactif)',
+        '/addsubactivity `parent` `nom [desc]` — Sous-activité',
+        '/history `[nombre]` `[période]` — Historique',
+        '',
+        '*🏆 Scores :*',
+        '/score `@user` `activité` `points` `[commentaire]`',
+        '/ranking `activité` — Classement',
+        '',
+        '*👥 Équipes :*',
+        '/createteam `nom` `[description]` — Créer une équipe',
+        '/addtoteam `@user` `équipe` `[admin]` — Ajouter un membre',
+        '/teamranking `activité` — Classement d\'équipe',
+      );
+    } else if (isGroup) {
+      // -- AIDE GROUPE --
+      sections.push(
+        '👥 _Vous êtes dans un groupe._',
+        '_Dans les groupes, ajoutez @' + (msg.botUsername || 'scory\\_fr\\_bot') + ' après la commande._',
+        '',
+        '*Exemple :* `/ranking@scory_fr_bot course`',
+        '',
+        '*📋 Commandes disponibles en groupe :*',
+        '/score — Enregistrer un score',
+        '/ranking — Voir le classement',
+        '/stats — Statistiques',
+        '/activities — Lister les activités',
+        '/createactivity — Créer une activité',
+        '/addtoteam — Ajouter à une équipe',
+        '/teamranking — Classement équipe',
+        '',
+        '*💬 Commandes conseillées en privé :*',
+        '`/start` — Inscription',
+        '`/help` — Aide détaillée',
+        '`/history` — Historique personnel',
+        '`/createteam` — Créer une équipe',
+        '`/app` — Mini App',
+        '',
+        '_💡 Pour une aide complète, envoyez /help en message privé au bot._',
       );
     }
+
+    sections.push(
+      '',
+      `_${TELEGRAM_CONFIG.COMMANDS.length} commandes disponibles_`,
+    );
+
+    await bot.sendMessage(chatId, sections.join('\n'), { parse_mode: 'Markdown' });
+
+    logger.info(`/help (${chatType}) par ${msg.from.id}`);
   } catch (error) {
-    console.error('Erreur dans la commande /help:', error);
-    try {
-      // En cas d'erreur avec le Markdown, essayer sans
-      await bot.sendMessage(chatId, helpMessage.replace(/[\*_`\[]/g, ''));
-    } catch (e) {
-      console.error('Échec de l\'envoi du message d\'aide:', e);
-      // Dernier recours : envoyer un message d'erreur générique
-      try {
-        await bot.sendMessage(chatId, MESSAGES.ERRORS.GENERAL);
-      } catch (sendError) {
-        console.error('Échec de l\'envoi du message d\'erreur:', sendError);
-      }
-    }
+    logger.error('Erreur /help:', error);
+    await bot.sendMessage(chatId, '❌ Erreur lors de l\'affichage de l\'aide.').catch(() => {});
   }
 };
 

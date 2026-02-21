@@ -121,6 +121,7 @@ router.post('/', asyncHandler(async (req, res) => {
   const { 
     name, 
     description, 
+    type,
     chatId, 
     teamId, 
     settings = {} 
@@ -128,9 +129,12 @@ router.post('/', asyncHandler(async (req, res) => {
   const createdBy = req.userId;
 
   // Validation des champs requis
-  if (!name || !chatId) {
-    throw createError(400, 'Nom et chatId sont requis');
+  if (!name) {
+    throw createError(400, 'Le nom de l\'activité est requis');
   }
+
+  // Utiliser chatId fourni ou générer un identifiant webapp
+  const effectiveChatId = chatId || `webapp_${req.userId}`;
 
   // Si teamId est fourni, vérifier que l'utilisateur a les permissions
   if (teamId) {
@@ -152,7 +156,8 @@ router.post('/', asyncHandler(async (req, res) => {
   const activity = new Activity({
     name,
     description,
-    chatId,
+    type: type || 'other',
+    chatId: effectiveChatId,
     createdBy,
     teamId: teamId || undefined,
     settings: {
@@ -176,7 +181,7 @@ router.post('/', asyncHandler(async (req, res) => {
   logger.info(`Activité créée: ${name}`, { 
     activityId: activity._id,
     createdBy: req.user.username,
-    chatId,
+    chatId: effectiveChatId,
     teamId 
   });
 
@@ -289,7 +294,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
     await team.save();
   }
 
-  await Activity.findByIdAndDelete(id);
+  await Activity.findByIdAndDelete(String(id));
 
   logger.info(`Activité supprimée: ${activity.name}`, { 
     activityId: activity._id,
@@ -528,16 +533,42 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
     }
   }
 
-  // Pour l'instant, retourner un historique vide
-  // TODO: Implémenter avec le modèle Score quand il sera connecté
+  // Récupérer les scores liés à cette activité
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const Score = (await import('../models/Score.js')).default;
+  
+  const [scores, totalEntries] = await Promise.all([
+    Score.find(filter)
+      .populate('user', 'username firstName lastName')
+      .populate('team', 'name')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(),
+    Score.countDocuments(filter)
+  ]);
+
+  const totalPages = Math.ceil(totalEntries / parseInt(limit));
+
   res.json({
-    history: [],
+    history: scores.map(s => ({
+      id: s._id,
+      user: s.user,
+      team: s.team,
+      value: s.value,
+      maxPossible: s.maxPossible,
+      normalizedScore: s.normalizedScore,
+      subActivity: s.subActivity,
+      status: s.status,
+      comments: s.metadata?.comments,
+      createdAt: s.createdAt
+    })),
     pagination: {
       currentPage: parseInt(page),
-      totalPages: 0,
-      totalEntries: 0,
-      hasNextPage: false,
-      hasPrevPage: false,
+      totalPages,
+      totalEntries,
+      hasNextPage: parseInt(page) < totalPages,
+      hasPrevPage: parseInt(page) > 1,
     }
   });
 }));

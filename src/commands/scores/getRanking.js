@@ -1,5 +1,6 @@
 import { bot } from '../../config/bot.js';
 import { getRankingData } from '../../api/services/scoreService.js';
+import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
 import { handleError } from '../utils/helpers.js';
 
@@ -43,9 +44,21 @@ const formatRanking = (ranking, activityName = '') => {
  */
 export default async (msg, match) => {
   const chatId = msg.chat.id;
-  const activityId = match[1]; // Le paramètre optionnel activité
+  const activityNameInput = match[1]; // Le paramètre optionnel (nom de l'activité)
 
   try {
+    // Si pas d'activité spécifiée, afficher une aide
+    if (!activityNameInput) {
+      return bot.sendMessage(
+        chatId,
+        '🏆 *Classement*\n\n' +
+        'Utilisez: `/ranking nom_activité`\n\n' +
+        'Exemple: `/ranking course`\n\n' +
+        'Pour voir les activités disponibles: /activities',
+        { parse_mode: 'Markdown' }
+      );
+    }
+
     // Afficher un message de chargement
     const loadingMsg = await bot.sendMessage(
       chatId,
@@ -53,16 +66,28 @@ export default async (msg, match) => {
       { parse_mode: 'Markdown' }
     );
 
-    // Récupérer les données de classement
+    // Rechercher l'activité par nom
+    const activity = await Activity.findOne({
+      name: { $regex: new RegExp(`^${activityNameInput}$`, 'i') },
+      chatId: chatId.toString()
+    });
+
+    if (!activity) {
+      return bot.editMessageText(
+        `❌ Activité "${activityNameInput}" non trouvée.\n\nCréez-la avec /createactivity ou consultez /activities.`,
+        { chat_id: chatId, message_id: loadingMsg.message_id }
+      );
+    }
+
+    // Récupérer les données de classement avec l'ObjectId
     const ranking = await getRankingData({
-      activityId,
+      activityId: activity._id.toString(),
       limit: 10,
-      period: 'month' // Par défaut, classement du mois
+      period: 'month'
     });
 
     // Formater et envoyer le classement
-    const activityName = activityId ? `pour ${activityId}` : 'général';
-    const formattedRanking = formatRanking(ranking, activityName);
+    const formattedRanking = formatRanking(ranking, activity.name);
     
     await bot.editMessageText(
       formattedRanking,
@@ -73,7 +98,7 @@ export default async (msg, match) => {
       }
     );
 
-    logger.info(`Classement affiché pour l'activité: ${activityId || 'général'}`);
+    logger.info(`Classement affiché pour l'activité: ${activity.name} (${activity._id})`);
 
   } catch (error) {
     handleError(chatId, error, 'Erreur lors de la récupération du classement');
