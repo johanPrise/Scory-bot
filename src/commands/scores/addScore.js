@@ -16,11 +16,11 @@ export const addScore = async (msg, match) => {
   const activityName = match[2];
   const pointsStr = match[3];
   const comments = match[4] || '';
-  const points = parseInt(pointsStr, 10);
+  const points = Number.parseInt(pointsStr, 10);
 
   try {
     // Vérifier les paramètres
-    if (!targetUser || !activityName || isNaN(points)) {
+    if (!targetUser || !activityName || Number.isNaN(points)) {
       return bot.sendMessage(
         chatId,
         '📊 *Enregistrer un score*\n\n' +
@@ -44,7 +44,7 @@ export const addScore = async (msg, match) => {
     if (targetUser.startsWith('@')) {
       // Rechercher l'utilisateur par nom d'utilisateur Telegram
       const username = targetUser.substring(1);
-      userToScore = await User.findOne({ 'telegram.username': username });
+      userToScore = await User.findOne({ 'telegram.username': String(username) });
       
       if (!userToScore) {
         return bot.editMessageText(
@@ -74,9 +74,10 @@ export const addScore = async (msg, match) => {
       userIdToScore = userToScore._id;
     }
 
-    // Rechercher l'activité par nom
+    // Rechercher l'activité par nom (échapper les caractères spéciaux regex)
+    const escapedName = activityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const activity = await Activity.findOne({ 
-      name: { $regex: new RegExp(`^${activityName}$`, 'i') },
+      name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
       chatId: chatId.toString()
     });
 
@@ -90,13 +91,22 @@ export const addScore = async (msg, match) => {
       );
     }
 
+    // Résoudre l'ID MongoDB de l'utilisateur qui attribue le score
+    const awardedByMongoId = await resolveUserId(userId);
+    if (!awardedByMongoId) {
+      return bot.editMessageText(
+        '❌ Vous devez d\'abord vous inscrire avec /start',
+        { chat_id: chatId, message_id: loadingMsg.message_id }
+      );
+    }
+
     // Ajouter le score via le service
-    const score = await scoreService.addScore({
+    await scoreService.addScore({
       type: 'individual',
       entityId: userIdToScore.toString(),
       activityId: activity._id.toString(),
       value: points,
-      awardedBy: userId.toString(),
+      awardedBy: awardedByMongoId.toString(),
       chatId: chatId.toString(),
       messageId: msg.message_id.toString(),
       comments: comments || undefined

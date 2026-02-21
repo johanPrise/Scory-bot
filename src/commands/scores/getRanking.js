@@ -66,9 +66,10 @@ export default async (msg, match) => {
       { parse_mode: 'Markdown' }
     );
 
-    // Rechercher l'activité par nom
+    // Rechercher l'activité par nom (échapper les caractères spéciaux regex)
+    const escapedName = activityNameInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const activity = await Activity.findOne({
-      name: { $regex: new RegExp(`^${activityNameInput}$`, 'i') },
+      name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
       chatId: chatId.toString()
     });
 

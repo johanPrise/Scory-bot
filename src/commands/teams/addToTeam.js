@@ -14,7 +14,7 @@ export const addToTeam = async (msg, match) => {
   const userId = msg.from.id;
   const targetUser = match[1];
   const teamName = match[2];
-  const isAdmin = match[3] && match[3].includes('admin');
+  const isAdmin = match[3]?.includes('admin');
 
   try {
     // Vérifier les paramètres
@@ -44,7 +44,7 @@ export const addToTeam = async (msg, match) => {
     if (targetUser.startsWith('@')) {
       // Rechercher l'utilisateur par nom d'utilisateur Telegram
       const username = targetUser.substring(1);
-      userToAdd = await User.findOne({ 'telegram.username': username });
+      userToAdd = await User.findOne({ 'telegram.username': String(username) });
       
       if (!userToAdd) {
         return bot.editMessageText(
@@ -73,9 +73,10 @@ export const addToTeam = async (msg, match) => {
       }
     }
 
-    // Rechercher l'équipe par nom
+    // Rechercher l'équipe par nom (échapper les caractères spéciaux regex)
+    const escapedTeamName = teamName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const team = await Team.findOne({ 
-      name: { $regex: new RegExp(`^${teamName}$`, 'i') },
+      name: { $regex: new RegExp(`^${escapedTeamName}$`, 'i') },
       chatId: chatId.toString()
     });
 
@@ -122,11 +123,17 @@ export const addToTeam = async (msg, match) => {
       );
     }
 
-    // Ajouter le membre à l'équipe
-    const updatedTeam = await teamService.addMemberToTeam(team._id.toString(), userIdToAdd, {
-      isAdmin: isAdmin,
-      addedBy: adderMongoId.toString()
+    // Ajouter le membre à l'équipe via teamMemberService
+    const role = isAdmin ? teamService.TEAM_ROLES.ADMIN : teamService.TEAM_ROLES.MEMBER;
+    await teamService.teamMemberService.addMember({
+      teamId: team._id.toString(),
+      userId: userIdToAdd,
+      role,
+      invitedBy: adderMongoId.toString()
     });
+
+    // Recharger l'équipe pour avoir la liste des membres à jour
+    const updatedTeam = await Team.findById(team._id);
 
     // Réponse de succès
     const displayName = userToAdd.getDisplayName();
@@ -140,8 +147,8 @@ export const addToTeam = async (msg, match) => {
     if (updatedTeam.members && updatedTeam.members.length > 0) {
       message += '\n\n*Membres actuels*:';
       updatedTeam.members.forEach((member, index) => {
-        const role = member.isAdmin ? ' (Admin)' : '';
-        message += `\n${index + 1}. ${member.username}${role}`;
+        const memberRole = member.isAdmin ? ' (Admin)' : '';
+        message += `\n${index + 1}. ${member.username}${memberRole}`;
       });
     }
 

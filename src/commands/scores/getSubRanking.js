@@ -1,5 +1,6 @@
 import { bot } from '../../config/bot.js';
 import { getRankingData } from '../../api/services/scoreService.js';
+import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
 import { handleError } from '../utils/helpers.js';
 
@@ -43,12 +44,12 @@ const formatSubRanking = (ranking, activityId, subActivity) => {
  */
 export default async (msg, match) => {
   const chatId = msg.chat.id;
-  const activityId = match ? match[1] : undefined;
+  const activityNameInput = match ? match[1] : undefined;
   const subActivity = match ? match[2] : undefined;
 
   try {
     // Vérifier les paramètres
-    if (!activityId || !subActivity) {
+    if (!activityNameInput || !subActivity) {
       return bot.sendMessage(
         chatId,
         '❌ Format incorrect. Utilisez: /subranking activité sous_activité\n' +
@@ -63,18 +64,32 @@ export default async (msg, match) => {
       { parse_mode: 'Markdown' }
     );
 
-    // Créer l'ID de sous-activité
-    const subActivityId = `${activityId}:${subActivity.toLowerCase()}`;
+    // Rechercher l'activité par nom (échapper les caractères spéciaux regex)
+    const escapedName = activityNameInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const activity = await Activity.findOne({
+      name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+      chatId: chatId.toString()
+    });
+
+    if (!activity) {
+      return bot.editMessageText(
+        `❌ Activité "${activityNameInput}" non trouvée.\n\nCréez-la avec /createactivity ou consultez /activities.`,
+        { chat_id: chatId, message_id: loadingMsg.message_id }
+      );
+    }
+
+    // Créer l'ID de sous-activité avec l'ObjectId de l'activité
+    const subActivityId = `${activity._id}:${subActivity.toLowerCase()}`;
 
     // Récupérer les données de classement
     const ranking = await getRankingData({
       activityId: subActivityId,
       limit: 10,
-      period: 'month' // Par défaut, classement du mois
+      period: 'month'
     });
 
     // Formater et envoyer le classement
-    const formattedRanking = formatSubRanking(ranking, activityId, subActivity);
+    const formattedRanking = formatSubRanking(ranking, activity.name, subActivity);
     
     await bot.editMessageText(
       formattedRanking,

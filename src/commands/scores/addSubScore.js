@@ -34,7 +34,7 @@ export default async (msg, match) => {
     let userToScore;
     if (targetUser.startsWith('@')) {
       const username = targetUser.substring(1);
-      userToScore = await User.findOne({ 'telegram.username': username });
+      userToScore = await User.findOne({ 'telegram.username': String(username) });
     } else {
       userToScore = await User.findOne({ 'telegram.id': String(targetUser) });
     }
@@ -43,9 +43,10 @@ export default async (msg, match) => {
       return bot.sendMessage(chatId, `❌ Utilisateur ${targetUser} non trouvé.`);
     }
 
-    // Rechercher l'activité par nom
+    // Rechercher l'activité par nom (échapper les caractères spéciaux regex)
+    const escapedName = activityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const activity = await Activity.findOne({
-      name: { $regex: new RegExp(`^${activityName}$`, 'i') },
+      name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
       chatId: chatId.toString()
     });
     
@@ -53,14 +54,20 @@ export default async (msg, match) => {
       return bot.sendMessage(chatId, `❌ Activité "${activityName}" non trouvée.`);
     }
 
+    // Résoudre l'ID MongoDB de l'utilisateur qui attribue le score
+    const awardedByMongoId = await resolveUserId(userId);
+    if (!awardedByMongoId) {
+      return bot.sendMessage(chatId, '❌ Vous devez d\'abord vous inscrire avec /start');
+    }
+
     // Ajouter le sous-score
-    const score = await addScore({
+    await addScore({
       type: 'sub_activity',
       entityId: userToScore._id.toString(),
       activityId: activity._id.toString(),
       subActivityId: `${activity._id}:${subActivity.toLowerCase()}`,
       value: points,
-      awardedBy: userId.toString(),
+      awardedBy: awardedByMongoId.toString(),
       chatId: chatId.toString(),
     });
 
@@ -68,10 +75,10 @@ export default async (msg, match) => {
     await bot.sendMessage(
       chatId,
       `✅ Sous-score ajouté !\n` +
-      `👤 ${targetUser} : ${points} points pour ${activityId} (${subActivity})`
+      `👤 ${targetUser} : ${points} points pour ${activityName} (${subActivity})`
     );
 
-    logger.info(`Sous-score ajouté: ${points} points pour ${targetUser} (${subActivityId})`);
+    logger.info(`Sous-score ajouté: ${points} points pour ${targetUser} (${subActivity})`);
 
   } catch (error) {
     handleError(chatId, error, 'Erreur lors de l\'ajout du sous-score');

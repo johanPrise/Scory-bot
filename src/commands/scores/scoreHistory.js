@@ -21,9 +21,16 @@ const scoreHistory = async (ctx, match) => {
     const { resolveUserId } = await import('../utils/helpers.js');
     const mongoUserId = await resolveUserId(userId);
 
+    if (!mongoUserId) {
+      return bot.editMessageText(
+        '❌ Vous devez d\'abord vous inscrire avec /start',
+        { chat_id: chatId, message_id: loadingMsg.message_id }
+      );
+    }
+
     // Récupérer l'historique des scores
     const historyResult = await getScoreHistory({
-      userId: mongoUserId || userId,
+      userId: mongoUserId,
       activityId,
       limit: 10
     });

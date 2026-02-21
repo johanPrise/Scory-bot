@@ -2,6 +2,7 @@ import { bot } from '../../config/bot.js';
 import * as activityService from '../../api/services/activityService.js';
 import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
+import { resolveUserId } from '../utils/helpers.js';
 
 /**
  * Gère la commande /addsubactivity pour ajouter une sous-activité
@@ -30,7 +31,7 @@ export const addSubActivity = async (msg, match) => {
     const subActivityName = parts[0];
     const scoreMaxStr = parts[1];
     const description = parts.slice(2).join(' ');
-    const maxScore = parseInt(scoreMaxStr, 10) || 100;
+    const maxScore = Number.parseInt(scoreMaxStr, 10) || 100;
 
     // Afficher un message de chargement
     const loadingMsg = await bot.sendMessage(
@@ -39,9 +40,10 @@ export const addSubActivity = async (msg, match) => {
       { parse_mode: 'Markdown' }
     );
 
-    // Rechercher l'activité parent par nom
+    // Rechercher l'activité parent par nom (échapper les caractères spéciaux regex)
+    const escapedName = parentActivityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const parentActivity = await Activity.findOne({ 
-      name: { $regex: new RegExp(`^${parentActivityName}$`, 'i') },
+      name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
       chatId: chatId.toString()
     });
 
@@ -55,19 +57,23 @@ export const addSubActivity = async (msg, match) => {
       );
     }
 
+    // Résoudre l'ID MongoDB de l'utilisateur
+    const mongoUserId = await resolveUserId(userId);
+    if (!mongoUserId) {
+      return bot.editMessageText(
+        '❌ Vous devez d\'abord vous inscrire avec /start',
+        { chat_id: chatId, message_id: loadingMsg.message_id }
+      );
+    }
+
     // Ajouter la sous-activité via le service
     const updatedActivity = await activityService.addSubActivity({
       parentActivityId: parentActivity._id.toString(),
       name: subActivityName,
       description: description || '',
-      createdBy: userId.toString(),
+      createdBy: mongoUserId.toString(),
       chatId: chatId.toString()
     });
-
-    // Trouver la sous-activité ajoutée
-    const addedSubActivity = updatedActivity.subActivities.find(sub => 
-      sub.name === subActivityName
-    );
 
     // Réponse de succès
     await bot.editMessageText(

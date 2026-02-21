@@ -2,6 +2,7 @@ import { bot } from '../../config/bot.js';
 import { MESSAGES } from '../../config/messages.js';
 import logger from '../../utils/logger.js';
 import { getRankingData } from '../../api/services/scoreService.js';
+import { resolveUserId } from '../utils/helpers.js';
 
 /**
  * Affiche un classement avancé avec filtres
@@ -17,11 +18,14 @@ const advancedRanking = async (ctx, match) => {
     // Afficher un message de chargement
     const loadingMsg = await bot.sendMessage(chatId, '🔄 Chargement du classement...');
 
+    // Résoudre l'ID MongoDB de l'utilisateur
+    const mongoUserId = await resolveUserId(userId);
+
     // Récupérer les données de classement
     const rankingData = await getRankingData({
       period,
       activityId,
-      userId
+      userId: mongoUserId || undefined
     });
 
     // Formater et envoyer le classement
