@@ -3,12 +3,14 @@ import logger from '../../utils/logger.js';
 import { createInlineKeyboard, createWebAppButton, createUrlButton } from '../../utils/inlineButtons.js';
 import { handleError } from './helpers.js';
 
+const WEB_APP_BASE = process.env.WEB_APP_URL || process.env.WEBAPP_URL || 'http://localhost:3000';
+
 /**
  * Crée un bouton adapté selon que l'URL est HTTPS ou non
  * Telegram exige HTTPS pour les Web Apps
  */
 const createSmartButton = (text, url) => {
-  if (url && url.startsWith('https://')) {
+  if (url?.startsWith('https://')) {
     return createWebAppButton(text, url);
   }
   // En dev (HTTP), utiliser un bouton URL classique
@@ -26,7 +28,7 @@ export const openAdminDashboard = async (msg) => {
     // Vérifier si l'utilisateur est un administrateur
     // (à implémenter selon votre logique d'authentification)
     
-    const webAppUrl = `${process.env.WEB_APP_URL}/admin?userId=${userId}`;
+    const webAppUrl = `${WEB_APP_BASE}/admin?userId=${userId}`;
     
     const keyboard = [
       [createSmartButton("🖥️ Ouvrir le Dashboard Admin", webAppUrl)]
@@ -45,7 +47,7 @@ export const openAdminDashboard = async (msg) => {
     
   } catch (error) {
     logger.error('Erreur lors de l\'ouverture du dashboard admin:', error);
-    await handleError(msg, error, "Une erreur s'est produite. Veuillez réessayer.");
+    await handleError(msg, error, 'commande /admin');
   }
 };
 
@@ -57,7 +59,7 @@ export const openScoreManager = async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     
-    const webAppUrl = `${process.env.WEB_APP_URL}/scores?userId=${userId}`;
+    const webAppUrl = `${WEB_APP_BASE}/scores?userId=${userId}`;
     
     const keyboard = [
       [createSmartButton("📊 Gestion des Scores", webAppUrl)]
@@ -76,7 +78,7 @@ export const openScoreManager = async (msg) => {
     
   } catch (error) {
     logger.error('Erreur lors de l\'ouverture du gestionnaire de scores:', error);
-    await handleError(msg, error, "Une erreur s'est produite. Veuillez réessayer.");
+    await handleError(msg, error, 'commande /scoremanager');
   }
 };
 
@@ -88,7 +90,7 @@ export const openTeamDashboard = async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     
-    const webAppUrl = `${process.env.WEB_APP_URL}/teams?userId=${userId}`;
+    const webAppUrl = `${WEB_APP_BASE}/teams?userId=${userId}`;
     
     const keyboard = [
       [createSmartButton("👥 Tableau de Bord des Équipes", webAppUrl)]
@@ -107,7 +109,7 @@ export const openTeamDashboard = async (msg) => {
     
   } catch (error) {
     logger.error('Erreur lors de l\'ouverture du tableau de bord des équipes:', error);
-    await handleError(msg, error, "Une erreur s'est produite. Veuillez réessayer.");
+    await handleError(msg, error, 'commande /teamdashboard');
   }
 };
 
@@ -119,7 +121,7 @@ export const openMainDashboard = async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     
-    const webAppUrl = `${process.env.WEB_APP_URL}/dashboard?userId=${userId}`;
+    const webAppUrl = `${WEB_APP_BASE}/dashboard?userId=${userId}`;
     
     const keyboard = [
       [createSmartButton("📈 Tableau de Bord", webAppUrl)]
@@ -138,7 +140,7 @@ export const openMainDashboard = async (msg) => {
     
   } catch (error) {
     logger.error('Erreur lors de l\'ouverture du tableau de bord principal:', error);
-    await handleError(msg, error, "Une erreur s'est produite. Veuillez réessayer.");
+    await handleError(msg, error, 'commande /dashboard');
   }
 };
 
@@ -153,7 +155,7 @@ export const openApp = async (msg) => {
     const username = msg.from.username || '';
     
     // URL de l'application avec paramètres Telegram
-    const webAppUrl = `${process.env.WEB_APP_URL}?` + new URLSearchParams({
+    const webAppUrl = `${WEB_APP_BASE}?` + new URLSearchParams({
       telegram_id: userId,
       first_name: firstName,
       username: username,
@@ -165,12 +167,12 @@ export const openApp = async (msg) => {
     const keyboard = [
       [createSmartButton("🚀 Ouvrir Scory App", webAppUrl)],
       [
-        createSmartButton("📊 Scores", `${process.env.WEB_APP_URL}/scores?userId=${userId}`),
-        createSmartButton("🏆 Rankings", `${process.env.WEB_APP_URL}/rankings?userId=${userId}`)
+        createSmartButton("📊 Scores", `${WEB_APP_BASE}/scores?userId=${userId}`),
+        createSmartButton("🏆 Rankings", `${WEB_APP_BASE}/rankings?userId=${userId}`)
       ],
       [
-        createSmartButton("👥 Équipes", `${process.env.WEB_APP_URL}/teams?userId=${userId}`),
-        createSmartButton("📈 Stats", `${process.env.WEB_APP_URL}/stats?userId=${userId}`)
+        createSmartButton("👥 Équipes", `${WEB_APP_BASE}/teams?userId=${userId}`),
+        createSmartButton("📈 Stats", `${WEB_APP_BASE}/stats?userId=${userId}`)
       ]
     ];
     
@@ -179,8 +181,8 @@ export const openApp = async (msg) => {
       `👋 Salut ${firstName || username || 'Utilisateur'} !\n\n` +
       `🚀 Clique sur le bouton ci-dessous pour ouvrir l'application complète de Scory directement dans Telegram !\n\n` +
       `💡 *Deux façons d'utiliser Scory :*\n` +
-      `• 🤖 **Mode Bot** : Commandes rapides (/score, /ranking, etc.)\n` +
-      `• 📱 **Mode App** : Interface complète avec toutes les fonctionnalités\n\n` +
+      `• 🤖 *Mode Bot* : Commandes rapides (/score, /ranking, etc.)\n` +
+      `• 📱 *Mode App* : Interface complète avec toutes les fonctionnalités\n\n` +
       `✨ *Fonctionnalités disponibles dans l'app :*\n` +
       `• Gestion avancée des scores\n` +
       `• Tableaux de bord interactifs\n` +
@@ -198,6 +200,6 @@ export const openApp = async (msg) => {
     
   } catch (error) {
     logger.error('Erreur lors de l\'ouverture de l\'application:', error);
-    await handleError(msg, error, "Une erreur s'est produite lors de l'ouverture de l'application.");
+    await handleError(msg, error, 'commande /app');
   }
 };

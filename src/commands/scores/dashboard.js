@@ -1,5 +1,4 @@
 import { bot } from '../../config/bot.js';
-import { MESSAGES } from '../../config/messages.js';
 import logger from '../../utils/logger.js';
 import { getDashboardData } from '../../api/services/scoreService.js';
 
@@ -10,8 +9,7 @@ import { getDashboardData } from '../../api/services/scoreService.js';
  */
 const dashboard = async (ctx, match) => {
   const chatId = ctx.chat.id;
-  const userId = ctx.from.id;
-  const [_, dashboardType = 'overview'] = match || [];
+  const [, dashboardType = 'overview'] = match || [];
 
   try {
     // Afficher un message de chargement
@@ -19,8 +17,8 @@ const dashboard = async (ctx, match) => {
 
     // Récupérer les données du tableau de bord
     const dashboardData = await getDashboardData({
-      userId,
-      type: dashboardType
+      chatId,
+      period: dashboardType === 'overview' ? 'month' : dashboardType
     });
 
     // Formater et envoyer le tableau de bord
@@ -66,25 +64,35 @@ function formatDashboard(data, type) {
  * Formatte le tableau de bord de vue d'ensemble
  */
 function formatOverviewDashboard(data) {
-  const { user, recentActivities, stats, leaderboardPosition } = data;
+  const { stats = {}, recentScores = [], topPerformers = [] } = data;
   
-  let message = `👤 *Tableau de bord de ${user.name}*\n\n`;
+  let message = `📊 *Tableau de bord*\n\n`;
   
   // Statistiques rapides
-  message += `📊 *Statistiques rapides*\n`;
-  message += `🏆 Score total: *${stats.totalScore} pts*\n`;
-  message += `📈 Activités ce mois: *${stats.monthlyActivities}*\n`;
-  message += `🎯 Objectif mensuel: *${stats.monthlyGoalProgress}%*\n`;
-  message += `🏅 Classement: *${leaderboardPosition}ᵉ position*\n\n`;
+  message += `📊 *Statistiques générales*\n`;
+  message += `🏆 Scores validés: *${stats.totalScores || 0}*\n`;
+  message += `👥 Utilisateurs actifs: *${stats.totalUsers || 0}*\n`;
+  message += `🏅 Équipes: *${stats.totalTeams || 0}*\n\n`;
   
-  // Activités récentes
-  message += `🔄 *Dernières activités*\n`;
-  if (recentActivities && recentActivities.length > 0) {
-    recentActivities.forEach(activity => {
-      message += `• ${activity.name}: *${activity.score} pts* (${activity.date})\n`;
+  // Scores récents
+  message += `🔄 *Derniers scores*\n`;
+  if (recentScores && recentScores.length > 0) {
+    recentScores.slice(0, 5).forEach(score => {
+      const userName = score.user?.firstName || score.user?.username || 'Inconnu';
+      const activityName = score.activity?.name || 'N/A';
+      message += `• ${userName} - ${activityName}: *${score.value || 0} pts*\n`;
     });
   } else {
-    message += "Aucune activité récente.\n";
+    message += "Aucun score récent.\n";
+  }
+  
+  // Top performers
+  if (topPerformers && topPerformers.length > 0) {
+    message += `\n🏆 *Top performers*\n`;
+    topPerformers.forEach((perf, i) => {
+      const medal = ['🥇', '🥈', '🥉'][i] || `${i + 1}.`;
+      message += `${medal} ${perf.username || perf.firstName || 'Inconnu'}: *${perf.totalScore || 0} pts*\n`;
+    });
   }
   
   // Clavier d'action
@@ -209,23 +217,17 @@ function formatComparisonDashboard(data) {
  */
 const handleDashboardActions = async (ctx) => {
   // Vérifier si c'est un callback_query
-  if (!ctx.update || !ctx.update.callback_query) {
-    console.error('handleDashboardActions: ctx.update.callback_query est undefined');
-    return;
-  }
-  
-  // Vérifier si c'est un callback_query
-  if (!ctx.update || !ctx.update.callback_query) {
+  if (!ctx?.update?.callback_query) {
     console.error('handleDashboardActions: ctx.update.callback_query est undefined');
     return;
   }
   
   const callbackData = ctx.update.callback_query.data;
-  const chatId = ctx.chat?.id || ctx.update.callback_query.message.chat.id;
+  const chatId = ctx.chat?.id || ctx.update?.callback_query?.message?.chat?.id;
   
   try {
     if (callbackData.startsWith('dashboard_')) {
-      const [_, action] = callbackData.split('_');
+      const action = callbackData.split('_')[1];
       
       // Rafraîchir le tableau de bord avec le type sélectionné
       await dashboard(

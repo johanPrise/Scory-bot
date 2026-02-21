@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { connectToDatabase } from '../config/database.js';
+import { bot } from '../config/bot.js';
 import logger from '../utils/logger.js';
 
 // Import des routes
@@ -84,6 +85,14 @@ export const createApiApp = () => {
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/feedback', feedbackRouter);
   app.use('/api/timers', timersRouter);
+
+  // Route webhook Telegram (production uniquement)
+  // node-telegram-bot-api attend le body brut en JSON
+  const webhookPath = `/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
+  app.post(webhookPath, (req, res) => {
+    bot.processUpdate(req.body);
+    res.sendStatus(200);
+  });
 
   // Route 404 pour les endpoints API non trouvés
   app.use('/api/*', (req, res) => {

@@ -30,7 +30,17 @@ async function main() {
     await setupCommands();
     logger.info('✅ Commandes du bot configurées');
 
-    // 3. Enregistrer les commandes dans le menu Telegram
+    // 3. Configurer le webhook en production ou vérifier le polling en dev
+    if (process.env.NODE_ENV === 'production' && process.env.TELEGRAM_WEBHOOK_URL) {
+      const webhookUrl = `${process.env.TELEGRAM_WEBHOOK_URL}/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
+      await bot.setWebHook(webhookUrl);
+      logger.info(`✅ Webhook Telegram configuré : ${process.env.TELEGRAM_WEBHOOK_URL}/webhook/***`);
+    } else {
+      // En dev, le polling démarre automatiquement via bot.js
+      logger.info('✅ Bot en mode polling (développement)');
+    }
+
+    // 4. Enregistrer les commandes dans le menu Telegram
     try {
       await bot.setMyCommands(TELEGRAM_CONFIG.COMMANDS);
       logger.info('✅ Menu des commandes Telegram mis à jour');
