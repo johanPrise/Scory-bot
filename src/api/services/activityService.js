@@ -6,7 +6,8 @@ import logger from '../../utils/logger.js';
 // Fonction utilitaire pour gérer les erreurs
 const handleError = (error, customMessage) => {
   logger.error(`${customMessage}: ${error.message}`, { error });
-  throw new Error(customMessage);
+  const errorMessage = error.message ? `${customMessage}: ${error.message}` : customMessage;
+  throw new Error(errorMessage);
 };
 
 /**

@@ -56,7 +56,8 @@ const handleError = (error, customMessage) => {
     context: error.context 
   });
   
-  const errorToThrow = new Error(customMessage);
+  const errorMessage = error.message ? `${customMessage}: ${error.message}` : customMessage;
+  const errorToThrow = new Error(errorMessage);
   errorToThrow.originalError = error;
   errorToThrow.status = error.status || 500;
   throw errorToThrow;
@@ -126,10 +127,7 @@ export const createTeam = async ({
     
     return team;
   } catch (error) {
-    handleError({
-      ...error,
-      context: { teamName: name, createdBy }
-    }, 'Failed to create team');
+    handleError(error, 'Failed to create team');
   }
 };
 
@@ -169,10 +167,7 @@ export const teamMemberService = {
       logger.info(`Member ${userId} added to team ${teamId}`, { role });
       return { userId, username: user.username, role, joinedAt: new Date() };
     } catch (error) {
-      handleError({
-        ...error,
-        context: { teamId, userId, role }
-      }, 'Failed to add team member');
+      handleError(error, 'Failed to add team member');
     }
   },
 
@@ -214,10 +209,7 @@ export const teamMemberService = {
       logger.info(`Role updated for member ${userId} in team ${teamId}`, { role });
       return { userId, role };
     } catch (error) {
-      handleError({
-        ...error,
-        context: { teamId, userId, role, updatedBy }
-      }, 'Failed to update team member role');
+      handleError(error, 'Failed to update team member role');
     }
   },
 
@@ -250,10 +242,7 @@ export const teamMemberService = {
       logger.info(`Member ${userId} removed from team ${teamId}`);
       return true;
     } catch (error) {
-      handleError({
-        ...error,
-        context: { teamId, userId, removedBy }
-      }, 'Failed to remove team member');
+      handleError(error, 'Failed to remove team member');
     }
   },
 
@@ -290,10 +279,7 @@ export const teamMemberService = {
         total: members.length
       };
     } catch (error) {
-      handleError({
-        ...error,
-        context: { teamId, limit, offset, role }
-      }, 'Failed to list team members');
+      handleError(error, 'Failed to list team members');
     }
   }
 };
@@ -341,10 +327,7 @@ export const teamService = {
         stats: includeStats ? stats : team.stats
       };
     } catch (error) {
-      handleError({
-        ...error,
-        context: { teamId, includeMembers, includeStats }
-      }, 'Failed to get team');
+      handleError(error, 'Failed to get team');
     }
   },
 
@@ -388,10 +371,7 @@ export const teamService = {
         total
       };
     } catch (error) {
-      handleError({
-        ...error,
-        context: { filters, limit, offset, sort, order }
-      }, 'Failed to list teams');
+      handleError(error, 'Failed to list teams');
     }
   },
 
@@ -427,10 +407,7 @@ export const teamService = {
 
       return ranking;
     } catch (error) {
-      handleError({
-        ...error,
-        context: { chatId, activityName }
-      }, 'Failed to get team ranking');
+      handleError(error, 'Failed to get team ranking');
     }
   }
 };

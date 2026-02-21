@@ -45,7 +45,8 @@ const handleScoreError = (error, customMessage, context = {}) => {
     context 
   });
   
-  const errorToThrow = new Error(customMessage);
+  const errorMessage = error.message ? `${customMessage}: ${error.message}` : customMessage;
+  const errorToThrow = new Error(errorMessage);
   errorToThrow.status = error.status || 500;
   errorToThrow.details = errorDetails;
   throw errorToThrow;
@@ -460,7 +461,7 @@ const scoreService = {
         .limit(10);
 
       // Top performers
-      const topPerformers = await this.getRankings({
+      const topPerformers = await scoreService.getRankings({
         scope: 'individual',
         period,
         limit: 5
@@ -487,14 +488,14 @@ const scoreService = {
 
 export default scoreService;
 
-// Export des fonctions individuelles pour compatibilité
-export const addScore = scoreService.addScore;
-export const updateScore = scoreService.updateScore;
-export const deleteScore = scoreService.deleteScore;
-export const getRankings = scoreService.getRankings;
-export const getRankingData = scoreService.getRankings; // Alias pour compatibilité
-export const getScoreHistory = scoreService.getScoreHistory;
-export const getDashboardData = scoreService.getDashboardData;
+// Export des fonctions individuelles pour compatibilité (bindées pour conserver le contexte)
+export const addScore = scoreService.addScore.bind(scoreService);
+export const updateScore = scoreService.updateScore.bind(scoreService);
+export const deleteScore = scoreService.deleteScore.bind(scoreService);
+export const getRankings = scoreService.getRankings.bind(scoreService);
+export const getRankingData = scoreService.getRankings.bind(scoreService); // Alias pour compatibilité
+export const getScoreHistory = scoreService.getScoreHistory.bind(scoreService);
+export const getDashboardData = scoreService.getDashboardData.bind(scoreService);
 
 // Les constantes sont déjà exportées individuellement ci-dessus
 // export { SCORE_TYPES, SCORE_STATUS, STATS_PERIODS };
