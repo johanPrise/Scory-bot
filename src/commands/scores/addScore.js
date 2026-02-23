@@ -3,7 +3,7 @@ import * as scoreService from '../../api/services/scoreService.js';
 import { Activity } from '../../api/models/activity.js';
 import User from '../../api/models/User.js';
 import logger from '../../utils/logger.js';
-import { resolveUserId } from '../utils/helpers.js';
+import { resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Gère la commande /score pour ajouter un score
@@ -99,6 +99,9 @@ export const addScore = async (msg, match) => {
         { chat_id: chatId, message_id: loadingMsg.message_id }
       );
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(msg, awardedByMongoId);
 
     // Ajouter le score via le service
     await scoreService.addScore({

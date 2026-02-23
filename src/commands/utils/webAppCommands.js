@@ -28,7 +28,7 @@ export const openAdminDashboard = async (msg) => {
     // Vérifier si l'utilisateur est un administrateur
     // (à implémenter selon votre logique d'authentification)
     
-    const webAppUrl = `${WEB_APP_BASE}/admin?userId=${userId}`;
+    const webAppUrl = `${WEB_APP_BASE}/approval?userId=${userId}&chatId=${chatId}`;
     
     const keyboard = [
       [createSmartButton("🖥️ Ouvrir le Dashboard Admin", webAppUrl)]
@@ -59,7 +59,7 @@ export const openScoreManager = async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     
-    const webAppUrl = `${WEB_APP_BASE}/scores?userId=${userId}`;
+    const webAppUrl = `${WEB_APP_BASE}/add-score?userId=${userId}&chatId=${chatId}`;
     
     const keyboard = [
       [createSmartButton("📊 Gestion des Scores", webAppUrl)]
@@ -90,7 +90,7 @@ export const openTeamDashboard = async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     
-    const webAppUrl = `${WEB_APP_BASE}/teams?userId=${userId}`;
+    const webAppUrl = `${WEB_APP_BASE}/teams?userId=${userId}&chatId=${chatId}`;
     
     const keyboard = [
       [createSmartButton("👥 Tableau de Bord des Équipes", webAppUrl)]
@@ -121,7 +121,7 @@ export const openMainDashboard = async (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     
-    const webAppUrl = `${WEB_APP_BASE}/dashboard?userId=${userId}`;
+    const webAppUrl = `${WEB_APP_BASE}/?userId=${userId}&chatId=${chatId}`;
     
     const keyboard = [
       [createSmartButton("📈 Tableau de Bord", webAppUrl)]
@@ -167,12 +167,12 @@ export const openApp = async (msg) => {
     const keyboard = [
       [createSmartButton("🚀 Ouvrir Scory App", webAppUrl)],
       [
-        createSmartButton("📊 Scores", `${WEB_APP_BASE}/scores?userId=${userId}`),
-        createSmartButton("🏆 Rankings", `${WEB_APP_BASE}/rankings?userId=${userId}`)
+        createSmartButton("📊 Scores", `${WEB_APP_BASE}/add-score?userId=${userId}&chatId=${chatId}`),
+        createSmartButton("🏆 Rankings", `${WEB_APP_BASE}/rankings?userId=${userId}&chatId=${chatId}`)
       ],
       [
-        createSmartButton("👥 Équipes", `${WEB_APP_BASE}/teams?userId=${userId}`),
-        createSmartButton("📈 Stats", `${WEB_APP_BASE}/stats?userId=${userId}`)
+        createSmartButton("👥 Équipes", `${WEB_APP_BASE}/teams?userId=${userId}&chatId=${chatId}`),
+        createSmartButton("📈 Stats", `${WEB_APP_BASE}/rankings?userId=${userId}&chatId=${chatId}`)
       ]
     ];
     

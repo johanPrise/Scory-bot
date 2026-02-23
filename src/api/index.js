@@ -13,6 +13,7 @@ import teamRoutes from './routes/teams.js';
 import activityRoutes from './routes/activities.js';
 import scoreRoutes from './routes/scores.js';
 import dashboardRoutes from './routes/dashboard.js';
+import groupRoutes from './routes/groups.js';
 import feedbackRouter from './routes/feedback.js';
 import timersRouter from './routes/timers.js';
 
@@ -83,6 +84,7 @@ export const createApiApp = () => {
   app.use('/api/activities', activityRoutes);
   app.use('/api/scores', scoreRoutes);
   app.use('/api/dashboard', dashboardRoutes);
+  app.use('/api/groups', groupRoutes);
   app.use('/api/feedback', feedbackRouter);
   app.use('/api/timers', timersRouter);
 

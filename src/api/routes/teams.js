@@ -35,7 +35,12 @@ router.get('/', asyncHandler(async (req, res) => {
     ];
   }
   
-  if (chatId) filter.chatId = chatId;
+  if (chatId) {
+    filter.chatId = chatId;
+  } else if (!search) {
+    // Sans chatId ni recherche (webapp), montrer les équipes dont l'utilisateur est membre
+    filter['members.userId'] = req.userId;
+  }
 
   // Options de pagination et tri
   const options = {

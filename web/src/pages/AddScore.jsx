@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as api from '../api';
 import { BackButton, LoadingSpinner, EmptyState } from '../components';
 import { useToast } from '../components/Toast';
+import { useGroup } from '../components/GroupContext';
 
 export default function AddScore() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function AddScore() {
   const toast = useToast();
 
   const preselectedActivity = searchParams.get('activityId') || '';
+  const { selectedGroupId } = useGroup();
 
   const [activities, setActivities] = useState([]);
   const [teams, setTeams] = useState([]);
@@ -30,7 +32,7 @@ export default function AddScore() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedGroupId]);
 
   useEffect(() => {
     if (form.activityId && activities.length) {

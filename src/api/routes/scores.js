@@ -338,6 +338,7 @@ router.get('/rankings', asyncHandler(async (req, res) => {
     scope = 'individual', // individual, team
     activityId,
     subActivity,
+    chatId,
     limit = 10,
     period = 'month'
   } = req.query;
@@ -347,6 +348,7 @@ router.get('/rankings', asyncHandler(async (req, res) => {
   
   if (activityId) match.activity = activityId;
   if (subActivity) match.subActivity = subActivity;
+  if (chatId) match['metadata.chatId'] = chatId;
 
   // Filtrer par période
   if (period !== 'all') {
@@ -686,6 +688,7 @@ router.get('/personal', asyncHandler(async (req, res) => {
     limit = 20,
     activityId,
     period,
+    chatId,
     status = 'approved',
     sortBy = 'createdAt',
     sortOrder = 'desc'
@@ -699,6 +702,7 @@ router.get('/personal', asyncHandler(async (req, res) => {
   
   if (activityId) filter.activity = activityId;
   if (status) filter.status = status;
+  if (chatId) filter['metadata.chatId'] = chatId;
 
   // Filtrer par période
   if (period && period !== 'all') {

@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { LoadingSpinner, EmptyState, StatCard, ListItem } from '../components';
+import { useGroup } from '../components/GroupContext';
 
 export default function Home() {
   const navigate = useNavigate();
+  const { selectedGroupId } = useGroup();
   const user = globalThis.Telegram?.WebApp?.initDataUnsafe?.user || null;
   const [stats, setStats] = useState({ totalScores: 0, totalActivities: 0, rank: '—' });
   const [recentScores, setRecentScores] = useState([]);
@@ -13,7 +15,7 @@ export default function Home() {
 
   useEffect(() => {
     loadDashboard();
-  }, []);
+  }, [selectedGroupId]);
 
   const loadDashboard = async () => {
     try {

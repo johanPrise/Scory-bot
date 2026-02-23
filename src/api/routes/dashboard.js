@@ -14,9 +14,10 @@ router.use(authMiddleware);
 /**
  * GET /api/dashboard
  * Récupérer les données complètes du dashboard (stats + activité récente)
+ * ?chatId=xxx pour filtrer par groupe Telegram
  */
 router.get('/', asyncHandler(async (req, res) => {
-  const { period = 'month' } = req.query;
+  const { period = 'month', chatId } = req.query;
   const userId = req.userId;
 
   // Calculer la date de début selon la période
@@ -41,32 +42,54 @@ router.get('/', asyncHandler(async (req, res) => {
   }
 
   const dateFilter = startDate ? { createdAt: { $gte: startDate } } : {};
+  
+  // Filtre chatId pour les scores et activités
+  const chatIdScoreFilter = chatId ? { 'metadata.chatId': chatId } : {};
+  const chatIdActivityFilter = chatId ? { chatId } : {};
 
   // Statistiques personnelles
   const user = await User.findById(userId).populate('teams.team', 'name');
   const [userScores, userActivities, userRanking, recentScores] = await Promise.all([
-    Score.countDocuments({ user: userId, status: 'approved', ...dateFilter }),
-    Activity.countDocuments({ createdBy: userId, ...dateFilter }),
-    getUserRankingForDashboard(userId, period),
-    Score.find({ user: userId, status: 'approved' })
+    Score.countDocuments({ user: userId, status: 'approved', ...dateFilter, ...chatIdScoreFilter }),
+    Activity.countDocuments({ createdBy: userId, ...dateFilter, ...chatIdActivityFilter }),
+    getUserRankingForDashboard(userId, period, chatId),
+    Score.find({ user: userId, status: 'approved', ...chatIdScoreFilter })
       .populate('activity', 'name description')
       .sort({ createdAt: -1 })
       .limit(5)
       .lean()
   ]);
 
+  // Calculer le score total pour ce groupe si chatId est fourni
+  let groupTotalScore = user.stats?.totalScore || 0;
+  if (chatId) {
+    const groupScoreAgg = await Score.aggregate([
+      { $match: { user: userId, status: 'approved', 'metadata.chatId': chatId } },
+      { $group: { _id: null, total: { $sum: '$value' } } }
+    ]);
+    groupTotalScore = groupScoreAgg.length > 0 ? groupScoreAgg[0].total : 0;
+  }
+
+  // Compter les équipes dans ce groupe
+  let teamsCount = user.teams?.length || 0;
+  if (chatId) {
+    const Team = (await import('../models/Team.js')).default;
+    teamsCount = await Team.countDocuments({ chatId, 'members.userId': userId });
+  }
+
   res.json({
     stats: {
       personal: {
         scores: userScores,
         activitiesCreated: userActivities,
-        teamsCount: user.teams?.length || 0,
-        totalScore: user.stats?.totalScore || 0,
+        teamsCount,
+        totalScore: groupTotalScore,
         ranking: userRanking
       }
     },
     recentScores,
     period,
+    chatId: chatId || null,
     generatedAt: new Date().toISOString()
   });
 }));
@@ -74,7 +97,7 @@ router.get('/', asyncHandler(async (req, res) => {
 /**
  * Fonction utilitaire pour obtenir le classement d'un utilisateur (dashboard)
  */
-async function getUserRankingForDashboard(userId, period = 'month') {
+async function getUserRankingForDashboard(userId, period = 'month', chatId = null) {
   let startDate;
   const now = new Date();
   
@@ -99,7 +122,8 @@ async function getUserRankingForDashboard(userId, period = 'month') {
     status: 'approved',
     context: 'individual',
     user: { $exists: true },
-    ...(startDate && { createdAt: { $gte: startDate } })
+    ...(startDate && { createdAt: { $gte: startDate } }),
+    ...(chatId && { 'metadata.chatId': chatId })
   };
 
   const pipeline = [

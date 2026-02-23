@@ -11,7 +11,10 @@ import AddScore from './pages/AddScore';
 import ScoreApproval from './pages/ScoreApproval';
 import Help from './pages/Help';
 import { ToastProvider } from './components/Toast';
+import { GroupProvider } from './components/GroupContext';
+import GroupSelector from './components/GroupSelector';
 import * as api from './api';
+import { getChatId } from './api';
 
 function BottomNav() {
 
@@ -62,6 +65,9 @@ function App() {
 
     // Authentification automatique
     initAuth();
+
+    // Initialiser le chatId depuis les query params (contexte Telegram)
+    getChatId();
   }, []);
 
   const initAuth = async () => {
@@ -100,19 +106,22 @@ function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/activities" element={<Activities />} />
-          <Route path="/activities/:id" element={<ActivityDetail />} />
-          <Route path="/rankings" element={<Rankings />} />
-          <Route path="/teams" element={<Teams />} />
-          <Route path="/teams/:id" element={<TeamDetail />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/add-score" element={<AddScore />} />
-          <Route path="/approval" element={<ScoreApproval />} />
-          <Route path="/help" element={<Help />} />
-        </Routes>
-        <BottomNav />
+        <GroupProvider>
+          <GroupSelector />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/activities" element={<Activities />} />
+            <Route path="/activities/:id" element={<ActivityDetail />} />
+            <Route path="/rankings" element={<Rankings />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="/teams/:id" element={<TeamDetail />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/add-score" element={<AddScore />} />
+            <Route path="/approval" element={<ScoreApproval />} />
+            <Route path="/help" element={<Help />} />
+          </Routes>
+          <BottomNav />
+        </GroupProvider>
       </BrowserRouter>
     </ToastProvider>
   );

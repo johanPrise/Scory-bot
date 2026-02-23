@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
 import * as activityService from '../../api/services/activityService.js';
 import logger from '../../utils/logger.js';
-import { resolveUserId } from '../utils/helpers.js';
+import { resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Gère la commande /createactivity pour créer une nouvelle activité
@@ -48,6 +48,9 @@ export const createActivity = async (msg, match) => {
         { chat_id: chatId, message_id: loadingMsg.message_id }
       );
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(msg, mongoUserId);
 
     // Créer l'activité via le service
     const activity = await activityService.createActivity({

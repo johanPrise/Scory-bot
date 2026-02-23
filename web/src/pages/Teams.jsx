@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { LoadingSpinner, EmptyState, ListItem } from '../components';
 import { useToast } from '../components/Toast';
+import { useGroup } from '../components/GroupContext';
 
 export default function Teams() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { selectedGroupId } = useGroup();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -17,7 +19,7 @@ export default function Teams() {
 
   useEffect(() => {
     loadTeams();
-  }, []);
+  }, [selectedGroupId]);
 
   const loadTeams = async () => {
     try {

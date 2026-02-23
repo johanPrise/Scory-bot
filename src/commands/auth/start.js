@@ -3,6 +3,7 @@
  */
 import { bot } from '../../config/bot.js';
 import User from '../../api/models/User.js';
+import ChatGroup from '../../api/models/ChatGroup.js';
 import logger from '../../utils/logger.js';
 
 const start = async (msg) => {
@@ -35,6 +36,18 @@ const start = async (msg) => {
       if (from.first_name) user.firstName = from.first_name;
       if (from.last_name) user.lastName = from.last_name;
       await user.save();
+    }
+
+    // Tracker le groupe Telegram si c'est un groupe
+    if (msg.chat.type !== 'private') {
+      try {
+        await ChatGroup.upsertGroup(
+          { chatId: chatId, title: msg.chat.title || `Groupe ${chatId}`, type: msg.chat.type },
+          { mongoUserId: user._id, telegramId: from.id }
+        );
+      } catch (trackErr) {
+        logger.error('Erreur tracking groupe dans /start:', trackErr.message);
+      }
     }
 
     const webAppUrl = process.env.WEB_APP_URL;

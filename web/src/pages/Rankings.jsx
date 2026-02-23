@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import * as api from '../api';
 import { LoadingSpinner, EmptyState } from '../components';
+import { useGroup } from '../components/GroupContext';
 
 export default function Rankings() {
+  const { selectedGroupId } = useGroup();
   const [scope, setScope] = useState('individual');
   const [period, setPeriod] = useState('month');
   const [activityId, setActivityId] = useState('');
@@ -12,11 +14,11 @@ export default function Rankings() {
 
   useEffect(() => {
     api.getActivities().then(data => setActivities(data.activities || data || [])).catch(() => {});
-  }, []);
+  }, [selectedGroupId]);
 
   useEffect(() => {
     loadRankings();
-  }, [scope, period, activityId]);
+  }, [scope, period, activityId, selectedGroupId]);
 
   const loadRankings = async () => {
     setLoading(true);

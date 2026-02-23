@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
 import * as teamService from '../../api/services/teamService.js';
 import logger from '../../utils/logger.js';
-import { resolveUserId } from '../utils/helpers.js';
+import { resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Gère la commande /createteam
@@ -40,6 +40,9 @@ export const createTeam = async (msg, match) => {
         { chat_id: chatId, message_id: loadingMsg.message_id }
       );
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(msg, mongoUserId);
 
     // Appeler le service pour créer l'équipe
     const team = await teamService.createTeam({

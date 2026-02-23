@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { LoadingSpinner, EmptyState, StatCard, ListItem } from '../components';
 import { useToast } from '../components/Toast';
+import { useGroup } from '../components/GroupContext';
 
 export default function Profile() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { selectedGroupId, selectedGroup } = useGroup();
   const tgUser = globalThis.Telegram?.WebApp?.initDataUnsafe?.user || null;
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +19,7 @@ export default function Profile() {
 
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [selectedGroupId]);
 
   const loadProfile = async () => {
     try {

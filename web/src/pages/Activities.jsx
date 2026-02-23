@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { LoadingSpinner, EmptyState, ListItem } from '../components';
 import { useToast } from '../components/Toast';
+import { useGroup } from '../components/GroupContext';
 
 export default function Activities() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { selectedGroupId } = useGroup();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -15,7 +17,7 @@ export default function Activities() {
 
   useEffect(() => {
     loadActivities();
-  }, []);
+  }, [selectedGroupId]);
 
   const loadActivities = async () => {
     try {
