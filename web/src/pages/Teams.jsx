@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
-import { LoadingSpinner, EmptyState, ListItem } from '../components';
+import { LoadingSpinner, EmptyState, ListItem, NoGroupSelected } from '../components';
 import { useToast } from '../components/Toast';
 import { useGroup } from '../components/GroupContext';
 
 export default function Teams() {
   const navigate = useNavigate();
   const toast = useToast();
-  const { selectedGroupId } = useGroup();
+  const { selectedGroupId, selectedGroup } = useGroup();
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -18,7 +18,9 @@ export default function Teams() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    loadTeams();
+    if (selectedGroupId) {
+      loadTeams();
+    }
   }, [selectedGroupId]);
 
   const loadTeams = async () => {
@@ -77,6 +79,12 @@ export default function Teams() {
   };
 
   const teamEmojis = ['🏆', '🚀', '💪', '⚡', '🔥', '🌟', '💎', '🎯'];
+  const groupName = selectedGroup?.title || 'Groupe';
+
+  // Bloquer l'affichage si aucun groupe n'est sélectionné
+  if (!selectedGroupId) {
+    return <NoGroupSelected />;
+  }
 
   return (
     <div className="page">
@@ -157,7 +165,7 @@ export default function Teams() {
                 key={team._id || i}
                 icon={teamEmojis[i % teamEmojis.length]}
                 title={team.name}
-                subtitle={`${team.members?.length || 0} membres · ${team.totalScore || 0} pts`}
+                subtitle={`${team.members?.length || 0} membres · ${team.totalScore || 0} pts dans ${groupName}`}
                 onClick={() => navigate(`/teams/${team._id}`)}
                 trailing={<div style={{ color: 'var(--tg-theme-hint-color)', fontSize: 20 }}>›</div>}
               />

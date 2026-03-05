@@ -2,6 +2,7 @@ import { bot } from '../../config/bot.js';
 import { MESSAGES } from '../../config/messages.js';
 import logger from '../../utils/logger.js';
 import { getScoreHistory } from '../../api/services/scoreService.js';
+import { resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Affiche l'historique des scores d'un utilisateur
@@ -27,6 +28,9 @@ const scoreHistory = async (ctx, match) => {
         { chat_id: chatId, message_id: loadingMsg.message_id }
       );
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(ctx, mongoUserId);
 
     // Récupérer l'historique des scores
     const historyResult = await getScoreHistory({

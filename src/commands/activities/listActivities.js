@@ -1,7 +1,7 @@
 import { bot } from '../../config/bot.js';
 import { listActivities as listActivitiesService } from '../../api/services/activityService.js';
 import logger from '../../utils/logger.js';
-import { handleError, resolveUserId } from '../utils/helpers.js';
+import { handleError, resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Formate la liste des activités pour l'affichage
@@ -60,6 +60,11 @@ export default async (msg) => {
     let createdBy = null;
     if (isPrivateChat) {
       createdBy = await resolveUserId(msg.from.id);
+    }
+
+    // Tracker le groupe Telegram si ce n'est pas un chat privé
+    if (!isPrivateChat && createdBy) {
+      await trackGroup(msg, createdBy);
     }
 
     // Récupérer la liste des activités

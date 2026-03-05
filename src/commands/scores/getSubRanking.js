@@ -2,7 +2,7 @@ import { bot } from '../../config/bot.js';
 import { getRankingData } from '../../api/services/scoreService.js';
 import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
-import { handleError } from '../utils/helpers.js';
+import { handleError, resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Formate un sous-classement pour l'affichage
@@ -44,6 +44,7 @@ const formatSubRanking = (ranking, activityId, subActivity) => {
  */
 export default async (msg, match) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
   const activityNameInput = match ? match[1] : undefined;
   const subActivity = match ? match[2] : undefined;
 
@@ -63,6 +64,12 @@ export default async (msg, match) => {
       '🔄 Chargement du sous-classement...',
       { parse_mode: 'Markdown' }
     );
+
+    // Résoudre l'ID utilisateur et tracker le groupe
+    const mongoUserId = await resolveUserId(userId);
+    if (mongoUserId) {
+      await trackGroup(msg, mongoUserId);
+    }
 
     // Rechercher l'activité par nom (échapper les caractères spéciaux regex)
     const escapedName = activityNameInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

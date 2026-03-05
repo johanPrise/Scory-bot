@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import Team from '../models/Team.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware, requireTeamPermission } from '../middleware/auth.js';
+import { requireChatId, validateChatAccess } from '../middleware/chatIdValidator.js';
 import logger from '../../utils/logger.js';
 import { bot } from '../../config/bot.js'; // Import du bot Telegram
 import { notifyUserScoreStatus, notifyTeamMembersNewScore } from '../utils/notifications.js';
@@ -13,6 +14,10 @@ const router = express.Router();
 
 // Toutes les routes nécessitent une authentification
 router.use(authMiddleware);
+
+// Toutes les routes nécessitent un chatId valide et l'accès au groupe
+router.use(requireChatId);
+router.use(validateChatAccess);
 
 /**
  * GET /api/scores
@@ -28,13 +33,14 @@ router.get('/', asyncHandler(async (req, res) => {
     subActivity,
     status = 'approved',
     context,
-    chatId,
     sortBy = 'createdAt',
     sortOrder = 'desc'
   } = req.query;
 
-  // Construction du filtre
-  const filter = {};
+  // Construction du filtre - toujours filtrer par chatId validé
+  const filter = {
+    'metadata.chatId': req.chatId
+  };
   
   if (userId) filter.user = userId;
   if (teamId) filter.team = teamId;
@@ -42,7 +48,6 @@ router.get('/', asyncHandler(async (req, res) => {
   if (subActivity) filter.subActivity = subActivity;
   if (status) filter.status = status;
   if (context) filter.context = context;
-  if (chatId) filter['metadata.chatId'] = chatId;
 
   // Options de pagination et tri
   const options = {
@@ -184,7 +189,7 @@ router.post('/', asyncHandler(async (req, res) => {
     context,
     awardedBy,
     metadata: {
-      chatId: metadata.chatId,
+      chatId: req.chatId,
       messageId: metadata.messageId,
       comments,
       evidence: metadata.evidence
@@ -338,17 +343,18 @@ router.get('/rankings', asyncHandler(async (req, res) => {
     scope = 'individual', // individual, team
     activityId,
     subActivity,
-    chatId,
     limit = 10,
     period = 'month'
   } = req.query;
 
-  // Construire le filtre de base
-  const match = { status: 'approved' };
+  // Construire le filtre de base - toujours filtrer par chatId validé
+  const match = { 
+    status: 'approved',
+    'metadata.chatId': req.chatId
+  };
   
   if (activityId) match.activity = activityId;
   if (subActivity) match.subActivity = subActivity;
-  if (chatId) match['metadata.chatId'] = chatId;
 
   // Filtrer par période
   if (period !== 'all') {
@@ -688,21 +694,20 @@ router.get('/personal', asyncHandler(async (req, res) => {
     limit = 20,
     activityId,
     period,
-    chatId,
     status = 'approved',
     sortBy = 'createdAt',
     sortOrder = 'desc'
   } = req.query;
 
-  // Construction du filtre
+  // Construction du filtre - toujours filtrer par chatId validé
   const filter = { 
     user: req.userId,
-    context: 'individual'
+    context: 'individual',
+    'metadata.chatId': req.chatId
   };
   
   if (activityId) filter.activity = activityId;
   if (status) filter.status = status;
-  if (chatId) filter['metadata.chatId'] = chatId;
 
   // Filtrer par période
   if (period && period !== 'all') {

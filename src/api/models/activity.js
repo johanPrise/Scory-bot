@@ -94,6 +94,7 @@ const activitySchema = new mongoose.Schema({
   },
   chatId: {
     type: String,
+    required: [true, 'L\'ID du chat Telegram est requis'],
     index: true
   },
   createdBy: {

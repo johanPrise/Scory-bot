@@ -2,7 +2,7 @@ import { bot } from '../../config/bot.js';
 import Team from '../../api/models/Team.js';
 import User from '../../api/models/User.js';
 import logger from '../../utils/logger.js';
-import { resolveUserId, handleError } from '../utils/helpers.js';
+import { resolveUserId, handleError, trackGroup } from '../utils/helpers.js';
 
 /**
  * Gère la commande /deleteteam pour supprimer une équipe
@@ -31,6 +31,9 @@ export const deleteTeam = async (msg, match) => {
     if (!mongoUserId) {
       return bot.sendMessage(chatId, '❌ Vous devez d\'abord vous inscrire avec /start');
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(msg, mongoUserId);
 
     // Chercher l'équipe par nom — d'abord dans ce chat, sinon parmi celles créées par l'utilisateur
     let team = await Team.findOne({

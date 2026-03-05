@@ -2,7 +2,7 @@ import { bot } from '../../config/bot.js';
 import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
 import { createInlineKeyboard, createButton } from '../../utils/inlineButtons.js';
-import { handleError } from '../utils/helpers.js';
+import { handleError, resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Commande améliorée pour créer une activité avec interface interactive
@@ -11,6 +11,12 @@ export const createActivityWithButtons = async (msg) => {
   try {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
+    
+    // Résoudre l'ID utilisateur et tracker le groupe
+    const mongoUserId = await resolveUserId(userId);
+    if (mongoUserId) {
+      await trackGroup(msg, mongoUserId);
+    }
     
     // Étape 1: Demander le type d'activité
     const activityTypes = [

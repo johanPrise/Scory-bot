@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../api';
 import { useToast } from '../components/Toast';
+import { useGroup } from '../components/GroupContext';
+import { NoGroupSelected, LoadingSpinner } from '../components';
 
 function MembersFallback({ members }) {
   const list = members || [];
@@ -32,6 +34,7 @@ export default function TeamDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { selectedGroupId, selectedGroup } = useGroup();
   const [team, setTeam] = useState(null);
   const [members, setMembers] = useState([]);
   const [stats, setStats] = useState(null);
@@ -96,9 +99,14 @@ export default function TeamDetail() {
   if (loading) {
     return (
       <div className="page">
-        <div className="loading"><div className="spinner" /></div>
+        <LoadingSpinner />
       </div>
     );
+  }
+
+  // Bloquer l'affichage si aucun groupe n'est sélectionné
+  if (!selectedGroupId) {
+    return <NoGroupSelected />;
   }
 
   if (!team) {
@@ -118,6 +126,7 @@ export default function TeamDetail() {
   const memberCount = team.members?.length || members.length || 0;
   const totalScore = stats?.totalScore || team.stats?.totalScore || 0;
   const joinCode = team.settings?.joinCode || '';
+  const groupName = selectedGroup?.title || 'Groupe';
 
   return (
     <div className="page">
@@ -148,7 +157,7 @@ export default function TeamDetail() {
         </div>
         <div className="stat-card">
           <div className="stat-value">{totalScore}</div>
-          <div className="stat-label">Score total</div>
+          <div className="stat-label">Score dans {groupName}</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{stats?.activitiesCount || 0}</div>

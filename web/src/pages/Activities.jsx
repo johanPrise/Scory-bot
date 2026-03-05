@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
-import { LoadingSpinner, EmptyState, ListItem } from '../components';
+import { LoadingSpinner, EmptyState, ListItem, NoGroupSelected } from '../components';
 import { useToast } from '../components/Toast';
 import { useGroup } from '../components/GroupContext';
 
@@ -16,7 +16,9 @@ export default function Activities() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    loadActivities();
+    if (selectedGroupId) {
+      loadActivities();
+    }
   }, [selectedGroupId]);
 
   const loadActivities = async () => {
@@ -53,6 +55,11 @@ export default function Activities() {
   };
 
   const typeEmojis = { game: '🎮', sport: '🏋️', education: '📚', creative: '🎨', other: '📌' };
+
+  // Bloquer l'affichage si aucun groupe n'est sélectionné
+  if (!selectedGroupId) {
+    return <NoGroupSelected />;
+  }
 
   return (
     <div className="page">

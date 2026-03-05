@@ -3,7 +3,7 @@ import { getActivityHistory } from '../../api/services/activityService.js';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import logger from '../../utils/logger.js';
-import { handleError, resolveUserId } from '../utils/helpers.js';
+import { handleError, resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Formate une date pour l'affichage
@@ -82,6 +82,9 @@ export default async (msg, match) => {
         { chat_id: chatId, message_id: loadingMsg.message_id }
       );
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(msg, mongoUserId);
 
     // Récupérer l'historique
     const history = await getActivityHistory({

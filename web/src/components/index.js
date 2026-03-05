@@ -6,3 +6,4 @@ export { default as ListItem } from './ListItem';
 export { ToastProvider, useToast } from './Toast';
 export { GroupProvider, useGroup } from './GroupContext';
 export { default as GroupSelector } from './GroupSelector';
+export { default as NoGroupSelected } from './NoGroupSelected';

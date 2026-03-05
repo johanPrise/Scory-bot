@@ -2,7 +2,7 @@ import { bot } from '../../config/bot.js';
 import { Activity } from '../../api/models/activity.js';
 import Team from '../../api/models/Team.js';
 import logger from '../../utils/logger.js';
-import { resolveUserId, handleError } from '../utils/helpers.js';
+import { resolveUserId, handleError, trackGroup } from '../utils/helpers.js';
 
 /**
  * Gère la commande /deleteactivity pour supprimer une activité
@@ -31,6 +31,9 @@ export const deleteActivity = async (msg, match) => {
     if (!mongoUserId) {
       return bot.sendMessage(chatId, '❌ Vous devez d\'abord vous inscrire avec /start');
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(msg, mongoUserId);
 
     // Chercher l'activité par nom — d'abord dans ce chat, sinon parmi celles créées par l'utilisateur
     let activity = await Activity.findOne({

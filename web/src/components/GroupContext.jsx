@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import * as api from '../api';
 import { getChatId } from '../api';
 
@@ -11,8 +11,8 @@ const GroupContext = createContext(null);
 export function GroupProvider({ children }) {
   const [groups, setGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState(() => {
-    // Initialiser depuis l'URL (chatId passé par le bot) ou sessionStorage
-    return getChatId() || sessionStorage.getItem('scory_selectedGroup') || null;
+    // Initialiser depuis l'URL (chatId passé par le bot) ou localStorage
+    return getChatId() || localStorage.getItem('scory_selectedGroup') || null;
   });
   const [loading, setLoading] = useState(true);
 
@@ -32,37 +32,50 @@ export function GroupProvider({ children }) {
         const exists = (data.groups || []).some(g => g.chatId === urlChatId);
         if (exists) {
           setSelectedGroupId(urlChatId);
-          sessionStorage.setItem('scory_selectedGroup', urlChatId);
+          localStorage.setItem('scory_selectedGroup', urlChatId);
         }
+      }
+      
+      // Si aucun groupe n'est sélectionné et qu'il y a des groupes, sélectionner le premier
+      if (!selectedGroupId && data.groups && data.groups.length > 0) {
+        const firstGroupId = data.groups[0].chatId;
+        setSelectedGroupId(firstGroupId);
+        localStorage.setItem('scory_selectedGroup', firstGroupId);
       }
     } catch (err) {
       console.warn('Impossible de charger les groupes:', err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedGroupId]);
 
   const selectGroup = useCallback((chatId) => {
-    setSelectedGroupId(chatId);
-    if (chatId) {
-      sessionStorage.setItem('scory_selectedGroup', chatId);
-      sessionStorage.setItem('scory_chatId', chatId);
-    } else {
-      sessionStorage.removeItem('scory_selectedGroup');
-      sessionStorage.removeItem('scory_chatId');
+    if (!chatId) {
+      console.warn('Tentative de sélection d\'un groupe null - ignoré');
+      return;
     }
+    
+    setSelectedGroupId(chatId);
+    localStorage.setItem('scory_selectedGroup', chatId);
+    sessionStorage.setItem('scory_chatId', chatId);
   }, []);
 
-  const selectedGroup = groups.find(g => g.chatId === selectedGroupId) || null;
+  const selectedGroup = useMemo(
+    () => groups.find(g => g.chatId === selectedGroupId) || null,
+    [groups, selectedGroupId]
+  );
 
-  const value = {
-    groups,
-    selectedGroupId,
-    selectedGroup,
-    selectGroup,
-    loading,
-    refreshGroups: loadGroups
-  };
+  const value = useMemo(
+    () => ({
+      groups,
+      selectedGroupId,
+      selectedGroup,
+      selectGroup,
+      loading,
+      refreshGroups: loadGroups
+    }),
+    [groups, selectedGroupId, selectedGroup, selectGroup, loading, loadGroups]
+  );
 
   return (
     <GroupContext.Provider value={value}>

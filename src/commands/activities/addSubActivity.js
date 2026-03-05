@@ -2,7 +2,7 @@ import { bot } from '../../config/bot.js';
 import * as activityService from '../../api/services/activityService.js';
 import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
-import { resolveUserId } from '../utils/helpers.js';
+import { resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Gère la commande /addsubactivity pour ajouter une sous-activité
@@ -65,6 +65,9 @@ export const addSubActivity = async (msg, match) => {
         { chat_id: chatId, message_id: loadingMsg.message_id }
       );
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(msg, mongoUserId);
 
     // Ajouter la sous-activité via le service
     const updatedActivity = await activityService.addSubActivity({

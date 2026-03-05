@@ -2,7 +2,7 @@ import { bot } from '../../config/bot.js';
 import { getTeamRanking as getTeamRankingService } from '../../api/services/teamService.js';
 import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
-import { handleError } from '../utils/helpers.js';
+import { handleError, resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Gère la commande /teamranking
@@ -10,6 +10,7 @@ import { handleError } from '../utils/helpers.js';
  */
 export default async (msg, match) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
   const activityNameInput = match[1];
 
   try {
@@ -31,6 +32,12 @@ export default async (msg, match) => {
       '🔄 Récupération du classement des équipes...',
       { parse_mode: 'Markdown' }
     );
+
+    // Résoudre l'ID utilisateur et tracker le groupe
+    const mongoUserId = await resolveUserId(userId);
+    if (mongoUserId) {
+      await trackGroup(msg, mongoUserId);
+    }
 
     // Rechercher l'activité par nom (échapper les caractères spéciaux regex)
     const escapedName = activityNameInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

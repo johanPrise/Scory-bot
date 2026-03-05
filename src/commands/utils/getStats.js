@@ -4,15 +4,23 @@ import User from '../../api/models/User.js';
 import Team from '../../api/models/Team.js';
 import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
+import { resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Commande /stats — Affiche les statistiques globales
  */
 export default async (msg) => {
   const chatId = msg.chat.id;
+  const userId = msg.from.id;
 
   try {
     const loadingMsg = await bot.sendMessage(chatId, '🔄 Chargement des statistiques...');
+
+    // Résoudre l'ID utilisateur et tracker le groupe
+    const mongoUserId = await resolveUserId(userId);
+    if (mongoUserId) {
+      await trackGroup(msg, mongoUserId);
+    }
 
     // Stats directement depuis les modèles
     const [totalUsers, totalTeams, totalActivities, totalScores] = await Promise.all([

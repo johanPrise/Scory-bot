@@ -1,13 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as api from '../api';
-import { BackButton, LoadingSpinner, EmptyState, StatCard, ListItem } from '../components';
+import { BackButton, LoadingSpinner, EmptyState, StatCard, ListItem, NoGroupSelected } from '../components';
 import { useToast } from '../components/Toast';
+import { useGroup } from '../components/GroupContext';
 
 export default function ActivityDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { selectedGroupId, selectedGroup } = useGroup();
   const [activity, setActivity] = useState(null);
   const [scores, setScores] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +119,11 @@ export default function ActivityDetail() {
 
   if (loading) return <div className="page"><LoadingSpinner /></div>;
 
+  // Bloquer l'affichage si aucun groupe n'est sélectionné
+  if (!selectedGroupId) {
+    return <NoGroupSelected />;
+  }
+
   if (!activity) {
     return (
       <div className="page">
@@ -129,6 +136,7 @@ export default function ActivityDetail() {
   }
 
   const subActivities = activity.subActivities || [];
+  const groupName = selectedGroup?.title || 'Groupe';
 
   return (
     <div className="page">
@@ -144,6 +152,11 @@ export default function ActivityDetail() {
             <div className="page-subtitle">{activity.description || 'Pas de description'}</div>
           </div>
         </div>
+        {selectedGroup && (
+          <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', marginTop: 4 }}>
+            📍 {groupName}
+          </div>
+        )}
       </div>
 
       {/* Stats rapides */}

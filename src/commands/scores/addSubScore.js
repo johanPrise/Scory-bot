@@ -3,7 +3,7 @@ import { addScore } from '../../api/services/scoreService.js';
 import { Activity } from '../../api/models/activity.js';
 import User from '../../api/models/User.js';
 import logger from '../../utils/logger.js';
-import { handleError, resolveUserId } from '../utils/helpers.js';
+import { handleError, resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Gère la commande /subscore pour ajouter un sous-score
@@ -59,6 +59,9 @@ export default async (msg, match) => {
     if (!awardedByMongoId) {
       return bot.sendMessage(chatId, '❌ Vous devez d\'abord vous inscrire avec /start');
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(msg, awardedByMongoId);
 
     // Ajouter le sous-score
     await addScore({

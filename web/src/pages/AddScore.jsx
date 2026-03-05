@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as api from '../api';
-import { BackButton, LoadingSpinner, EmptyState } from '../components';
+import { BackButton, LoadingSpinner, EmptyState, NoGroupSelected } from '../components';
 import { useToast } from '../components/Toast';
 import { useGroup } from '../components/GroupContext';
 
@@ -31,7 +31,9 @@ export default function AddScore() {
   const [selectedActivity, setSelectedActivity] = useState(null);
 
   useEffect(() => {
-    loadData();
+    if (selectedGroupId) {
+      loadData();
+    }
   }, [selectedGroupId]);
 
   useEffect(() => {
@@ -105,6 +107,11 @@ export default function AddScore() {
   };
 
   if (loading) return <div className="page"><LoadingSpinner /></div>;
+
+  // Bloquer l'affichage si aucun groupe n'est sélectionné
+  if (!selectedGroupId) {
+    return <NoGroupSelected />;
+  }
 
   return (
     <div className="page">

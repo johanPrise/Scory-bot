@@ -3,6 +3,7 @@ import Team from '../models/Team.js';
 import User from '../models/User.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware, requireTeamPermission } from '../middleware/auth.js';
+import { requireChatId, validateChatAccess } from '../middleware/chatIdValidator.js';
 import logger from '../../utils/logger.js';
 import { notifyUserAddedToTeam } from '../utils/notifications.js';
 
@@ -10,6 +11,10 @@ const router = express.Router();
 
 // Toutes les routes nécessitent une authentification
 router.use(authMiddleware);
+
+// Toutes les routes nécessitent un chatId valide et l'accès au groupe
+router.use(requireChatId);
+router.use(validateChatAccess);
 
 /**
  * GET /api/teams
@@ -20,26 +25,20 @@ router.get('/', asyncHandler(async (req, res) => {
     page = 1,
     limit = 20,
     search,
-    chatId,
     sortBy = 'createdAt',
     sortOrder = 'desc'
   } = req.query;
 
-  // Construction du filtre
-  const filter = {};
+  // Construction du filtre - toujours filtrer par chatId validé
+  const filter = {
+    chatId: req.chatId
+  };
   
   if (search) {
     filter.$or = [
       { name: { $regex: search, $options: 'i' } },
       { description: { $regex: search, $options: 'i' } }
     ];
-  }
-  
-  if (chatId) {
-    filter.chatId = chatId;
-  } else if (!search) {
-    // Sans chatId ni recherche (webapp), montrer les équipes dont l'utilisateur est membre
-    filter['members.userId'] = req.userId;
   }
 
   // Options de pagination et tri
@@ -126,7 +125,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
  * Créer une nouvelle équipe
  */
 router.post('/', asyncHandler(async (req, res) => {
-  const { name, description, chatId, settings = {} } = req.body;
+  const { name, description, settings = {} } = req.body;
   const createdBy = req.userId;
 
   // Validation des champs requis
@@ -134,13 +133,11 @@ router.post('/', asyncHandler(async (req, res) => {
     throw createError(400, 'Le nom de l\'équipe est requis');
   }
 
-  // Utiliser chatId fourni ou générer un identifiant webapp
-  const effectiveChatId = chatId || `webapp_${req.userId}`;
+  // Utiliser le chatId validé par le middleware
+  const effectiveChatId = req.chatId;
 
-  // Vérifier si une équipe avec ce nom existe déjà
-  const existingTeam = chatId 
-    ? await Team.findOne({ name, chatId }) 
-    : await Team.findOne({ name, createdBy });
+  // Vérifier si une équipe avec ce nom existe déjà dans ce groupe
+  const existingTeam = await Team.findOne({ name, chatId: effectiveChatId });
   if (existingTeam) {
     throw createError(409, 'Une équipe avec ce nom existe déjà');
   }

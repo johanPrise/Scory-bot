@@ -104,68 +104,114 @@ export const loginWithTelegram = async () => {
 // ===== ACTIVITIES =====
 export const getActivities = (params = {}) => {
   const chatId = getChatId();
-  if (chatId) params.chatId = params.chatId || chatId;
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour accéder aux activités');
+  }
+  params.chatId = chatId;
   const query = new URLSearchParams(params).toString();
   return apiRequest(`/activities${query ? '?' + query : ''}`);
 };
 
 export const createActivity = (data) => {
   const chatId = getChatId();
-  if (chatId && !data.chatId) data = { ...data, chatId };
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour créer une activité');
+  }
+  data = { ...data, chatId };
   return apiRequest('/activities', { method: 'POST', body: JSON.stringify(data) });
 };
 
-export const getActivity = (id) => apiRequest(`/activities/${id}`);
+export const getActivity = (id) => {
+  const chatId = getChatId();
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné');
+  }
+  return apiRequest(`/activities/${id}?chatId=${chatId}`);
+};
 
 // ===== SCORES =====
 export const getScores = (params = {}) => {
   const chatId = getChatId();
-  if (chatId) params.chatId = params.chatId || chatId;
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour accéder aux scores');
+  }
+  params.chatId = chatId;
   const query = new URLSearchParams(params).toString();
   return apiRequest(`/scores${query ? '?' + query : ''}`);
 };
 
 export const getRankings = (params = {}) => {
   const chatId = getChatId();
-  if (chatId) params.chatId = params.chatId || chatId;
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour accéder aux classements');
+  }
+  params.chatId = chatId;
   const query = new URLSearchParams(params).toString();
   return apiRequest(`/scores/rankings${query ? '?' + query : ''}`);
 };
 
 export const getPersonalScores = (params = {}) => {
   const chatId = getChatId();
-  if (chatId) params.chatId = params.chatId || chatId;
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour accéder à vos scores');
+  }
+  params.chatId = chatId;
   const query = new URLSearchParams(params).toString();
   return apiRequest(`/scores/personal${query ? '?' + query : ''}`);
 };
 
 export const addScore = (data) => {
   const chatId = getChatId();
-  if (chatId && !data.metadata?.chatId) {
-    data = { ...data, metadata: { ...(data.metadata || {}), chatId } };
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour ajouter un score');
   }
+  data = { ...data, metadata: { ...(data.metadata || {}), chatId } };
   return apiRequest('/scores', { method: 'POST', body: JSON.stringify(data) });
 };
 
 // ===== TEAMS =====
 export const getTeams = (params = {}) => {
   const chatId = getChatId();
-  if (chatId) params.chatId = params.chatId || chatId;
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour accéder aux équipes');
+  }
+  params.chatId = chatId;
   const query = new URLSearchParams(params).toString();
   return apiRequest(`/teams${query ? '?' + query : ''}`);
 };
 
 export const createTeam = (data) => {
   const chatId = getChatId();
-  if (chatId && !data.chatId) data = { ...data, chatId };
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour créer une équipe');
+  }
+  data = { ...data, chatId };
   return apiRequest('/teams', { method: 'POST', body: JSON.stringify(data) });
 };
 
-export const getTeam = (id) => apiRequest(`/teams/${id}`);
+export const getTeam = (id) => {
+  const chatId = getChatId();
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné');
+  }
+  return apiRequest(`/teams/${id}?chatId=${chatId}`);
+};
 
-export const getTeamMembers = (id) => apiRequest(`/teams/${id}/members`);
+export const getTeamMembers = (id) => {
+  const chatId = getChatId();
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné');
+  }
+  return apiRequest(`/teams/${id}/members?chatId=${chatId}`);
+};
 
-export const getTeamStats = (id) => apiRequest(`/teams/${id}/stats`);
+export const getTeamStats = (id) => {
+  const chatId = getChatId();
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné');
+  }
+  return apiRequest(`/teams/${id}/stats?chatId=${chatId}`);
+};
 
 export const joinTeam = (joinCode) =>
   apiRequest('/teams/join', { method: 'POST', body: JSON.stringify({ joinCode }) });
@@ -173,7 +219,10 @@ export const joinTeam = (joinCode) =>
 // ===== DASHBOARD =====
 export const getDashboard = (params = {}) => {
   const chatId = getChatId();
-  if (chatId) params.chatId = params.chatId || chatId;
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour accéder au dashboard');
+  }
+  params.chatId = chatId;
   const query = new URLSearchParams(params).toString();
   return apiRequest(`/dashboard${query ? '?' + query : ''}`);
 };

@@ -1,6 +1,7 @@
 import { bot } from '../../config/bot.js';
 import logger from '../../utils/logger.js';
 import { getDashboardData } from '../../api/services/scoreService.js';
+import { resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Affiche un tableau de bord personnalisé
@@ -9,11 +10,18 @@ import { getDashboardData } from '../../api/services/scoreService.js';
  */
 const dashboard = async (ctx, match) => {
   const chatId = ctx.chat.id;
+  const userId = ctx.from.id;
   const [, dashboardType = 'overview'] = match || [];
 
   try {
     // Afficher un message de chargement
     const loadingMsg = await bot.sendMessage(chatId, '🔄 Chargement du tableau de bord...');
+
+    // Résoudre l'ID utilisateur et tracker le groupe
+    const mongoUserId = await resolveUserId(userId);
+    if (mongoUserId) {
+      await trackGroup(ctx, mongoUserId);
+    }
 
     // Récupérer les données du tableau de bord
     const dashboardData = await getDashboardData({

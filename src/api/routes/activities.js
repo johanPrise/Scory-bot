@@ -3,6 +3,7 @@ import { Activity } from '../models/activity.js';
 import Team from '../models/Team.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware, requireTeamPermission } from '../middleware/auth.js';
+import { requireChatId, validateChatAccess } from '../middleware/chatIdValidator.js';
 import logger from '../../utils/logger.js';
 import { bot } from '../../config/bot.js'; // Import du bot Telegram
 import User from '../models/User.js';
@@ -13,6 +14,10 @@ const router = express.Router();
 // Toutes les routes nécessitent une authentification
 router.use(authMiddleware);
 
+// Toutes les routes nécessitent un chatId valide et l'accès au groupe
+router.use(requireChatId);
+router.use(validateChatAccess);
+
 /**
  * GET /api/activities
  * Récupérer la liste des activités
@@ -22,7 +27,6 @@ router.get('/', asyncHandler(async (req, res) => {
     page = 1,
     limit = 20,
     search,
-    chatId,
     teamId,
     isActive,
     includeSubActivities = 'false',
@@ -30,8 +34,10 @@ router.get('/', asyncHandler(async (req, res) => {
     sortOrder = 'desc'
   } = req.query;
 
-  // Construction du filtre
-  const filter = {};
+  // Construction du filtre - toujours filtrer par chatId validé
+  const filter = {
+    chatId: req.chatId
+  };
   
   if (search) {
     filter.$or = [
@@ -40,20 +46,8 @@ router.get('/', asyncHandler(async (req, res) => {
     ];
   }
   
-  if (chatId) filter.chatId = chatId;
   if (teamId) filter.teamId = teamId;
   if (isActive !== undefined) filter['settings.isActive'] = isActive === 'true';
-
-  // Si aucun filtre chatId/teamId n'est fourni (webapp), montrer les activités
-  // créées par l'utilisateur ou celles de ses équipes
-  if (!chatId && !teamId && !search) {
-    const userTeams = await Team.find({ 'members.userId': req.userId }).select('_id');
-    const teamIds = userTeams.map(t => t._id);
-    filter.$or = [
-      { createdBy: req.userId },
-      ...(teamIds.length > 0 ? [{ teamId: { $in: teamIds } }] : [])
-    ];
-  }
 
   // Options de pagination et tri
   const options = {
@@ -133,7 +127,6 @@ router.post('/', asyncHandler(async (req, res) => {
     name, 
     description, 
     type,
-    chatId, 
     teamId, 
     settings = {} 
   } = req.body;
@@ -144,8 +137,8 @@ router.post('/', asyncHandler(async (req, res) => {
     throw createError(400, 'Le nom de l\'activité est requis');
   }
 
-  // Utiliser chatId fourni ou générer un identifiant webapp
-  const effectiveChatId = chatId || `webapp_${req.userId}`;
+  // Utiliser le chatId validé par le middleware
+  const effectiveChatId = req.chatId;
 
   // Si teamId est fourni, vérifier que l'utilisateur a les permissions
   if (teamId) {
@@ -545,7 +538,7 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
   }
 
   // Récupérer les scores liés à cette activité
-  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
   const Score = (await import('../models/Score.js')).default;
   
   const [scores, totalEntries] = await Promise.all([
@@ -554,12 +547,12 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
       .populate('team', 'name')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(parseInt(limit))
+      .limit(Number.parseInt(limit))
       .lean(),
     Score.countDocuments(filter)
   ]);
 
-  const totalPages = Math.ceil(totalEntries / parseInt(limit));
+  const totalPages = Math.ceil(totalEntries / Number.parseInt(limit));
 
   res.json({
     history: scores.map(s => ({
@@ -575,11 +568,11 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
       createdAt: s.createdAt
     })),
     pagination: {
-      currentPage: parseInt(page),
+      currentPage: Number.parseInt(page),
       totalPages,
       totalEntries,
-      hasNextPage: parseInt(page) < totalPages,
-      hasPrevPage: parseInt(page) > 1,
+      hasNextPage:  Number.parseInt(page) < totalPages,
+      hasPrevPage:  Number.parseInt(page) > 1,
     }
   });
 }));

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import * as api from '../api';
-import { LoadingSpinner, EmptyState } from '../components';
+import { LoadingSpinner, EmptyState, NoGroupSelected } from '../components';
 import { useGroup } from '../components/GroupContext';
 
 export default function Rankings() {
-  const { selectedGroupId } = useGroup();
+  const { selectedGroupId, selectedGroup } = useGroup();
   const [scope, setScope] = useState('individual');
   const [period, setPeriod] = useState('month');
   const [activityId, setActivityId] = useState('');
@@ -13,11 +13,15 @@ export default function Rankings() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getActivities().then(data => setActivities(data.activities || data || [])).catch(() => {});
+    if (selectedGroupId) {
+      api.getActivities().then(data => setActivities(data.activities || data || [])).catch(() => {});
+    }
   }, [selectedGroupId]);
 
   useEffect(() => {
-    loadRankings();
+    if (selectedGroupId) {
+      loadRankings();
+    }
   }, [scope, period, activityId, selectedGroupId]);
 
   const loadRankings = async () => {
@@ -37,12 +41,23 @@ export default function Rankings() {
 
   const getRankClass = (rank) => rank <= 3 ? `rank-${rank}` : 'rank-default';
   const getMedal = (rank) => ['🥇', '🥈', '🥉'][rank - 1] || rank;
+  const groupName = selectedGroup?.title || 'Groupe';
+
+  // Bloquer l'affichage si aucun groupe n'est sélectionné
+  if (!selectedGroupId) {
+    return <NoGroupSelected />;
+  }
 
   return (
     <div className="page">
       <div className="page-header slide-up">
         <h1 className="page-title">Classement</h1>
         <div className="page-subtitle">Qui est en tête ?</div>
+        {selectedGroup && (
+          <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', marginTop: 4 }}>
+            📍 {groupName}
+          </div>
+        )}
       </div>
 
       <div className="chips-row slide-up-delay-1">

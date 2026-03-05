@@ -3,7 +3,7 @@ import * as teamService from '../../api/services/teamService.js';
 import Team from '../../api/models/Team.js';
 import User from '../../api/models/User.js';
 import logger from '../../utils/logger.js';
-import { resolveUserId } from '../utils/helpers.js';
+import { resolveUserId, trackGroup } from '../utils/helpers.js';
 
 /**
  * Gère la commande /addtoteam
@@ -98,6 +98,10 @@ export const addToTeam = async (msg, match) => {
         { chat_id: chatId, message_id: loadingMsg.message_id }
       );
     }
+
+    // Tracker le groupe Telegram
+    await trackGroup(msg, adderMongoId);
+
     const adder = await User.findById(adderMongoId);
     const isAdderAdmin = adder.isTeamAdmin(team._id);
     const isAdderOwner = adder.isTeamOwner(team._id);

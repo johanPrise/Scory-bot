@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
-import { LoadingSpinner, EmptyState, StatCard, ListItem } from '../components';
+import { LoadingSpinner, EmptyState, StatCard, ListItem, NoGroupSelected } from '../components';
 import { useGroup } from '../components/GroupContext';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { selectedGroupId } = useGroup();
+  const { selectedGroupId, selectedGroup } = useGroup();
   const user = globalThis.Telegram?.WebApp?.initDataUnsafe?.user || null;
   const [stats, setStats] = useState({ totalScores: 0, totalActivities: 0, rank: '—' });
   const [recentScores, setRecentScores] = useState([]);
@@ -14,7 +14,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboard();
+    if (selectedGroupId) {
+      loadDashboard();
+    }
   }, [selectedGroupId]);
 
   const loadDashboard = async () => {
@@ -58,18 +60,29 @@ export default function Home() {
   };
 
   const firstName = user?.first_name || 'Joueur';
+  const groupName = selectedGroup?.title || 'Groupe';
+
+  // Bloquer l'affichage si aucun groupe n'est sélectionné
+  if (!selectedGroupId) {
+    return <NoGroupSelected />;
+  }
 
   return (
     <div className="page">
       <div className="page-header slide-up">
         <div className="page-subtitle">Bienvenue 👋</div>
         <h1 className="page-title">{firstName}</h1>
+        {selectedGroup && (
+          <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', marginTop: 4 }}>
+            📍 {groupName}
+          </div>
+        )}
       </div>
 
       <div className="stats-grid slide-up-delay-1">
-        <StatCard value={stats.totalScores} label="Points" />
+        <StatCard value={stats.totalScores} label={`Points dans ${groupName}`} />
         <StatCard value={stats.totalActivities} label="Activités" />
-        <StatCard value={stats.rank} label="Rang" />
+        <StatCard value={stats.rank} label={`Rang dans ${groupName}`} />
       </div>
 
       {/* Quick actions */}

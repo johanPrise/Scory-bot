@@ -7,7 +7,7 @@ import { useGroup } from './GroupContext';
 export default function GroupSelector() {
   const { groups, selectedGroupId, selectGroup, loading } = useGroup();
 
-  // Ne pas afficher si pas de groupes ou un seul groupe
+  // Ne pas afficher si pas de groupes
   if (loading || groups.length === 0) return null;
 
   const haptic = () => {
@@ -17,12 +17,6 @@ export default function GroupSelector() {
   return (
     <div className="group-selector">
       <div className="group-selector-inner">
-        <button
-          className={`group-chip ${!selectedGroupId ? 'active' : ''}`}
-          onClick={() => { haptic(); selectGroup(null); }}
-        >
-          🌐 Tous
-        </button>
         {groups.map(group => (
           <button
             key={group.chatId}

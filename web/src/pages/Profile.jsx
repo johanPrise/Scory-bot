@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../api';
-import { LoadingSpinner, EmptyState, StatCard, ListItem } from '../components';
+import { LoadingSpinner, EmptyState, StatCard, ListItem, NoGroupSelected } from '../components';
 import { useToast } from '../components/Toast';
 import { useGroup } from '../components/GroupContext';
 
@@ -18,7 +18,9 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    loadProfile();
+    if (selectedGroupId) {
+      loadProfile();
+    }
   }, [selectedGroupId]);
 
   const loadProfile = async () => {
@@ -67,11 +69,18 @@ export default function Profile() {
   const role = profile?.role || 'user';
   const isLinked = profile?.telegram?.linked || !!tgUser;
 
+  const groupName = selectedGroup?.title || 'Groupe';
+  
   const stats = {
     points: profile?.stats?.totalScore || 0,
     activities: profile?.stats?.completedActivities || 0,
     teams: profile?.teams?.length || 0
   };
+
+  // Bloquer l'affichage si aucun groupe n'est sélectionné
+  if (!selectedGroupId) {
+    return <NoGroupSelected />;
+  }
 
   return (
     <div className="page">
@@ -94,7 +103,7 @@ export default function Profile() {
           </div>
 
           <div className="stats-grid slide-up-delay-1">
-            <StatCard value={stats.points} label="Points" />
+            <StatCard value={stats.points} label={`Points dans ${groupName}`} />
             <StatCard value={stats.activities} label="Activités" />
             <StatCard value={stats.teams} label="Équipes" />
           </div>
