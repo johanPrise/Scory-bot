@@ -1,8 +1,13 @@
+import { useGroup } from './GroupContext';
+
 /**
  * Message affiché quand aucun groupe n'est sélectionné
  * Bloque l'affichage des données jusqu'à ce qu'un groupe soit choisi
  */
 export default function NoGroupSelected() {
+  const { groups } = useGroup();
+  const hasGroups = groups && groups.length > 0;
+
   return (
     <div className="page" style={{ 
       display: 'flex', 
@@ -28,8 +33,10 @@ export default function NoGroupSelected() {
         marginBottom: 24,
         maxWidth: 300
       }}>
-        Veuillez sélectionner un groupe Telegram pour accéder aux données.
-        Chaque groupe a ses propres activités, scores et classements.
+        {hasGroups 
+          ? "Veuillez sélectionner un groupe Telegram pour accéder aux données. Chaque groupe a ses propres activités, scores et classements."
+          : "Vous devez d'abord rejoindre un groupe Telegram avec le bot Scory pour commencer à utiliser l'application."
+        }
       </p>
       <div style={{
         padding: '12px 16px',
@@ -38,7 +45,10 @@ export default function NoGroupSelected() {
         fontSize: 13,
         color: 'var(--tg-theme-hint-color)'
       }}>
-        💡 Astuce : Utilisez le sélecteur en haut pour choisir un groupe
+        {hasGroups 
+          ? "💡 Astuce : Utilisez le sélecteur en haut pour choisir un groupe"
+          : "💡 Astuce : Ajoutez le bot à un groupe Telegram et utilisez /start"
+        }
       </div>
     </div>
   );

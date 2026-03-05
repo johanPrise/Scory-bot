@@ -33,8 +33,7 @@ export const addToTeam = async (msg, match) => {
     // Afficher un message de chargement
     const loadingMsg = await bot.sendMessage(
       chatId,
-      `🔄 Ajout de ${targetUser} à l'équipe *${teamName}*...`,
-      { parse_mode: 'Markdown' }
+      `🔄 Ajout de ${targetUser} à l'équipe "${teamName}"...`
     );
 
     // Extraire l'ID utilisateur si mention

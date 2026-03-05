@@ -126,19 +126,13 @@ async function sendFilterOptions(chatId) {
  */
 const handleRankingActions = async (ctx) => {
   // Vérifier si c'est un callback_query
-  if (!ctx.update || !ctx.update.callback_query) {
-    console.error('handleRankingActions: ctx.update.callback_query est undefined');
-    return;
-  }
-  
-  // Vérifier si c'est un callback_query
-  if (!ctx.update || !ctx.update.callback_query) {
+  if (!ctx?.update?.callback_query) {
     console.error('handleRankingActions: ctx.update.callback_query est undefined');
     return;
   }
   
   const callbackData = ctx.update.callback_query.data;
-  const chatId = ctx.chat?.id || ctx.update.callback_query.message.chat.id;
+  const chatId = ctx.chat?.id || ctx.update.callback_query.message?.chat?.id;
   
   try {
     if (callbackData.startsWith('ranking_')) {

@@ -68,14 +68,32 @@ export const validateParams = (params, required) => {
 export const trackGroup = async (msg, mongoUserId = null) => {
   try {
     const chat = msg.chat;
+    const from = msg.from;
     
     // Ne tracker que les groupes, pas les conversations privées
     if (chat.type === 'private') return null;
 
     // Résoudre l'ID MongoDB si non fourni
     if (!mongoUserId) {
-      mongoUserId = await resolveUserId(msg.from.id);
-      if (!mongoUserId) return null;
+      mongoUserId = await resolveUserId(from.id);
+      
+      // Si l'utilisateur n'existe pas, le créer automatiquement
+      if (!mongoUserId) {
+        const user = await User.create({
+          username: from.username || `user_${from.id}`,
+          firstName: from.first_name || '',
+          lastName: from.last_name || '',
+          telegram: {
+            id: String(from.id),
+            username: from.username || '',
+            chatId: String(chat.id),
+            linked: true
+          },
+          status: 'active'
+        });
+        mongoUserId = user._id;
+        logger.info(`Utilisateur auto-créé lors du tracking: ${from.id} (${from.first_name})`);
+      }
     }
 
     const group = await ChatGroup.upsertGroup(
@@ -86,7 +104,7 @@ export const trackGroup = async (msg, mongoUserId = null) => {
       },
       {
         mongoUserId,
-        telegramId: msg.from.id
+        telegramId: from.id
       }
     );
 
@@ -94,7 +112,8 @@ export const trackGroup = async (msg, mongoUserId = null) => {
   } catch (error) {
     logger.error('Erreur lors du tracking du groupe:', {
       chatId: msg?.chat?.id,
-      error: error.message
+      error: error.message,
+      stack: error.stack
     });
     return null;
   }

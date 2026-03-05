@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema({
     sparse: true, // Permet plusieurs documents sans email (utilisateurs Telegram)
     trim: true,
     lowercase: true,
-    match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, 'Veuillez entrer un email valide']
+    match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$/, 'Veuillez entrer un email valide']
   },
   
   password: {
