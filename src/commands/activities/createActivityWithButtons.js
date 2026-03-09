@@ -2,7 +2,7 @@ import { bot } from '../../config/bot.js';
 import { Activity } from '../../api/models/activity.js';
 import logger from '../../utils/logger.js';
 import { createInlineKeyboard, createButton } from '../../utils/inlineButtons.js';
-import { handleError, resolveUserId, trackGroup } from '../utils/helpers.js';
+import { handleError, resolveUserId, trackGroup, userSessions } from '../utils/helpers.js';
 
 /**
  * Commande améliorée pour créer une activité avec interface interactive
@@ -70,8 +70,7 @@ export const handleActivityCreationCallback = async (query, action) => {
     );
     
     // Stocker temporairement le type d'activité dans une session utilisateur
-    // Note: Vous devrez implémenter un système de gestion d'état utilisateur
-    // userSessions.set(userId, { step: 'waiting_activity_name', activityType });
+    userSessions.set(userId, { step: 'waiting_activity_name', activityType });
     
     logger.info(`Utilisateur ${userId} a sélectionné le type d'activité ${activityType}`);
     

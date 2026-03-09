@@ -241,6 +241,11 @@ export const rejectScore = (id, data) =>
 
 // ===== ACTIVITIES (extended) =====
 export const getActivityHistory = (id, params = {}) => {
+  const chatId = getChatId();
+  if (!chatId) {
+    throw new Error('Un groupe doit être sélectionné pour accéder à l\'historique');
+  }
+  params.chatId = chatId;
   const query = new URLSearchParams(params).toString();
   return apiRequest(`/activities/${id}/history${query ? '?' + query : ''}`);
 };

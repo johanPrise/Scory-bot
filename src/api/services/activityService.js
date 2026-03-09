@@ -1,4 +1,5 @@
 import { Activity } from '../models/activity.js';
+import Score from '../models/Score.js';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
 import logger from '../../utils/logger.js';
@@ -112,15 +113,15 @@ export const listActivities = async ({ includeSubActivities = false, chatId, tea
     // les activités du chat actuel OU créées par l'utilisateur
     if (chatId && createdBy) {
       filter.$or = [
-        { chatId },
-        { createdBy }
+        { chatId: String(chatId) },
+        { createdBy: String(createdBy) }
       ];
     } else {
-      if (chatId) filter.chatId = chatId;
-      if (createdBy) filter.createdBy = createdBy;
+      if (chatId) filter.chatId = String(chatId);
+      if (createdBy) filter.createdBy = String(createdBy);
     }
 
-    if (teamId) filter.teamId = teamId;
+    if (teamId) filter.teamId = String(teamId);
     
     const activities = await Activity.find(filter)
       .populate('createdBy', 'username firstName lastName')
@@ -173,9 +174,9 @@ export const getActivityHistory = async ({ userId, limit = 10, period = 'day', c
 
     // Construction du filtre
     const filter = {};
-    if (userId) filter.createdBy = userId;
-    if (chatId) filter.chatId = chatId;
-    if (teamId) filter.teamId = teamId;
+    if (userId) filter.createdBy = String(userId);
+    if (chatId) filter.chatId = String(chatId);
+    if (teamId) filter.teamId = String(teamId);
     if (startDate) filter.createdAt = { $gte: startDate };
     
     const activities = await Activity.find(filter)
@@ -196,8 +197,8 @@ export const getActivityHistory = async ({ userId, limit = 10, period = 'day', c
  */
 export const getActivity = async (id, chatId) => {
   try {
-    const filter = { _id: id };
-    if (chatId) filter.chatId = chatId;
+    const filter = { _id: String(id) };
+    if (chatId) filter.chatId = String(chatId);
     
     const activity = await Activity.findOne(filter)
       .populate('createdBy', 'username firstName lastName')
@@ -219,7 +220,7 @@ export const getActivity = async (id, chatId) => {
 export const getAllActivities = async (chatId) => {
   try {
     const filter = {};
-    if (chatId) filter.chatId = chatId;
+    if (chatId) filter.chatId = String(chatId);
     
     const activities = await Activity.find(filter)
       .populate('createdBy', 'username firstName lastName')
@@ -237,8 +238,8 @@ export const getAllActivities = async (chatId) => {
  */
 export const updateActivity = async (id, updateData, chatId) => {
   try {
-    const filter = { _id: id };
-    if (chatId) filter.chatId = chatId;
+    const filter = { _id: String(id) };
+    if (chatId) filter.chatId = String(chatId);
     
     const activity = await Activity.findOne(filter);
     if (!activity) {
@@ -260,8 +261,8 @@ export const updateActivity = async (id, updateData, chatId) => {
  */
 export const deleteActivity = async (id, chatId) => {
   try {
-    const filter = { _id: id };
-    if (chatId) filter.chatId = chatId;
+    const filter = { _id: String(id) };
+    if (chatId) filter.chatId = String(chatId);
     
     const activity = await Activity.findOne(filter);
     if (!activity) {
@@ -279,7 +280,11 @@ export const deleteActivity = async (id, chatId) => {
       }
     }
 
-    await Activity.findByIdAndDelete(id);
+    // IMPORTANT: Supprimer tous les scores associés en cascade pour éviter
+    // les données fantômes (scores orphelins)
+    await Score.deleteMany({ activity: String(id) });
+
+    await Activity.findByIdAndDelete(String(id));
     return true;
   } catch (error) {
     handleError(error, 'Error deleting activity');
@@ -291,8 +296,8 @@ export const deleteActivity = async (id, chatId) => {
  */
 export const addParticipant = async (activityId, participantName, chatId) => {
   try {
-    const filter = { _id: activityId };
-    if (chatId) filter.chatId = chatId;
+    const filter = { _id: String(activityId) };
+    if (chatId) filter.chatId = String(chatId);
     
     const activity = await Activity.findOne(filter);
     if (!activity) {
@@ -314,8 +319,8 @@ export const addParticipant = async (activityId, participantName, chatId) => {
  */
 export const addScore = async (activityId, participantName, subActivityName, score, chatId) => {
   try {
-    const filter = { _id: activityId };
-    if (chatId) filter.chatId = chatId;
+    const filter = { _id: String(activityId) };
+    if (chatId) filter.chatId = String(chatId);
     
     const activity = await Activity.findOne(filter);
     if (!activity) {
@@ -346,14 +351,14 @@ export const searchActivities = async (query, filters = {}, limit = 10) => {
   try {
     const filter = {
       $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { description: { $regex: query, $options: 'i' } }
+        { name: { $regex: String(query), $options: 'i' } },
+        { description: { $regex: String(query), $options: 'i' } }
       ]
     };
     
-    if (filters.chatId) filter.chatId = filters.chatId;
-    if (filters.teamId) filter.teamId = filters.teamId;
-    if (filters.createdBy) filter.createdBy = filters.createdBy;
+    if (filters.chatId) filter.chatId = String(filters.chatId);
+    if (filters.teamId) filter.teamId = String(filters.teamId);
+    if (filters.createdBy) filter.createdBy = String(filters.createdBy);
     
     const activities = await Activity.find(filter)
       .populate('createdBy', 'username firstName lastName')
@@ -372,8 +377,8 @@ export const searchActivities = async (query, filters = {}, limit = 10) => {
  */
 export const getActivityStats = async (activityId, chatId) => {
   try {
-    const filter = { _id: activityId };
-    if (chatId) filter.chatId = chatId;
+    const filter = { _id: String(activityId) };
+    if (chatId) filter.chatId = String(chatId);
     
     const activity = await Activity.findOne(filter);
     if (!activity) {

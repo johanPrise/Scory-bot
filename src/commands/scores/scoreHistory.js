@@ -146,17 +146,17 @@ async function sendFilterOptions(chatId, userId) {
 
 /**
  * Gère les actions du clavier en ligne pour l'historique
- * @param {Object} ctx - Contexte du callback
+ * @param {Object} query - Le callback query
  */
-const handleHistoryActions = async (ctx) => {
-  // Vérifier si c'est un callback_query
-  if (!ctx?.update?.callback_query) {
-    console.error('handleHistoryActions: ctx.update.callback_query est undefined');
+export const handleHistoryActions = async (query) => {
+  if (!query || !query.data) {
+    console.error('handleHistoryActions: query ou query.data est undefined');
     return;
   }
   
-  const callbackData = ctx.update.callback_query.data;
-  const chatId = ctx.chat?.id || ctx.update.callback_query.message?.chat?.id;
+  const callbackData = query.data;
+  const chatId = query.message?.chat?.id;
+  const fromId = query.from?.id;
   
   try {
     if (callbackData.startsWith('history_')) {
@@ -173,17 +173,17 @@ const handleHistoryActions = async (ctx) => {
       }
       
       // Réutiliser la logique d'historique avec la nouvelle période
+      // On simule un objet message (msg) pour que scoreHistory fonctionne
       await scoreHistory(
         { 
-          ...ctx, 
           chat: { id: chatId },
-          from: { id: parseInt(userId) }
+          from: { id: parseInt(userId, 10) }
         }, 
         [null, period]
       );
       
       // Supprimer le clavier après sélection
-      await bot.answerCallbackQuery(ctx.update.callback_query.id);
+      await bot.answerCallbackQuery(query.id);
     }
   } catch (error) {
     logger.error('Erreur dans handleHistoryActions:', error);
@@ -196,25 +196,12 @@ const handleHistoryActions = async (ctx) => {
  */
 async function handleExportHistory(chatId, userId) {
   try {
-    // Ici, vous pourriez générer un fichier CSV et l'envoyer
-    // Pour l'instant, on simule l'export
+    // Pas d'export CSV pour l'instant
     await bot.sendMessage(
       chatId,
-      '📤 Export de votre historique en cours de préparation...',
+      '🚧 *Export CSV*\nCette fonctionnalité est en cours de développement. Bientôt disponible !',
       { parse_mode: 'Markdown' }
     );
-    
-    // Simuler un délai de génération
-    setTimeout(async () => {
-      await bot.sendDocument(
-        chatId,
-        'https://example.com/exports/scores-export.csv', // À remplacer par l'URL réelle
-        {
-          caption: '📥 Voici votre export CSV des scores',
-          parse_mode: 'Markdown'
-        }
-      );
-    }, 2000);
     
   } catch (error) {
     logger.error('Erreur lors de l\'export de l\'historique:', error);
@@ -230,31 +217,52 @@ async function handleExportHistory(chatId, userId) {
  */
 async function showDetailedStats(chatId, userId) {
   try {
-    // Ici, vous pourriez récupérer des statistiques avancées
-    // Pour l'instant, on simule des données
-    const stats = {
-      totalActivities: 42,
-      totalScore: 1250,
-      averageScore: 29.8,
-      bestActivity: 'Course à pied',
-      bestScore: 150,
-      activityDistribution: [
-        { name: 'Course', percentage: 40 },
-        { name: 'Vélo', percentage: 30 },
-        { name: 'Natation', percentage: 20 },
-        { name: 'Autre', percentage: 10 }
-      ]
-    };
+    const { resolveUserId } = await import('../utils/helpers.js');
+    const mongoUserId = await resolveUserId(userId);
     
-    let message = '📊 *Statistiques détaillées*\n\n';
-    message += `🎯 Activités totales: *${stats.totalActivities}*\n`;
-    message += `🏆 Score total: *${stats.totalScore} pts*\n`;
-    message += `📈 Moyenne: *${stats.averageScore} pts/activité*\n`;
-    message += `🌟 Meilleure activité: *${stats.bestActivity}* (${stats.bestScore} pts)\n\n`;
+    if (!mongoUserId) return;
+
+    // Récupérer un historique plus large pour les stats (ex: 100 derniers)
+    const historyResult = await getScoreHistory({
+      userId: mongoUserId,
+      limit: 100
+    });
     
-    message += '📊 Répartition des activités:\n';
-    stats.activityDistribution.forEach(item => {
-      message += `• ${item.name}: ${item.percentage}%\n`;
+    const scores = historyResult?.scores || [];
+    
+    if (scores.length === 0) {
+      return bot.sendMessage(chatId, 'Aucun score disponible pour générer des statistiques.');
+    }
+
+    const totalScore = scores.reduce((sum, s) => sum + (s.value || 0), 0);
+    const averageScore = totalScore / scores.length;
+    
+    // Distribution par activité
+    const activityMap = {};
+    let bestActivity = { name: 'N/A', score: 0 };
+    
+    scores.forEach(s => {
+      const actName = s.activity?.name || 'Inconnue';
+      activityMap[actName] = (activityMap[actName] || 0) + 1;
+      
+      if (s.value > bestActivity.score) {
+        bestActivity = { name: actName, score: s.value };
+      }
+    });
+
+    let message = '📊 *Statistiques détaillées (100 derniers)*\n\n';
+    message += `🎯 Activités complétées: *${scores.length}*\n`;
+    message += `🏆 Score cumulatif: *${totalScore} pts*\n`;
+    message += `📈 Moyenne: *${averageScore.toFixed(1)} pts/activité*\n`;
+    message += `🌟 Meilleur record: *${bestActivity.name}* (${bestActivity.score} pts)\n\n`;
+    
+    message += '📊 Fréquentation d\'activités:\n';
+    Object.entries(activityMap)
+      .sort((a, b) => b[1] - a[1]) // Trier par activité la plus jouée
+      .slice(0, 5) // Les 5 les plus fréquentes
+      .forEach(([name, count]) => {
+        const percentage = Math.round((count / scores.length) * 100);
+        message += `• ${name}: ${percentage}% (${count}x)\n`;
     });
     
     await bot.sendMessage(

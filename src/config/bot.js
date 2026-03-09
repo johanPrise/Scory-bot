@@ -81,7 +81,7 @@ export async function setupBot() {
     await bot.setMyCommands(BOT_COMMANDS);
     
     // Enregistrer les commandes dans un fichier pour référence
-    await saveCommandsToFile();
+    await saveCommandsToFile(botInfo.username);
     
     // Configurer le menu des commandes pour les chats privés
     await bot.setMyCommands(BOT_COMMANDS, { scope: { type: 'all_private_chats' } });
@@ -136,9 +136,10 @@ export function getCommands() {
 
 /**
  * Sauvegarde les commandes dans un fichier JSON pour référence
+ * @param {string} [botUsername] - Le nom d'utilisateur du bot (optionnel, pour éviter un appel API)
  * @returns {Promise<void>}
  */
-export async function saveCommandsToFile() {
+export async function saveCommandsToFile(botUsername = null) {
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
@@ -153,11 +154,11 @@ export async function saveCommandsToFile() {
     const commandsData = {
       lastUpdated: new Date().toISOString(),
       environment: env,
-      bot: (await bot.getMe()).username,
+      bot: botUsername || (await bot.getMe()).username,
       commands: BOT_COMMANDS.map(cmd => ({
         command: cmd.command.replace(/^\//, ''),
         description: cmd.description,
-        usage: `/${cmd.command} ${getCommandUsage(cmd.command)}`
+        usage: `/${cmd.command} ${getCommandUsage(cmd.command)}`.trim()
       }))
     };
     

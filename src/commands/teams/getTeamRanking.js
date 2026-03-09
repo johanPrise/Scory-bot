@@ -11,21 +11,13 @@ import { handleError, resolveUserId, trackGroup } from '../utils/helpers.js';
 export default async (msg, match) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const activityNameInput = match[1];
+    // Extraire les noms correctement (gestion des noms composés)
+    const activityNameInput = match && match[1] ? match[1].trim() : null;
 
-  try {
-    // Si pas d'activité spécifiée, afficher l'aide
-    if (!activityNameInput) {
-      return bot.sendMessage(
-        chatId,
-        '🏅 *Classement des équipes*\n\n' +
-        'Utilisez: `/teamranking nom_activité`\n\n' +
-        'Exemple: `/teamranking course`\n\n' +
-        'Pour voir les activités disponibles: /activities',
-        { parse_mode: 'Markdown' }
-      );
-    }
+    try {
+      // Si pas d'activité spécifiée, optionnel dans certains contextes, mais on va l'accepter vide ou non
 
+    
     // Afficher un message de chargement
     const loadingMsg = await bot.sendMessage(
       chatId,
@@ -39,12 +31,15 @@ export default async (msg, match) => {
       await trackGroup(msg, mongoUserId);
     }
 
-    // Rechercher l'activité par nom (échapper les caractères spéciaux regex)
-    const escapedName = activityNameInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const activity = await Activity.findOne({
-      name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
-      chatId: chatId.toString()
-    });
+    let activity = null;
+    if (activityNameInput) {
+      // Rechercher l'activité par nom (échapper les caractères spéciaux regex)
+      const escapedName = String(activityNameInput).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      activity = await Activity.findOne({
+        name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
+        chatId: String(chatId)
+      });
+    }
 
     // Appeler le service pour obtenir le classement
     const ranking = await getTeamRankingService({
@@ -53,20 +48,20 @@ export default async (msg, match) => {
     });
 
     // Formater le message de réponse
-    let message = `🏆 *Classement des équipes* pour *${activityNameInput}*\n\n`;
+    let message = `🏆 *Classement global des équipes*\n\n`;
+    if (activityNameInput) {
+      message = `🏆 *Classement des équipes* pour *${activityNameInput}*\n\n`;
+    }
 
     if (!ranking || ranking.length === 0) {
       message += 'Aucune équipe trouvée. Créez des équipes avec /createteam';
     } else {
       ranking.forEach((team, index) => {
-        message += `${index + 1}. *${team.name}* - ${team.score} points\n`;
+        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+        message += `${medal} *${team.name}* - ${team.score} points\n`;
         if (team.members && team.members.length > 0) {
           message += `   👥 ${team.members.length} membres\n`;
         }
-        if (team.lastActivity) {
-          message += `   🕒 Dernière activité: ${team.lastActivity}\n`;
-        }
-        message += '\n';
       });
     }
 

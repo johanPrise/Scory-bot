@@ -290,9 +290,9 @@ export default function ActivityDetail() {
             )}
 
             {subActivities.length > 0 ? (
-              subActivities.map((sub, i) => (
+              subActivities.map((sub) => (
                 <ListItem
-                  key={sub._id || sub.name || i}
+                  key={sub._id || `sub-${sub.name}`}
                   icon="📎"
                   title={sub.name}
                   subtitle={sub.description || 'Pas de description'}
@@ -319,7 +319,7 @@ export default function ActivityDetail() {
             {scores.length > 0 ? (
               scores.map((score, i) => (
                 <ListItem
-                  key={score._id || i}
+                  key={score._id || `score-${score.createdAt}-${i}`}
                   icon="🎯"
                   title={
                     (score.user?.username || score.user?.firstName || 'Utilisateur') +

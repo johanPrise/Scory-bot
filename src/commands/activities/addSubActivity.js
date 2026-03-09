@@ -1,6 +1,6 @@
 import { bot } from '../../config/bot.js';
-import * as activityService from '../../api/services/activityService.js';
 import { Activity } from '../../api/models/activity.js';
+import User from '../../api/models/User.js';
 import logger from '../../utils/logger.js';
 import { resolveUserId, trackGroup } from '../utils/helpers.js';
 
@@ -41,10 +41,10 @@ export const addSubActivity = async (msg, match) => {
     );
 
     // Rechercher l'activité parent par nom (échapper les caractères spéciaux regex)
-    const escapedName = parentActivityName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedName = String(parentActivityName).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const parentActivity = await Activity.findOne({ 
       name: { $regex: new RegExp(`^${escapedName}$`, 'i') },
-      chatId: chatId.toString()
+      chatId: String(chatId)
     });
 
     if (!parentActivity) {
@@ -56,7 +56,7 @@ export const addSubActivity = async (msg, match) => {
         }
       );
     }
-
+    
     // Résoudre l'ID MongoDB de l'utilisateur
     const mongoUserId = await resolveUserId(userId);
     if (!mongoUserId) {
@@ -64,6 +64,21 @@ export const addSubActivity = async (msg, match) => {
         '❌ Vous devez d\'abord vous inscrire avec /start',
         { chat_id: chatId, message_id: loadingMsg.message_id }
       );
+    }
+    
+    // VERIFICATION DES PERMISSIONS
+    const isCreator = parentActivity.createdBy?.toString() === mongoUserId.toString();
+    // TODO: Verify team admin permissions if needed, but for now strict creator check
+    if (!isCreator) {
+      const user = await User.findById(mongoUserId);
+      const isSuperAdmin = user && ['admin', 'superadmin'].includes(user.role);
+      
+      if (!isSuperAdmin) {
+        return bot.editMessageText(
+          `❌ Permission refusée. Vous devez être le créateur de "${parentActivityName}" pour y ajouter des sous-activités.`,
+          { chat_id: chatId, message_id: loadingMsg.message_id }
+        );
+      }
     }
 
     // Tracker le groupe Telegram

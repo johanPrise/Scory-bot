@@ -239,15 +239,21 @@ userSchema.methods.addToTeam = function(teamId, role = 'member') {
 // Méthode pour supprimer l'utilisateur d'une équipe
 userSchema.methods.removeFromTeam = function(teamId) {
   const initialLength = this.teams.length;
-  this.teams = this.teams.filter(t => 
-    !t.team || t.team.toString() !== teamId.toString()
-  );
+  // Assurer une comparaison robuste d'ObjectId (même si teamId est un objet)
+  const teamIdStr = teamId.toString();
+  
+  this.teams = this.teams.filter(t => {
+    if (!t.team) return false;
+    return t.team.toString() !== teamIdStr;
+  });
   
   // Si aucun changement, ne pas sauvegarder
   if (this.teams.length === initialLength) {
     return Promise.resolve(this);
   }
   
+  // Forcer Mongoose à détecter le changement dans le tableau
+  this.markModified('teams');
   return this.save();
 };
 

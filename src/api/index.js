@@ -19,7 +19,6 @@ import timersRouter from './routes/timers.js';
 
 // Import des middlewares
 import { errorHandler } from './middleware/errorHandler.js';
-import { authMiddleware } from './middleware/auth.js';
 import { requestLogger } from './middleware/requestLogger.js';
 
 /**
@@ -92,6 +91,13 @@ export const createApiApp = () => {
   // node-telegram-bot-api attend le body brut en JSON
   const webhookPath = `/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
   app.post(webhookPath, (req, res) => {
+    // SECURITY: Valider le secret token si configuré
+    const secretToken = process.env.TELEGRAM_WEBHOOK_SECRET;
+    if (secretToken && req.headers['x-telegram-bot-api-secret-token'] !== secretToken) {
+      logger.warn('Tentative d\'accès non autorisée au webhook Telegram');
+      return res.status(403).send('Unauthorized');
+    }
+
     bot.processUpdate(req.body);
     res.sendStatus(200);
   });

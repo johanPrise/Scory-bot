@@ -15,6 +15,8 @@ import * as webAppCommands from './utils/webAppCommands.js';
 import { createActivityWithButtons } from './activities/createActivityWithButtons.js';
 import logger from '../utils/logger.js';
 import { createBotCommand, wrapCommandHandler } from './utils/botCommandUtils.js';
+import { userSessions, resolveUserId, trackGroup } from './utils/helpers.js';
+import * as activityService from '../api/services/activityService.js';
 
 // Configuration des commandes
 export const setupCommands = async () => {
@@ -76,8 +78,54 @@ export const setupCommands = async () => {
     const extraCommands = ['create_activity', 'subscore', 'subranking', 'aranking', 'shistory', 'export', 'feedback', 'starttimer', 'stoptimer', 'admin', 'scoremanager', 'teamdashboard', 'deleteactivity', 'deleteteam', 'deletescore'];
     const allKnownCommands = [...knownCommands, ...extraCommands];
     
-    bot.on('message', (msg) => {
-      if (!msg.text || !msg.text.startsWith('/')) return;
+    bot.on('message', async (msg) => {
+      if (!msg.text) return;
+
+      const userId = msg.from.id;
+      
+      // 1. Intercepter le texte si l'utilisateur est dans une session conversationnelle
+      const session = userSessions.get(userId);
+      if (session && !msg.text.startsWith('/')) {
+        if (session.step === 'waiting_activity_name') {
+          try {
+            const chatId = msg.chat.id;
+            const activityName = msg.text.trim();
+            const mongoUserId = await resolveUserId(userId);
+            
+            // Assurons-nous que le groupe est suivi si c'est un groupe
+            if (msg.chat.type !== 'private' && mongoUserId) {
+              await trackGroup(msg, mongoUserId);
+            }
+
+            // Création de l'activité
+            const newActivity = await activityService.createActivity({
+              name: activityName,
+              description: `Type: ${session.activityType}`,
+              createdBy: mongoUserId,
+              chatId: chatId.toString()
+            });
+
+            // Nettoyage de la session
+            userSessions.delete(userId);
+
+            await bot.sendMessage(
+              chatId,
+              `✅ Excellente nouvelle ! L'activité *${activityName}* a été créée avec succès !`,
+              { parse_mode: 'Markdown' }
+            );
+            logger.info(`Activité créée via l'interface conversationnelle par ${userId}`);
+            return; // Arrêter le traitement normal du message
+          } catch (err) {
+            logger.error('Erreur lors de la capture du nom d\'activité:', err);
+            userSessions.delete(userId);
+            await bot.sendMessage(msg.chat.id, "❌ Echec lors de la création de l'activité.");
+            return;
+          }
+        }
+      }
+
+      // 2. Traitement standard des commandes
+      if (!msg.text.startsWith('/')) return;
       
       const chatType = msg.chat.type;
       const isGroupChat = ['group', 'supergroup'].includes(chatType);

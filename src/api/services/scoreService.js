@@ -65,6 +65,7 @@ const scoreService = {
     activityId,
     teamId,
     userId,
+    chatId,
     limit = 50,
     offset = 0
   } = {}) {
@@ -269,10 +270,10 @@ const scoreService = {
 
       // Vérifier si un score existe déjà
       const existingScore = await Score.findOne({
-        ...(userId && { user: userId }),
-        ...(teamId && { team: teamId }),
-        activity: scoreData.activityId,
-        ...(scoreData.subActivityId && { subActivity: scoreData.subActivityId })
+        ...(userId && { user: String(userId) }),
+        ...(teamId && { team: String(teamId) }),
+        activity: String(scoreData.activityId),
+        ...(scoreData.subActivityId && { subActivity: String(scoreData.subActivityId) })
       });
 
       if (existingScore) {
@@ -394,7 +395,7 @@ const scoreService = {
         }
       }
 
-      await Score.findByIdAndDelete(scoreId);
+      await Score.findByIdAndDelete(String(scoreId));
       
       logger.info(`Score ${scoreId} supprimé par ${deletedBy}`);
       return true;
@@ -410,13 +411,14 @@ const scoreService = {
   /**
    * Récupère l'historique des scores pour un utilisateur ou une équipe
    */
-  async getScoreHistory({ userId, teamId, activityId, limit = 50, offset = 0 } = {}) {
+  async getScoreHistory({ userId, teamId, activityId, chatId, limit = 50, offset = 0 } = {}) {
     try {
       const filter = {};
       
       if (userId) filter.user = userId;
       if (teamId) filter.team = teamId;
       if (activityId) filter.activity = activityId;
+      if (chatId) filter['metadata.chatId'] = String(chatId);
 
       const scores = await Score.find(filter)
         .populate('user', 'username firstName lastName')
@@ -447,13 +449,13 @@ const scoreService = {
    */
   async getDashboardData({ chatId, period = STATS_PERIODS.MONTH } = {}) {
     try {
-      // Statistiques générales
-      const totalScores = await Score.countDocuments({ status: 'approved' });
-      const totalUsers = await User.countDocuments({ status: 'active' });
-      const totalTeams = await Team.countDocuments();
+      // Statistiques générales pour le chat actuel
+      const totalScores = await Score.countDocuments({ status: 'approved', 'metadata.chatId': String(chatId) });
+      const totalUsers = await User.countDocuments({ status: 'active' }); // Les utilisateurs sont globaux
+      const totalTeams = await Team.countDocuments({ chatId: String(chatId) });
 
       // Scores récents
-      const recentScores = await Score.find({ status: 'approved' })
+      const recentScores = await Score.find({ status: 'approved', 'metadata.chatId': String(chatId) })
         .populate('user', 'username firstName lastName')
         .populate('team', 'name')
         .populate('activity', 'name')
@@ -464,6 +466,7 @@ const scoreService = {
       const topPerformers = await scoreService.getRankings({
         scope: 'individual',
         period,
+        chatId: String(chatId),
         limit: 5
       });
 

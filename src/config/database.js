@@ -30,21 +30,23 @@ export const connectToDatabase = async () => {
     
     logger.info(`✅ MongoDB connecté: ${mongoUrl.replace(/\/\/.*@/, '//***@')}`);
 
-    // Gestion des événements de connexion
-    mongoose.connection.on('error', (err) => {
-      logger.error('Erreur MongoDB:', err);
-      isConnected = false;
-    });
+    // Gestion des événements de connexion uniquement si non déjà attachés
+    if (mongoose.connection.listeners('error').length === 0) {
+      mongoose.connection.on('error', (err) => {
+        logger.error('Erreur MongoDB:', err);
+        isConnected = false;
+      });
 
-    mongoose.connection.on('disconnected', () => {
-      logger.warn('MongoDB déconnecté');
-      isConnected = false;
-    });
+      mongoose.connection.on('disconnected', () => {
+        logger.warn('MongoDB déconnecté');
+        isConnected = false;
+      });
 
-    mongoose.connection.on('reconnected', () => {
-      logger.info('MongoDB reconnecté');
-      isConnected = true;
-    });
+      mongoose.connection.on('reconnected', () => {
+        logger.info('MongoDB reconnecté');
+        isConnected = true;
+      });
+    }
 
   } catch (error) {
     isConnected = false;

@@ -4,6 +4,12 @@ import ChatGroup from '../../api/models/ChatGroup.js';
 import logger from '../../utils/logger.js';
 
 /**
+ * In-memory store for conversational user sessions
+ * Expected payload: { step: string, [key: string]: any }
+ */
+export const userSessions = new Map();
+
+/**
  * Résout un ID Telegram en ObjectId MongoDB
  * @param {number|string} telegramId - L'ID Telegram de l'utilisateur
  * @returns {Promise<string|null>} L'ObjectId MongoDB ou null si non trouvé

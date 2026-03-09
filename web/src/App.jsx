@@ -45,31 +45,6 @@ function BottomNav() {
 function App() {
   const [authReady, setAuthReady] = useState(false);
 
-  useEffect(() => {
-    // Initialiser le Telegram WebApp
-    const tg = globalThis.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand(); // Ouvrir en plein écran
-      tg.enableClosingConfirmation(); // Confirmer avant de fermer
-
-      // Appliquer les couleurs du thème
-      document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#1a1a2e');
-      document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#e0e0e0');
-      document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#8888aa');
-      document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#6c63ff');
-      document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#6c63ff');
-      document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
-      document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#16213e');
-    }
-
-    // Authentification automatique
-    initAuth();
-
-    // Initialiser le chatId depuis les query params (contexte Telegram)
-    getChatId();
-  }, []);
-
   const initAuth = async () => {
     try {
       // Si on a déjà un JWT valide, vérifier qu'il marche
@@ -94,6 +69,31 @@ function App() {
       setAuthReady(true);
     }
   };
+
+  useEffect(() => {
+    // Initialiser le Telegram WebApp
+    const tg = globalThis.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand(); // Ouvrir en plein écran
+      tg.enableClosingConfirmation(); // Confirmer avant de fermer
+
+      // Appliquer les couleurs du thème
+      document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#1a1a2e');
+      document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#e0e0e0');
+      document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#8888aa');
+      document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#6c63ff');
+      document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#6c63ff');
+      document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+      document.documentElement.style.setProperty('--tg-theme-secondary-bg-color', tg.themeParams.secondary_bg_color || '#16213e');
+    }
+
+    // Authentification automatique
+    initAuth();
+
+    // Initialiser le chatId depuis les query params (contexte Telegram)
+    getChatId();
+  }, []);
 
   if (!authReady) {
     return (

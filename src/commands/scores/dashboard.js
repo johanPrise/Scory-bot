@@ -124,21 +124,12 @@ function formatOverviewDashboard(data) {
  * Formatte le tableau de bord de performance
  */
 function formatPerformanceDashboard(data) {
-  // Implémentation simplifiée
   let message = `📊 *Performances détaillées*\n\n`;
   
-  // Graphique de progression (en texte pour l'instant)
-  message += "Graphique de progression des 7 derniers jours :\n";
-  message += "🟩🟩🟩🟨⬜⬜⬜ +15% vs semaine dernière\n\n";
+  message += "🚧 *En cours de construction*\n";
+  message += "Les graphiques et statistiques détaillées de progression seront bientôt disponibles !\n\n";
   
-  message += "📈 *Statistiques hebdomadaires*\n";
-  message += "• Activités: 12 (+3)\n";
-  message += "• Score total: 350 pts (+45)\n";
-  message += "• Temps total: 8h 30m\n\n";
-  
-  message += "🏆 *Records personnels*\n";
-  message += "• Meilleur score: 150 pts (Course à pied)\n";
-  message += "• Série active: 5 jours consécutifs\n";
+  message += "La fonctionnalité des records est activée dans la prochaine mise à jour.\n";
   
   const keyboard = {
     inline_keyboard: [
@@ -158,19 +149,8 @@ function formatPerformanceDashboard(data) {
 function formatGoalsDashboard(data) {
   let message = `🎯 *Objectifs et récompenses*\n\n`;
   
-  // Objectifs en cours
-  message += `📌 *Objectifs en cours*\n`;
-  message += `🏃‍♂️ 10 activités ce mois-ci: 7/10 (70%)\n`;
-  message += `⭐ Atteindre 1000 points: 750/1000 (75%)\n`;
-  message += `🔥 Série de 7 jours: 5/7 jours\n\n`;
-  
-  // Récompenses
-  message += `🏆 *Récompenses à venir*\n`;
-  message += `• 10 activités: 50 points\n`;
-  message += `• 1000 points: Badge "Champion"\n\n`;
-  
-  message += `📅 *Prochain objectif*\n`;
-  message += `Atteindre 10 activités ce mois-ci (3 restantes)\n`;
+  message += "🚧 *Système d'objectifs en cours de développement*\n";
+  message += "Vous pourrez bientôt vous fixer des défis et débloquer des badges exclusifs.\n\n";
   
   const keyboard = {
     inline_keyboard: [
@@ -190,23 +170,8 @@ function formatGoalsDashboard(data) {
 function formatComparisonDashboard(data) {
   let message = `📊 *Comparaison*\n\n`;
   
-  // Comparaison avec la moyenne
-  message += `🔍 *Comparaison avec la moyenne*\n`;
-  message += `• Vos activités: 12\n`;
-  message += `• Moyenne des utilisateurs: 9\n`;
-  message += `• Position: Top 15%\n\n`;
-  
-  // Classement
-  message += `🏅 *Votre classement*\n`;
-  message += `• Global: #42\n`;
-  message += `• Amis: #3\n`;
-  message += `• Région: #8\n\n`;
-  
-  // Amis actifs
-  message += `👥 *Amis actifs*\n`;
-  message += `1. @johndoe: 15 activités\n`;
-  message += `2. @janedoe: 12 activités\n`;
-  message += `3. Vous: 12 activités\n`;
+  message += "🚧 *Partie Sociale en Construction*\n";
+  message += "Le classement visuel entre amis arrivera très prochainement !\n\n";
   
   const keyboard = {
     inline_keyboard: [
@@ -223,15 +188,15 @@ function formatComparisonDashboard(data) {
 /**
  * Gère les actions du tableau de bord
  */
-const handleDashboardActions = async (ctx) => {
-  // Vérifier si c'est un callback_query
-  if (!ctx?.update?.callback_query) {
-    console.error('handleDashboardActions: ctx.update.callback_query est undefined');
+export const handleDashboardActions = async (query) => {
+  if (!query || !query.data) {
+    console.error('handleDashboardActions: query ou query.data est undefined');
     return;
   }
   
-  const callbackData = ctx.update.callback_query.data;
-  const chatId = ctx.chat?.id || ctx.update?.callback_query?.message?.chat?.id;
+  const callbackData = query.data;
+  const chatId = query.message?.chat?.id;
+  const fromId = query.from?.id;
   
   try {
     if (callbackData.startsWith('dashboard_')) {
@@ -240,15 +205,14 @@ const handleDashboardActions = async (ctx) => {
       // Rafraîchir le tableau de bord avec le type sélectionné
       await dashboard(
         { 
-          ...ctx, 
           chat: { id: chatId },
-          from: { id: ctx.from.id }
+          from: { id: fromId }
         }, 
         [null, action]
       );
       
       // Supprimer le clavier après sélection
-      await bot.answerCallbackQuery(ctx.update.callback_query.id);
+      await bot.answerCallbackQuery(query.id);
     }
   } catch (error) {
     logger.error('Erreur dans handleDashboardActions:', error);

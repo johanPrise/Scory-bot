@@ -14,7 +14,10 @@ const start = async (msg) => {
     // Chercher ou créer l'utilisateur par son ID Telegram
     let user = await User.findOne({ 'telegram.id': String(from.id) });
 
+    let isNewUser = false;
+
     if (!user) {
+      isNewUser = true;
       // Créer le profil automatiquement
       user = await User.create({
         username: from.username || `user_${from.id}`,
@@ -65,7 +68,7 @@ const start = async (msg) => {
     const welcomeText = [
       `🎯 *Bienvenue sur Scory, ${from.first_name || 'Joueur'} !*`,
       '',
-      user.wasNew !== false ? '✅ Votre profil a été créé automatiquement.' : '',
+      isNewUser ? '✅ Votre profil a été créé automatiquement.' : '',
       '',
       '📋 *Commandes principales :*',
       '/help — Liste des commandes',
