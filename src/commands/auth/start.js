@@ -55,14 +55,25 @@ const start = async (msg) => {
 
     const webAppUrl = process.env.WEB_APP_URL;
     const hasValidWebApp = webAppUrl && webAppUrl.startsWith('https://');
+    const isPrivate = msg.chat.type === 'private';
 
     const options = { parse_mode: 'Markdown' };
     if (hasValidWebApp) {
-      options.reply_markup = {
-        inline_keyboard: [
-          [{ text: '🚀 Ouvrir Scory App', web_app: { url: webAppUrl } }]
-        ]
-      };
+      if (isPrivate) {
+        // En privé : bouton Web App natif (ouverture in-app)
+        options.reply_markup = {
+          inline_keyboard: [
+            [{ text: '🚀 Ouvrir Scory App', web_app: { url: webAppUrl } }]
+          ]
+        };
+      } else {
+        // En groupe : bouton URL classique (web_app interdit par Telegram dans les groupes)
+        options.reply_markup = {
+          inline_keyboard: [
+            [{ text: '🚀 Ouvrir Scory App', url: webAppUrl }]
+          ]
+        };
+      }
     }
 
     const welcomeText = [

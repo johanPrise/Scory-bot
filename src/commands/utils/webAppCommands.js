@@ -6,14 +6,16 @@ import { handleError } from './helpers.js';
 const WEB_APP_BASE = process.env.WEB_APP_URL || process.env.WEBAPP_URL || 'http://localhost:3000';
 
 /**
- * Crée un bouton adapté selon que l'URL est HTTPS ou non
- * Telegram exige HTTPS pour les Web Apps
+ * Crée un bouton adapté selon le contexte du chat
+ * - En privé + HTTPS : bouton web_app (ouverture in-app native)
+ * - En groupe ou HTTP : bouton URL classique (web_app interdit dans les groupes par Telegram)
  */
-const createSmartButton = (text, url) => {
-  if (url?.startsWith('https://')) {
+const createSmartButton = (text, url, msg) => {
+  const isPrivate = msg?.chat?.type === 'private';
+  if (isPrivate && url?.startsWith('https://')) {
     return createWebAppButton(text, url);
   }
-  // En dev (HTTP), utiliser un bouton URL classique
+  // En groupe ou en dev (HTTP), utiliser un bouton URL classique
   return createUrlButton(text, url);
 };
 
@@ -31,7 +33,7 @@ export const openAdminDashboard = async (msg) => {
     const webAppUrl = `${WEB_APP_BASE}/approval?userId=${userId}&chatId=${chatId}`;
     
     const keyboard = [
-      [createSmartButton("🖥️ Ouvrir le Dashboard Admin", webAppUrl)]
+      [createSmartButton("🖥️ Ouvrir le Dashboard Admin", webAppUrl, msg)]
     ];
     
     await bot.sendMessage(
@@ -62,7 +64,7 @@ export const openScoreManager = async (msg) => {
     const webAppUrl = `${WEB_APP_BASE}/add-score?userId=${userId}&chatId=${chatId}`;
     
     const keyboard = [
-      [createSmartButton("📊 Gestion des Scores", webAppUrl)]
+      [createSmartButton("📊 Gestion des Scores", webAppUrl, msg)]
     ];
     
     await bot.sendMessage(
@@ -93,7 +95,7 @@ export const openTeamDashboard = async (msg) => {
     const webAppUrl = `${WEB_APP_BASE}/teams?userId=${userId}&chatId=${chatId}`;
     
     const keyboard = [
-      [createSmartButton("👥 Tableau de Bord des Équipes", webAppUrl)]
+      [createSmartButton("👥 Tableau de Bord des Équipes", webAppUrl, msg)]
     ];
     
     await bot.sendMessage(
@@ -124,7 +126,7 @@ export const openMainDashboard = async (msg) => {
     const webAppUrl = `${WEB_APP_BASE}/?userId=${userId}&chatId=${chatId}`;
     
     const keyboard = [
-      [createSmartButton("📈 Tableau de Bord", webAppUrl)]
+      [createSmartButton("📈 Tableau de Bord", webAppUrl, msg)]
     ];
     
     await bot.sendMessage(
@@ -165,14 +167,14 @@ export const openApp = async (msg) => {
     
     // Créer le clavier avec bouton Web App principal + options rapides
     const keyboard = [
-      [createSmartButton("🚀 Ouvrir Scory App", webAppUrl)],
+      [createSmartButton("🚀 Ouvrir Scory App", webAppUrl, msg)],
       [
-        createSmartButton("📊 Scores", `${WEB_APP_BASE}/add-score?userId=${userId}&chatId=${chatId}`),
-        createSmartButton("🏆 Rankings", `${WEB_APP_BASE}/rankings?userId=${userId}&chatId=${chatId}`)
+        createSmartButton("📊 Scores", `${WEB_APP_BASE}/add-score?userId=${userId}&chatId=${chatId}`, msg),
+        createSmartButton("🏆 Rankings", `${WEB_APP_BASE}/rankings?userId=${userId}&chatId=${chatId}`, msg)
       ],
       [
-        createSmartButton("👥 Équipes", `${WEB_APP_BASE}/teams?userId=${userId}&chatId=${chatId}`),
-        createSmartButton("📈 Stats", `${WEB_APP_BASE}/rankings?userId=${userId}&chatId=${chatId}`)
+        createSmartButton("👥 Équipes", `${WEB_APP_BASE}/teams?userId=${userId}&chatId=${chatId}`, msg),
+        createSmartButton("📈 Stats", `${WEB_APP_BASE}/rankings?userId=${userId}&chatId=${chatId}`, msg)
       ]
     ];
     

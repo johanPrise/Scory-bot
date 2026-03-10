@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import logger from '../utils/logger.js';
+import User from '../api/models/User.js';
 
 let isConnected = false;
 
@@ -29,6 +30,11 @@ export const connectToDatabase = async () => {
     isConnected = true;
     
     logger.info(`✅ MongoDB connecté: ${mongoUrl.replace(/\/\/.*@/, '//***@')}`);
+
+    // Réparer l'index email corrompu (documents avec email: null)
+    // Cette opération est idempotente et ne fait rien si déjà réparé
+    await User.repairEmailIndex();
+
 
     // Gestion des événements de connexion uniquement si non déjà attachés
     if (mongoose.connection.listeners('error').length === 0) {

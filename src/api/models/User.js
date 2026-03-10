@@ -17,9 +17,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     unique: true,
     sparse: true, // Permet plusieurs documents sans email (utilisateurs Telegram)
+    default: undefined, // IMPORTANT: ne pas créer le champ avec null, sinon sparse ne fonctionne pas
     trim: true,
     lowercase: true,
-    match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$/, 'Veuillez entrer un email valide']
+    match: [/^[\w.-]+@([\w-]+\.)+[\w-]{2,}$/, 'Veuillez entrer un email valide']
   },
   
   password: {
@@ -162,6 +163,17 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ 'teams.team': 1 });
 userSchema.index({ status: 1 });
 
+// Middleware pour supprimer les emails null/vides AVANT la sauvegarde
+// Cela garantit que le sparse index fonctionne correctement
+userSchema.pre('save', function(next) {
+  if (this.email === null || this.email === undefined || this.email === '') {
+    this.email = undefined;
+    // S'assurer que Mongoose n'écrit pas le champ
+    this.set('email', undefined, { strict: false });
+  }
+  next();
+});
+
 // Middleware pour hacher le mot de passe avant la sauvegarde
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password') || !this.password) return next();
@@ -213,7 +225,7 @@ userSchema.methods.isTeamOwner = function(teamId) {
     t.team && t.team.toString() === teamId.toString()
   );
   
-  return teamMembership && teamMembership.role === 'owner';
+return teamMembership?.role === 'owner';
 };
 
 // Méthode pour ajouter l'utilisateur à une équipe
@@ -286,5 +298,40 @@ userSchema.methods.getPublicProfile = function() {
 userSchema.plugin(mongoosePaginate);
 
 const User = mongoose.model('User', userSchema);
+
+/**
+ * Répare l'index email corrompu en production.
+ * Les documents existants avec `email: null` empechent le sparse index de fonctionner.
+ * Cette fonction doit être appelée une seule fois au démarrage.
+ */
+User.repairEmailIndex = async function() {
+  try {
+    // 1. Nettoyer les documents existants avec email: null
+    const result = await this.updateMany(
+      { email: null },
+      { $unset: { email: '' } }
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`[User] Réparé ${result.modifiedCount} documents avec email: null`);
+    }
+    
+    // 2. Supprimer l'ancien index corrompu et laisser Mongoose le recréer
+    try {
+      await this.collection.dropIndex('email_1');
+      console.log('[User] Index email_1 corrompu supprimé, sera recréé au prochain syncIndexes');
+    } catch (e) {
+      // L'index n'existe peut-être pas ou a déjà été réparé
+      if (e.codeName !== 'IndexNotFound') {
+        console.warn('[User] Impossible de supprimer l\'index email_1:', e.message);
+      }
+    }
+    
+    // 3. Recréer les index proprement
+    await this.syncIndexes();
+    console.log('[User] Index synchronisés');
+  } catch (err) {
+    console.error('[User] Erreur lors de la réparation de l\'index email:', err.message);
+  }
+};
 
 export default User;
