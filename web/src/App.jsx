@@ -65,6 +65,7 @@ function App() {
       }
     } catch (err) {
       console.warn('Auth init failed:', err.message);
+      alert('Erreur Auth: ' + err.message);
     } finally {
       setAuthReady(true);
     }

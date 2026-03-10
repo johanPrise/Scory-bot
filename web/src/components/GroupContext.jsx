@@ -45,6 +45,7 @@ export function GroupProvider({ children }) {
       }
     } catch (err) {
       console.warn('Impossible de charger les groupes:', err.message);
+      alert('Erreur API Groupes: ' + err.message);
     } finally {
       setLoading(false);
     }
