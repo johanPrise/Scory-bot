@@ -62,24 +62,27 @@ const advancedRanking = async (ctx, match) => {
  * @returns {string} Message formaté
  */
 function formatRanking(rankingData, period) {
-  if (!rankingData || rankingData.length === 0) {
+  const items = Array.isArray(rankingData) ? rankingData : (rankingData?.items || []);
+
+  if (!items || items.length === 0) {
     return 'Aucune donnée de classement disponible pour cette période.';
   }
 
   const periodLabel = getPeriodLabel(period);
   let message = `🏆 *Classement ${periodLabel}*\n\n`;
 
-  rankingData.forEach((entry, index) => {
+  items.forEach((entry, index) => {
     const medal = getMedal(index + 1);
-    message += `${medal} *${entry.position}.* ${entry.username}: *${entry.score} pts*\n`;
+    const position = entry.position || (index + 1);
+    message += `${medal} *${position}.* ${entry.username}: *${entry.totalPoints || entry.score} pts*\n`;
     
     // Afficher la progression si disponible
-    if (entry.previousPosition) {
-      const change = entry.previousPosition - entry.position;
+    if (entry.previousPosition !== undefined && entry.previousPosition !== null) {
+      const change = entry.previousPosition - position;
       if (change > 0) {
         message += `   ⬆️ +${change} places\n`;
       } else if (change < 0) {
-        message += `   ⬇️ ${change} places\n`;
+        message += `   ⬇️ ${Math.abs(change)} places\n`;
       } else {
         message += '   ➖ Même position\n';
       }

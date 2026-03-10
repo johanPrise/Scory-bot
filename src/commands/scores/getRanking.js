@@ -7,8 +7,10 @@ import { handleError, resolveUserId, trackGroup } from '../utils/helpers.js';
 /**
  * Formate un classement pour l'affichage
  */
-const formatRanking = (ranking, activityName = '') => {
-  if (!ranking || ranking.length === 0) {
+const formatRanking = (rankingData, activityName = '') => {
+  const items = Array.isArray(rankingData) ? rankingData : (rankingData?.items || []);
+  
+  if (!items || items.length === 0) {
     return 'Aucun score trouvé pour cette activité.';
   }
 
@@ -16,7 +18,7 @@ const formatRanking = (ranking, activityName = '') => {
   
   let message = `🏆 *Classement ${activityName ? `- ${activityName}` : ''}* 🏆\n\n`;
   
-  ranking.forEach((entry, index) => {
+  items.forEach((entry, index) => {
     const rankEmoji = emojis[index] || `#${index + 1}`;
     message += `${rankEmoji} *${entry.username}*: ${entry.totalPoints} pts`;
     
