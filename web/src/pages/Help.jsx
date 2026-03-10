@@ -60,7 +60,6 @@ const sections = [
       '/activities — Lister les activités',
       '/createactivity — Créer une activité',
       '/createteam — Créer une équipe',
-      '/dashboard — Ouvrir le tableau de bord web',
       '/app — Ouvrir l\'application complète',
     ]
   }

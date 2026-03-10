@@ -5,7 +5,7 @@ import { handleDeleteActivityCallback } from '../activities/deleteActivity.js';
 import { handleDeleteTeamCallback } from '../teams/deleteTeam.js';
 import { handleDeleteScoreCallback } from '../scores/deleteScore.js';
 import { handleHistoryActions } from '../scores/scoreHistory.js';
-import { handleDashboardActions } from '../scores/dashboard.js';
+// Dashboard a été retiré pour unifier l'expérience Web App
 
 /**
  * Configure les gestionnaires de callbacks pour les boutons inline
@@ -59,10 +59,6 @@ export const setupCallbackHandlers = () => {
       else if (action.startsWith('history_')) {
         // Callbacks d'historique des scores
         await handleHistoryActions(query);
-      }
-      else if (action.startsWith('dashboard_')) {
-        // Callbacks du tableau de bord
-        await handleDashboardActions(query);
       }
       else {
         // Callback non reconnu

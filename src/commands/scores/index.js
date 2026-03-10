@@ -11,7 +11,7 @@ import getSubRanking from './getSubRanking.js';
 // Commandes avancées
 import advancedRanking from './advancedRanking.js';
 import scoreHistory from './scoreHistory.js';
-import dashboard, { setupDashboardHandlers } from './dashboard.js';
+// Plus de dashboard en texte pour éviter la confusion avec la Web App
 
 // Commande de suppression
 import deleteScore from './deleteScore.js';
@@ -39,7 +39,7 @@ const setupScoreCommands = (botUsername) => {
   // Ne pas le ré-enregistrer ici pour éviter des réponses en double
   
   // Configurer les gestionnaires d'événements
-  setupDashboardHandlers();
+  
 };
 
 export {
@@ -52,7 +52,6 @@ export {
   // Commandes avancées
   advancedRanking,
   scoreHistory,
-  dashboard,
   
   // Configuration
   setupScoreCommands
