@@ -22,7 +22,7 @@ const formatRanking = (rankingData, activityName = '') => {
   items.forEach((entry, index) => {
     const rankEmoji = emojis[index] || `#${index + 1}`;
     const safeUsername = escapeHtml(entry.username);
-    message += `${rankEmoji} <b>${safeUsername}</b>: ${entry.totalPoints} pts`;
+    message += `${rankEmoji} <b>${safeUsername}</b>: ${entry.totalScore || 0} pts`;
     
     // Ajouter la progression si disponible
     if (entry.previousPosition !== undefined) {

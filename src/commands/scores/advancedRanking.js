@@ -76,7 +76,7 @@ function formatRanking(rankingData, period) {
     const medal = getMedal(index + 1);
     const position = entry.position || (index + 1);
     const safeUsername = escapeHtml(entry.username);
-    message += `${medal} <b>${position}.</b> ${safeUsername}: <b>${entry.totalPoints || entry.score} pts</b>\n`;
+    message += `${medal} <b>${position}.</b> ${safeUsername}: <b>${entry.totalScore || entry.score || 0} pts</b>\n`;
     
     // Afficher la progression si disponible
     if (entry.previousPosition !== undefined && entry.previousPosition !== null) {
