@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import * as api from '../api';
 import { getChatId } from '../api';
 
@@ -19,7 +20,7 @@ export function GroupProvider({ children }) {
   // Charger la liste des groupes au montage
   useEffect(() => {
     loadGroups();
-  }, []);
+  }, [loadGroups]);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -84,9 +85,14 @@ export function GroupProvider({ children }) {
   );
 }
 
+GroupProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
 /**
  * Hook pour accéder au contexte de groupe
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useGroup() {
   const context = useContext(GroupContext);
   if (!context) {
@@ -95,4 +101,5 @@ export function useGroup() {
   return context;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export default GroupContext;
