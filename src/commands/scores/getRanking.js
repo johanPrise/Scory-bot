@@ -16,11 +16,13 @@ const formatRanking = (rankingData, activityName = '') => {
 
   const emojis = ['🥇', '🥈', '🥉'];
   
-  let message = `🏆 *Classement ${activityName ? `- ${activityName}` : ''}* 🏆\n\n`;
+  const escapeHtml = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let message = `🏆 <b>Classement ${activityName ? `- ${activityName}` : ''}</b> 🏆\n\n`;
   
   items.forEach((entry, index) => {
     const rankEmoji = emojis[index] || `#${index + 1}`;
-    message += `${rankEmoji} *${entry.username}*: ${entry.totalPoints} pts`;
+    const safeUsername = escapeHtml(entry.username);
+    message += `${rankEmoji} <b>${safeUsername}</b>: ${entry.totalPoints} pts`;
     
     // Ajouter la progression si disponible
     if (entry.previousPosition !== undefined) {
@@ -54,11 +56,11 @@ export default async (msg, match) => {
     if (!activityNameInput) {
       return bot.sendMessage(
         chatId,
-        '🏆 *Classement*\n\n' +
-        'Utilisez: `/ranking nom_activité`\n\n' +
-        'Exemple: `/ranking course`\n\n' +
+        '🏆 <b>Classement</b>\n\n' +
+        'Utilisez: <code>/ranking nom_activité</code>\n\n' +
+        'Exemple: <code>/ranking course</code>\n\n' +
         'Pour voir les activités disponibles: /activities',
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
     }
 
@@ -66,7 +68,7 @@ export default async (msg, match) => {
     const loadingMsg = await bot.sendMessage(
       chatId,
       '🔄 Chargement du classement...',
-      { parse_mode: 'Markdown' }
+      { parse_mode: 'HTML' }
     );
 
     // Résoudre l'ID utilisateur et tracker le groupe
@@ -104,7 +106,7 @@ export default async (msg, match) => {
       {
         chat_id: chatId,
         message_id: loadingMsg.message_id,
-        parse_mode: 'Markdown'
+        parse_mode: 'HTML'
       }
     );
 

@@ -22,7 +22,7 @@ export default async (msg, match) => {
     const loadingMsg = await bot.sendMessage(
       chatId,
       '🔄 Récupération du classement des équipes...',
-      { parse_mode: 'Markdown' }
+      { parse_mode: 'HTML' }
     );
 
     // Résoudre l'ID utilisateur et tracker le groupe
@@ -48,9 +48,11 @@ export default async (msg, match) => {
     });
 
     // Formater le message de réponse
-    let message = `🏆 *Classement global des équipes*\n\n`;
+    const escapeHtml = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    let message = `🏆 <b>Classement global des équipes</b>\n\n`;
     if (activityNameInput) {
-      message = `🏆 *Classement des équipes* pour *${activityNameInput}*\n\n`;
+      const safeActivityName = escapeHtml(activityNameInput);
+      message = `🏆 <b>Classement des équipes</b> pour <b>${safeActivityName}</b>\n\n`;
     }
 
     if (!ranking || ranking.length === 0) {
@@ -58,7 +60,8 @@ export default async (msg, match) => {
     } else {
       ranking.forEach((team, index) => {
         const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
-        message += `${medal} *${team.name}* - ${team.score} points\n`;
+        const safeTeamName = escapeHtml(team.name);
+        message += `${medal} <b>${safeTeamName}</b> - ${team.score} points\n`;
         if (team.members && team.members.length > 0) {
           message += `   👥 ${team.members.length} membres\n`;
         }
@@ -68,7 +71,7 @@ export default async (msg, match) => {
     await bot.editMessageText(message, {
       chat_id: chatId,
       message_id: loadingMsg.message_id,
-      parse_mode: 'Markdown'
+      parse_mode: 'HTML'
     });
 
     logger.info(`Team ranking displayed for chat ${chatId}`);

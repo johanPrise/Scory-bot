@@ -39,7 +39,7 @@ const advancedRanking = async (ctx, match) => {
     await bot.editMessageText(formattedRanking, {
       chat_id: chatId,
       message_id: loadingMsg.message_id,
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       disable_web_page_preview: true
     });
 
@@ -68,13 +68,15 @@ function formatRanking(rankingData, period) {
     return 'Aucune donnée de classement disponible pour cette période.';
   }
 
+  const escapeHtml = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const periodLabel = getPeriodLabel(period);
-  let message = `🏆 *Classement ${periodLabel}*\n\n`;
+  let message = `🏆 <b>Classement ${periodLabel}</b>\n\n`;
 
   items.forEach((entry, index) => {
     const medal = getMedal(index + 1);
     const position = entry.position || (index + 1);
-    message += `${medal} *${position}.* ${entry.username}: *${entry.totalPoints || entry.score} pts*\n`;
+    const safeUsername = escapeHtml(entry.username);
+    message += `${medal} <b>${position}.</b> ${safeUsername}: <b>${entry.totalPoints || entry.score} pts</b>\n`;
     
     // Afficher la progression si disponible
     if (entry.previousPosition !== undefined && entry.previousPosition !== null) {
