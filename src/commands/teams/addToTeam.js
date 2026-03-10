@@ -76,7 +76,7 @@ export const addToTeam = async (msg, match) => {
     const escapedTeamName = teamName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const team = await Team.findOne({ 
       name: { $regex: new RegExp(`^${escapedTeamName}$`, 'i') },
-      chatId: chatId.toString()
+      chatId: String(chatId)
     });
 
     if (!team) {
@@ -139,28 +139,31 @@ export const addToTeam = async (msg, match) => {
     const updatedTeam = await Team.findById(team._id);
 
     // Réponse de succès
-    const displayName = userToAdd.getDisplayName();
+    const escapeHtml = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    
+    const displayName = escapeHtml(userToAdd.getDisplayName());
+    const safeTeamName = escapeHtml(team.name);
     
     let message = `✅ Membre ajouté avec succès !\n\n`;
-    message += `👥 *Équipe*: ${team.name}\n`;
-    message += `👤 *Membre ajouté*: ${displayName}\n`;
-    message += `🔰 *Rôle*: ${isAdmin ? 'Administrateur' : 'Membre'}\n`;
-    const safeAdderName = (msg.from.first_name || msg.from.username || 'Utilisateur').replace(/_/g, '\\_');
-    message += `👑 *Ajouté par*: ${safeAdderName}`;
+    message += `👥 <b>Équipe</b>: ${safeTeamName}\n`;
+    message += `👤 <b>Membre ajouté</b>: ${displayName}\n`;
+    message += `🔰 <b>Rôle</b>: ${isAdmin ? 'Administrateur' : 'Membre'}\n`;
+    const adderName = escapeHtml(msg.from.first_name || msg.from.username || 'Utilisateur');
+    message += `👑 <b>Ajouté par</b>: ${adderName}`;
 
     if (updatedTeam.members && updatedTeam.members.length > 0) {
-      message += '\n\n*Membres actuels*:';
+      message += '\n\n<b>Membres actuels</b>:';
       updatedTeam.members.forEach((member, index) => {
         const memberRole = member.isAdmin ? ' (Admin)' : '';
-        const safeMemberName = (member.username || 'Utilisateur').replace(/_/g, '\\_');
-        message += `\n${index + 1}. ${safeMemberName}${memberRole}`;
+        const memberName = escapeHtml(member.username || 'Utilisateur');
+        message += `\n${index + 1}. ${memberName}${memberRole}`;
       });
     }
 
     await bot.editMessageText(message, {
       chat_id: chatId,
       message_id: loadingMsg.message_id,
-      parse_mode: 'Markdown'
+      parse_mode: 'HTML'
     });
 
     logger.info(`Utilisateur ${userIdToAdd} ajouté à l'équipe ${team.name} par ${userId} dans le chat ${chatId}`);

@@ -19,132 +19,7 @@ const createSmartButton = (text, url, msg) => {
   return createUrlButton(text, url);
 };
 
-/**
- * Commande pour ouvrir le dashboard administrateur
- */
-export const openAdminDashboard = async (msg) => {
-  try {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    
-    // Vérifier si l'utilisateur est un administrateur
-    // (à implémenter selon votre logique d'authentification)
-    
-    const webAppUrl = `${WEB_APP_BASE}/approval?userId=${userId}&chatId=${chatId}`;
-    
-    const keyboard = [
-      [createSmartButton("🖥️ Ouvrir le Dashboard Admin", webAppUrl, msg)]
-    ];
-    
-    await bot.sendMessage(
-      chatId, 
-      "🔐 *Dashboard Administrateur*\n\nAccédez au dashboard pour gérer les utilisateurs, les activités et les scores.", 
-      {
-        parse_mode: 'Markdown',
-        ...createInlineKeyboard(keyboard)
-      }
-    );
-    
-    logger.info(`Utilisateur ${userId} a ouvert le dashboard admin dans le chat ${chatId}`);
-    
-  } catch (error) {
-    logger.error('Erreur lors de l\'ouverture du dashboard admin:', error);
-    await handleError(msg, error, 'commande /admin');
-  }
-};
 
-/**
- * Commande pour ouvrir l'interface de gestion des scores
- */
-export const openScoreManager = async (msg) => {
-  try {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    
-    const webAppUrl = `${WEB_APP_BASE}/add-score?userId=${userId}&chatId=${chatId}`;
-    
-    const keyboard = [
-      [createSmartButton("📊 Gestion des Scores", webAppUrl, msg)]
-    ];
-    
-    await bot.sendMessage(
-      chatId, 
-      "📊 *Gestion des Scores*\n\nAccédez à l'interface de gestion des scores pour ajouter, modifier ou visualiser les scores.", 
-      {
-        parse_mode: 'Markdown',
-        ...createInlineKeyboard(keyboard)
-      }
-    );
-    
-    logger.info(`Utilisateur ${userId} a ouvert le gestionnaire de scores dans le chat ${chatId}`);
-    
-  } catch (error) {
-    logger.error('Erreur lors de l\'ouverture du gestionnaire de scores:', error);
-    await handleError(msg, error, 'commande /scoremanager');
-  }
-};
-
-/**
- * Commande pour ouvrir le tableau de bord des équipes
- */
-export const openTeamDashboard = async (msg) => {
-  try {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    
-    const webAppUrl = `${WEB_APP_BASE}/teams?userId=${userId}&chatId=${chatId}`;
-    
-    const keyboard = [
-      [createSmartButton("👥 Tableau de Bord des Équipes", webAppUrl, msg)]
-    ];
-    
-    await bot.sendMessage(
-      chatId, 
-      "👥 *Tableau de Bord des Équipes*\n\nGérez vos équipes, consultez les membres et les performances.", 
-      {
-        parse_mode: 'Markdown',
-        ...createInlineKeyboard(keyboard)
-      }
-    );
-    
-    logger.info(`Utilisateur ${userId} a ouvert le tableau de bord des équipes dans le chat ${chatId}`);
-    
-  } catch (error) {
-    logger.error('Erreur lors de l\'ouverture du tableau de bord des équipes:', error);
-    await handleError(msg, error, 'commande /teamdashboard');
-  }
-};
-
-/**
- * Commande pour ouvrir le tableau de bord principal
- */
-export const openMainDashboard = async (msg) => {
-  try {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    
-    const webAppUrl = `${WEB_APP_BASE}/?userId=${userId}&chatId=${chatId}`;
-    
-    const keyboard = [
-      [createSmartButton("📈 Tableau de Bord", webAppUrl, msg)]
-    ];
-    
-    await bot.sendMessage(
-      chatId, 
-      "📈 *Tableau de Bord Principal*\n\nConsultez vos statistiques, activités récentes et performances.", 
-      {
-        parse_mode: 'Markdown',
-        ...createInlineKeyboard(keyboard)
-      }
-    );
-    
-    logger.info(`Utilisateur ${userId} a ouvert le tableau de bord principal dans le chat ${chatId}`);
-    
-  } catch (error) {
-    logger.error('Erreur lors de l\'ouverture du tableau de bord principal:', error);
-    await handleError(msg, error, 'commande /dashboard');
-  }
-};
 
 /**
  * Commande principale pour ouvrir l'application (comme Hamster Kombat)
@@ -165,22 +40,17 @@ export const openApp = async (msg) => {
       chat_id: chatId
     }).toString();
     
-    // Créer le clavier avec bouton Web App principal + options rapides
+    // Créer le clavier avec bouton Web App principal UNIQUEMENT (Option A)
     const keyboard = [
-      [createSmartButton("🚀 Ouvrir Scory App", webAppUrl, msg)],
-      [
-        createSmartButton("📊 Scores", `${WEB_APP_BASE}/add-score?userId=${userId}&chatId=${chatId}`, msg),
-        createSmartButton("🏆 Rankings", `${WEB_APP_BASE}/rankings?userId=${userId}&chatId=${chatId}`, msg)
-      ],
-      [
-        createSmartButton("👥 Équipes", `${WEB_APP_BASE}/teams?userId=${userId}&chatId=${chatId}`, msg),
-        createSmartButton("📈 Stats", `${WEB_APP_BASE}/rankings?userId=${userId}&chatId=${chatId}`, msg)
-      ]
+      [createSmartButton("🚀 Ouvrir Scory App", webAppUrl, msg)]
     ];
+    
+    const safeFirstName = firstName.replace(/_/g, '\\_');
+    const safeUsername = username.replace(/_/g, '\\_');
     
     // Message d'accueil style Hamster Kombat
     const welcomeMessage = `🎯 *Scory Bot - L'App Complète*\n\n` +
-      `👋 Salut ${firstName || username || 'Utilisateur'} !\n\n` +
+      `👋 Salut ${safeFirstName || safeUsername || 'Utilisateur'} !\n\n` +
       `🚀 Clique sur le bouton ci-dessous pour ouvrir l'application complète de Scory directement dans Telegram !\n\n` +
       `💡 *Deux façons d'utiliser Scory :*\n` +
       `• 🤖 *Mode Bot* : Commandes rapides (/score, /ranking, etc.)\n` +

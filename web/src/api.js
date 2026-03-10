@@ -5,7 +5,7 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 /**
- * Récupère le chatId du contexte Telegram (passé via query params par le bot)
+ * Récupère le chatId du contexte Telegram (passé via query params, start_param ou l'objet natif TG)
  * et le stocke en sessionStorage pour les appels API suivants
  */
 export const getChatId = () => {
@@ -13,15 +13,22 @@ export const getChatId = () => {
   const stored = sessionStorage.getItem('scory_chatId');
   if (stored) return stored;
 
-  // Sinon extraire des query params de l'URL
-  const params = new URLSearchParams(globalThis.location?.search || '');
-  const chatId = params.get('chatId') || params.get('chat_id');
-  if (chatId) {
-    sessionStorage.setItem('scory_chatId', chatId);
-    return chatId;
+  // Depuis l'objet Telegram natif direct (si ouvert dans le groupe)
+  const tgChatId = globalThis.Telegram?.WebApp?.initDataUnsafe?.chat?.id;
+  if (tgChatId) {
+    sessionStorage.setItem('scory_chatId', tgChatId.toString());
+    return tgChatId.toString();
   }
 
-  // Ou depuis les données Telegram start_param
+  // Sinon extraire des query params de l'URL
+  const params = new URLSearchParams(globalThis.location?.search || '');
+  const urlChatId = params.get('chatId') || params.get('chat_id');
+  if (urlChatId) {
+    sessionStorage.setItem('scory_chatId', urlChatId);
+    return urlChatId;
+  }
+
+  // Ou depuis les données Telegram start_param (raccourcis)
   const startParam = globalThis.Telegram?.WebApp?.initDataUnsafe?.start_param;
   if (startParam) {
     const parts = startParam.split('_');

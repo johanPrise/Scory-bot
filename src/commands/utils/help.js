@@ -13,65 +13,55 @@ const help = async (msg) => {
 
   try {
     const sections = [
-      '❓ *Aide — Commandes Scory*',
+      '❓ <b>Aide — Commandes Scory</b>',
       '',
     ];
 
     if (isPrivate) {
       // -- AIDE INBOX --
       sections.push(
-        '💬 _Vous êtes en conversation privée._',
-        '_Toutes les commandes fonctionnent ici sans @mention._',
+        '💬 <i>Vous êtes en conversation privée.</i>',
+        '<i>Toutes les commandes fonctionnent ici sans @mention.</i>',
         '',
-        '*🏠 Commandes de base :*',
+        '<b>🏠 Commandes de base :</b>',
         '/start — S\'inscrire au bot',
         '/help — Afficher cette aide',
         '/stats — Statistiques globales',
         '/app — Ouvrir l\'App (Mini App Telegram)',
-        '/dashboard — Votre tableau de bord personnel',
         '',
-        '*🎯 WebApp & Dashboards :*',
-        '/admin — Panel administrateur',
-        '/scoremanager — Interface visuelle des scores',
-        '/teamdashboard — Interface visuelle des équipes',
-        '',
-        '*🎯 Activités :*',
+        '<b>🎯 Activités :</b>',
         '/activities — Lister toutes les activités',
-        '/createactivity `nom` `[description]` — Créer',
-        '/create\\_activity — Créer (Interactive)',
-        '/addsubactivity `parent` `nom [desc]` — Sous-activité',
-        '/deleteactivity `nom` — Supprimer',
+        '/createactivity <code>nom</code> <code>[description]</code> — Créer',
+        '/create_activity — Créer (Interactive)',
+        '/addsubactivity <code>parent</code> <code>nom [desc]</code> — Sous-activité',
+        '/deleteactivity <code>nom</code> — Supprimer',
         '',
-        '*🏆 Scores :*',
-        '/score `@user` `activité` `points` `[commentaire]` — Ajouter',
-        '/subscore `@user` `subactivite` `activité` `points` — Ajouter',
-        '/ranking `activité` — Classement général',
-        '/subranking `subactivite` `[activité]` — Classement spécifique',
-        '/aranking `[activité]` — Classement détaillé/avancé',
-        '/shistory `[période]` `[activité]` — Historique des scores',
-        '/deletescore `ID` — Supprimer un score',
+        '<b>🏆 Scores :</b>',
+        '/score <code>@user</code> <code>activité</code> <code>points</code> <code>[commentaire]</code> — Ajouter',
+        '/subscore <code>@user</code> <code>subactivite</code> <code>activité</code> <code>points</code> — Ajouter',
+        '/ranking <code>activité</code> — Classement général',
+        '/subranking <code>subactivite</code> <code>[activité]</code> — Classement spécifique',
+        '/aranking <code>[activité]</code> — Classement détaillé/avancé',
+        '/shistory <code>[période]</code> <code>[activité]</code> — Historique des scores',
+        '/deletescore <code>ID</code> — Supprimer un score',
         '',
-        '*👥 Équipes :*',
-        '/createteam `nom` `[description]` — Créer',
-        '/addtoteam `@user` `équipe` `[admin]` — Ajouter',
-        '/teamranking `activité` — Classement par équipe',
-        '/deleteteam `nom` — Supprimer l\'équipe',
-        '',
-        '*🛠 Utilitaires :*',
-        '/export — Exporter ses données',
-        '/feedback `type` `message` — Signaler un problème',
+        '<b>👥 Équipes :</b>',
+        '/createteam <code>nom</code> <code>[description]</code> — Créer',
+        '/addtoteam <code>@user</code> <code>équipe</code> <code>[admin]</code> — Ajouter',
+        '/teamranking <code>activité</code> — Classement par équipe',
+        '/deleteteam <code>nom</code> — Supprimer l\'équipe',
       );
     } else if (isGroup) {
-      const safeBotUsername = (msg.botUsername || 'scory_fr_bot').replace(/_/g, '\\_');
+      const botName = msg.botUsername || 'scory_fr_bot';
       
       // -- AIDE GROUPE --
       sections.push(
-        '👥 _Vous êtes dans un groupe._',
-        '_Dans les groupes, ajoutez @' + safeBotUsername + ' après la commande._',
+        '👥 <i>Vous êtes dans un groupe.</i>',
+        `<i>Dans les groupes, ajoutez @${botName} après la commande.</i>`,
         '',
-        '*Exemple :* `/ranking@scory_fr_bot course`',
+        `<b>Exemple :</b> <code>/ranking@${botName} course</code>`,
         '',
-        '*📋 Commandes disponibles en groupe :*',
+        '<b>📋 Commandes disponibles en groupe :</b>',
         '/score — Enregistrer un score',
         '/subscore — Enregistrer un sous-score',
         '/ranking — Voir le classement normal',
@@ -82,23 +72,23 @@ const help = async (msg) => {
         '/addtoteam — Ajouter à une équipe',
         '/teamranking — Classement par équipe',
         '',
-        '*💬 Commandes conseillées en privé :*',
-        '`/start` — S\'inscrire',
-        '`/help` — Aide détaillée',
-        '`/shistory` — Historique personnel',
-        '`/createteam` — Créer une équipe',
-        '`/app` — Découvrir la Mini App !',
+        '<b>💬 Commandes conseillées en privé :</b>',
+        '<code>/start</code> — S\'inscrire',
+        '<code>/help</code> — Aide détaillée',
+        '<code>/shistory</code> — Historique personnel',
+        '<code>/createteam</code> — Créer une équipe',
+        '<code>/app</code> — Découvrir la Mini App !',
         '',
-        '_💡 Pour une aide complète, envoyez /help en message privé au bot._',
+        '<i>💡 Pour une aide complète, envoyez /help en message privé au bot.</i>',
       );
     }
 
     sections.push(
       '',
-      `_${TELEGRAM_CONFIG.COMMANDS.length} commandes disponibles_`,
+      `<i>${TELEGRAM_CONFIG.COMMANDS.length} commandes disponibles</i>`,
     );
 
-    await bot.sendMessage(chatId, sections.join('\n'), { parse_mode: 'Markdown' });
+    await bot.sendMessage(chatId, sections.join('\n'), { parse_mode: 'HTML' });
 
     logger.info(`/help (${chatType}) par ${msg.from.id}`);
   } catch (error) {

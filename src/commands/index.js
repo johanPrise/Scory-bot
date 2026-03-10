@@ -62,10 +62,6 @@ export const setupCommands = async () => {
     
     // 6. Commandes Web App
     bot.onText(createBotCommand('app'), wrapCommandHandler(webAppCommands.openApp, botUsername));
-    bot.onText(createBotCommand('admin'), wrapCommandHandler(webAppCommands.openAdminDashboard, botUsername));
-    bot.onText(createBotCommand('scoremanager'), wrapCommandHandler(webAppCommands.openScoreManager, botUsername));
-    bot.onText(createBotCommand('teamdashboard'), wrapCommandHandler(webAppCommands.openTeamDashboard, botUsername));
-    bot.onText(createBotCommand('dashboard'), wrapCommandHandler(webAppCommands.openMainDashboard, botUsername));
     logger.debug('Commandes Web App configurées');
     
     // Configuration des gestionnaires de callbacks
@@ -75,7 +71,7 @@ export const setupCommands = async () => {
     // 7. Handler de commandes inconnues (doit être APRÈS toutes les commandes)
     const knownCommands = TELEGRAM_CONFIG.COMMANDS.map(c => c.command);
     // Ajouter les commandes non listées dans le menu mais qui existent
-    const extraCommands = ['create_activity', 'subscore', 'subranking', 'aranking', 'shistory', 'export', 'feedback', 'starttimer', 'stoptimer', 'admin', 'scoremanager', 'teamdashboard', 'deleteactivity', 'deleteteam', 'deletescore'];
+    const extraCommands = ['create_activity', 'subscore', 'subranking', 'aranking', 'shistory', 'export', 'feedback', 'starttimer', 'stoptimer', 'deleteactivity', 'deleteteam', 'deletescore'];
     const allKnownCommands = [...knownCommands, ...extraCommands];
     
     bot.on('message', async (msg) => {
