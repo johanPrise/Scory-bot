@@ -62,10 +62,12 @@ const help = async (msg) => {
         '/feedback `type` `message` — Signaler un problème',
       );
     } else if (isGroup) {
+      const safeBotUsername = (msg.botUsername || 'scory_fr_bot').replace(/_/g, '\\_');
+      
       // -- AIDE GROUPE --
       sections.push(
         '👥 _Vous êtes dans un groupe._',
-        '_Dans les groupes, ajoutez @' + (msg.botUsername || 'scory\\_fr\\_bot') + ' après la commande._',
+        '_Dans les groupes, ajoutez @' + safeBotUsername + ' après la commande._',
         '',
         '*Exemple :* `/ranking@scory_fr_bot course`',
         '',

@@ -145,13 +145,15 @@ export const addToTeam = async (msg, match) => {
     message += `👥 *Équipe*: ${team.name}\n`;
     message += `👤 *Membre ajouté*: ${displayName}\n`;
     message += `🔰 *Rôle*: ${isAdmin ? 'Administrateur' : 'Membre'}\n`;
-    message += `👑 *Ajouté par*: ${msg.from.first_name || msg.from.username}`;
+    const safeAdderName = (msg.from.first_name || msg.from.username || 'Utilisateur').replace(/_/g, '\\_');
+    message += `👑 *Ajouté par*: ${safeAdderName}`;
 
     if (updatedTeam.members && updatedTeam.members.length > 0) {
       message += '\n\n*Membres actuels*:';
       updatedTeam.members.forEach((member, index) => {
         const memberRole = member.isAdmin ? ' (Admin)' : '';
-        message += `\n${index + 1}. ${member.username}${memberRole}`;
+        const safeMemberName = (member.username || 'Utilisateur').replace(/_/g, '\\_');
+        message += `\n${index + 1}. ${safeMemberName}${memberRole}`;
       });
     }
 

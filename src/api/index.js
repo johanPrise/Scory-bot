@@ -2,9 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { connectToDatabase } from '../config/database.js';
 import { bot } from '../config/bot.js';
 import logger from '../utils/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Import des routes
 import authRoutes from './routes/auth.js';
@@ -102,7 +107,7 @@ export const createApiApp = () => {
     res.sendStatus(200);
   });
 
-  // Route 404 pour les endpoints API non trouvés
+  // Route 404 spécifique pour les endpoints API non trouvés
   app.use('/api/*', (req, res) => {
     res.status(404).json({
       error: 'Endpoint non trouvé',
@@ -110,6 +115,17 @@ export const createApiApp = () => {
       method: req.method,
     });
   });
+
+  // ========== SPA FALLBACK (React Router) ==========
+  // Servir les fichiers statiques du dossier "web/dist" en production
+  const staticPath = path.join(__dirname, '../../web/dist');
+  app.use(express.static(staticPath));
+
+  // Toutes les requêtes GET qui ne sont pas des requêtes API retournent l'application React
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(staticPath, 'index.html'));
+  });
+  // =================================================
 
   // Middleware de gestion d'erreurs (doit être en dernier)
   app.use(errorHandler);
