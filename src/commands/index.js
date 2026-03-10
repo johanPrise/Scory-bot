@@ -28,7 +28,7 @@ export const setupCommands = async () => {
     const botUsername = botInfo.username;
     
     // 1. Commandes d'authentification
-    bot.onText(createBotCommand('start'), wrapCommandHandler(authCommands.start, botUsername));
+    bot.onText(createBotCommand('start', '(?:\\s+(\\S+))?'), wrapCommandHandler(authCommands.start, botUsername));
     bot.onText(createBotCommand('help'), wrapCommandHandler(utilityCommands.help, botUsername));
     logger.debug('Commandes d\'authentification configurées');
 

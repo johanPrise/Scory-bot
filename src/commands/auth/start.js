@@ -1,12 +1,16 @@
 /**
  * Commande /start - Auto-crée ou retrouve l'utilisateur
+ * Gère aussi le deep-link /start app_chatXXX (redirection depuis /app en groupe)
  */
 import { bot } from '../../config/bot.js';
 import User from '../../api/models/User.js';
 import ChatGroup from '../../api/models/ChatGroup.js';
 import logger from '../../utils/logger.js';
+import { createInlineKeyboard, createWebAppButton } from '../../utils/inlineButtons.js';
 
-const start = async (msg) => {
+const WEB_APP_BASE = process.env.WEB_APP_URL || process.env.WEBAPP_URL || 'http://localhost:3000';
+
+const start = async (msg, match) => {
   const chatId = msg.chat.id;
   const from = msg.from;
 
@@ -53,41 +57,59 @@ const start = async (msg) => {
       }
     }
 
-    const webAppUrl = process.env.WEB_APP_URL;
-    const hasValidWebApp = webAppUrl && webAppUrl.startsWith('https://');
-    const isPrivate = msg.chat.type === 'private';
+    // ===== DEEP-LINK depuis /app en groupe : /start app_chatXXX =====
+    const startParam = match?.[1]?.trim();
+    if (startParam && startParam.startsWith('app_chat') && msg.chat.type === 'private') {
+      const groupChatId = startParam.replace('app_chat', '-');
+      const hasWebApp = WEB_APP_BASE.startsWith('https://');
 
-    const options = { parse_mode: 'Markdown' };
-    if (hasValidWebApp) {
-      if (isPrivate) {
-        // En privé : bouton Web App natif (ouverture in-app)
-        options.reply_markup = {
-          inline_keyboard: [
-            [{ text: '🚀 Ouvrir Scory App', web_app: { url: webAppUrl } }]
-          ]
-        };
-      } else {
-        // En groupe : bouton URL classique (web_app interdit par Telegram dans les groupes)
-        options.reply_markup = {
-          inline_keyboard: [
-            [{ text: '🚀 Ouvrir Scory App', url: webAppUrl }]
-          ]
-        };
+      if (hasWebApp) {
+        const keyboard = [
+          [createWebAppButton('🚀 Ouvrir Scory App', WEB_APP_BASE)]
+        ];
+
+        const message =
+          `🎯 <b>Scory App</b>\n\n` +
+          `👋 Salut <b>${escapeHtml(from.first_name || 'Utilisateur')}</b> !\n\n` +
+          `Clique ci-dessous pour ouvrir l'app.\n` +
+          `<i>Tu pourras choisir ton groupe directement dans l'interface.</i>`;
+
+        await bot.sendMessage(chatId, message, {
+          parse_mode: 'HTML',
+          ...createInlineKeyboard(keyboard)
+        });
+
+        logger.info(`Deep-link /app par ${from.id} depuis le groupe ${groupChatId}`);
+        return;
       }
     }
 
+    // ===== FLOW NORMAL : /start classique =====
+    const webAppUrl = WEB_APP_BASE;
+    const hasValidWebApp = webAppUrl && webAppUrl.startsWith('https://');
+    const isPrivate = msg.chat.type === 'private';
+
+    const options = { parse_mode: 'HTML' };
+    if (hasValidWebApp && isPrivate) {
+      options.reply_markup = {
+        inline_keyboard: [
+          [{ text: '🚀 Ouvrir Scory App', web_app: { url: webAppUrl } }]
+        ]
+      };
+    }
+
     const welcomeText = [
-      `🎯 *Bienvenue sur Scory, ${from.first_name || 'Joueur'} !*`,
+      `🎯 <b>Bienvenue sur Scory, ${escapeHtml(from.first_name || 'Joueur')} !</b>`,
       '',
       isNewUser ? '✅ Votre profil a été créé automatiquement.' : '',
       '',
-      '📋 *Commandes principales :*',
+      '<b>📋 Commandes principales :</b>',
       '/help — Liste des commandes',
       '/activities — Voir les activités',
       '/ranking — Voir le classement',
       '/score — Enregistrer un score',
       '/createteam — Créer une équipe',
-      hasValidWebApp ? '\n🚀 Ou cliquez le bouton ci-dessous !' : ''
+      hasValidWebApp && isPrivate ? '\n🚀 Ou cliquez le bouton ci-dessous !' : ''
     ].filter(Boolean).join('\n');
 
     await bot.sendMessage(chatId, welcomeText, options);
@@ -97,5 +119,10 @@ const start = async (msg) => {
     await bot.sendMessage(chatId, '❌ Une erreur est survenue. Réessayez avec /start').catch(() => {});
   }
 };
+
+/** Échappe les caractères spéciaux HTML */
+function escapeHtml(text) {
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 export default start;
