@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import PropTypes from 'prop-types';
 import * as api from '../api';
 import { getChatId } from '../api';
 
@@ -17,39 +16,45 @@ export function GroupProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
 
-  // Charger la liste des groupes au montage
-  useEffect(() => {
-    loadGroups();
-  }, [loadGroups]);
-
   const loadGroups = useCallback(async () => {
     try {
+      setLoading(true);
       const data = await api.getMyGroups();
-      setGroups(data.groups || []);
+      const fetchedGroups = data.groups || [];
+      setGroups(fetchedGroups);
       
       // Si le chatId de l'URL correspond à un groupe existant, le sélectionner
       const urlChatId = getChatId();
       if (urlChatId) {
-        const exists = (data.groups || []).some(g => g.chatId === urlChatId);
+        const exists = fetchedGroups.some(g => g.chatId === urlChatId);
         if (exists) {
           setSelectedGroupId(urlChatId);
           localStorage.setItem('scory_selectedGroup', urlChatId);
+          return; // groupe trouvé via URL, on s'arrête
         }
       }
       
-      // Si aucun groupe n'est sélectionné et qu'il y a des groupes, sélectionner le premier
-      if (!selectedGroupId && data.groups && data.groups.length > 0) {
-        const firstGroupId = data.groups[0].chatId;
-        setSelectedGroupId(firstGroupId);
-        localStorage.setItem('scory_selectedGroup', firstGroupId);
-      }
+      // Si aucun groupe sélectionné, auto-sélectionner le premier
+      setSelectedGroupId(prev => {
+        if (!prev && fetchedGroups.length > 0) {
+          const firstGroupId = fetchedGroups[0].chatId;
+          localStorage.setItem('scory_selectedGroup', firstGroupId);
+          return firstGroupId;
+        }
+        return prev;
+      });
     } catch (err) {
       console.warn('Impossible de charger les groupes:', err.message);
       alert('Erreur API Groupes: ' + err.message);
     } finally {
       setLoading(false);
     }
-  }, [selectedGroupId]);
+  }, []); // pas de dépendances : la fonction est stable
+
+  // Charger la liste des groupes au montage
+  useEffect(() => {
+    loadGroups();
+  }, [loadGroups]);
 
   const selectGroup = useCallback((chatId) => {
     if (!chatId) {
@@ -86,9 +91,7 @@ export function GroupProvider({ children }) {
   );
 }
 
-GroupProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
+
 
 /**
  * Hook pour accéder au contexte de groupe
