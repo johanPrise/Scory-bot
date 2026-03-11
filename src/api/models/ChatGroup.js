@@ -134,12 +134,48 @@ chatGroupSchema.statics.upsertGroup = async function(chatInfo, userInfo) {
 
 /**
  * Méthode statique : récupérer tous les groupes d'un utilisateur
+ * Utilise telegramId en priorité (plus fiable en cas de comptes dupliqués),
+ * avec fallback sur mongoUserId.
+ * Auto-corrige les members.userId désynchronisés.
  */
-chatGroupSchema.statics.getUserGroups = async function(mongoUserId) {
-  return this.find(
-    { 'members.userId': mongoUserId, isActive: true },
-    { chatId: 1, title: 1, type: 1, 'members.$': 1, stats: 1, updatedAt: 1 }
-  ).sort({ updatedAt: -1 });
+chatGroupSchema.statics.getUserGroups = async function(mongoUserId, telegramId = null) {
+  const query = telegramId
+    ? { 'members.telegramId': String(telegramId), isActive: true }
+    : { 'members.userId': mongoUserId, isActive: true };
+
+  const projection = { chatId: 1, title: 1, type: 1, 'members.$': 1, stats: 1, updatedAt: 1 };
+
+  const groups = await this.find(query, projection).sort({ updatedAt: -1 });
+
+  // Auto-heal : corriger les members.userId désynchronisés
+  if (telegramId && groups.length > 0 && mongoUserId) {
+    await this._healMemberUserIds(groups, mongoUserId, String(telegramId));
+  }
+
+  return groups;
+};
+
+/**
+ * Corrige les members.userId qui ne correspondent plus au bon ObjectId
+ * (cas de doublons de compte User fusionnés)
+ */
+chatGroupSchema.statics._healMemberUserIds = async function(groups, mongoUserId, telegramId) {
+  const bulkOps = groups
+    .filter(g => g.members?.[0]?.userId?.toString() !== mongoUserId.toString())
+    .map(g => ({
+      updateOne: {
+        filter: { _id: g._id, 'members.telegramId': telegramId },
+        update: { $set: { 'members.$.userId': mongoUserId } }
+      }
+    }));
+
+  if (bulkOps.length === 0) return;
+
+  try {
+    await this.bulkWrite(bulkOps);
+  } catch (err) {
+    console.error('Auto-heal members.userId failed:', err.message);
+  }
 };
 
 const ChatGroup = mongoose.model('ChatGroup', chatGroupSchema);

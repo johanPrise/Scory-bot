@@ -18,8 +18,9 @@ router.use(authMiddleware);
  */
 router.get('/', asyncHandler(async (req, res) => {
   const userId = req.userId;
+  const telegramId = req.user?.telegram?.id || null;
 
-  const groups = await ChatGroup.getUserGroups(userId);
+  const groups = await ChatGroup.getUserGroups(userId, telegramId);
 
   // Enrichir avec des compteurs par groupe
   const enrichedGroups = await Promise.all(
@@ -70,9 +71,14 @@ router.get('/:chatId', asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Groupe non trouvé' });
   }
 
-  // Vérifier que l'utilisateur est membre
+  // Vérifier que l'utilisateur est membre (par ObjectId OU par telegramId)
+  const userTelegramId = req.user?.telegram?.id;
   const isMember = group.members.some(
-    m => m.userId._id.toString() === userId.toString()
+    m => {
+      const matchById = m.userId?._id?.toString() === userId.toString();
+      const matchByTelegram = userTelegramId && m.telegramId === String(userTelegramId);
+      return matchById || matchByTelegram;
+    }
   );
 
   if (!isMember && !['admin', 'superadmin'].includes(req.user.role)) {

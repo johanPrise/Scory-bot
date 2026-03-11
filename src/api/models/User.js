@@ -52,6 +52,7 @@ const userSchema = new mongoose.Schema({
     id: {
       type: String,
       index: true,
+      unique: true,
       sparse: true
     },
     username: {

@@ -64,11 +64,67 @@ router.post('/telegram-login', asyncHandler(async (req, res) => {
     throw createError(401, 'Données Telegram invalides ou expirées');
   }
 
-  // Chercher ou créer l'utilisateur
-  let user = await User.findOne({ 'telegram.id': String(telegramUser.id) });
+  // Chercher l'utilisateur (prendre en compte les doublons potentiels)
+  const telegramIdStr = String(telegramUser.id);
+  const allMatches = await User.find({ 'telegram.id': telegramIdStr }).sort({ createdAt: 1 });
 
-  if (!user) {
-    // Créer un nouvel utilisateur à partir des données Telegram
+  let user;
+
+  if (allMatches.length > 1) {
+    // ===== FUSION DE DOUBLONS =====
+    // Garder le plus ancien (créé par le bot), supprimer les autres
+    user = allMatches[0]; // Le premier créé (typiquement par le bot)
+    const duplicateIds = allMatches.slice(1).map(u => u._id);
+
+    logger.warn(`Fusion de ${allMatches.length} comptes doublons pour telegram.id=${telegramIdStr}`, {
+      kept: user._id,
+      removed: duplicateIds
+    });
+
+    // Transférer les éventuelles données des doublons vers le compte principal
+    // (scores, teams, etc. qui référencent les doublons)
+    try {
+      const Score = (await import('../models/Score.js')).default;
+      const Team = (await import('../models/Team.js')).default;
+      const ChatGroup = (await import('../models/ChatGroup.js')).default;
+
+      await Promise.all([
+        Score.updateMany({ user: { $in: duplicateIds } }, { $set: { user: user._id } }),
+        Team.updateMany({ 'members.user': { $in: duplicateIds } }, { $set: { 'members.$.user': user._id } }),
+        ChatGroup.updateMany(
+          { 'members.userId': { $in: duplicateIds } },
+          { $set: { 'members.$.userId': user._id } }
+        )
+      ]);
+
+      // Supprimer les doublons
+      await User.deleteMany({ _id: { $in: duplicateIds } });
+      logger.info(`Doublons supprimés et données transférées vers ${user._id}`);
+    } catch (mergeErr) {
+      logger.error('Erreur lors de la fusion des doublons:', mergeErr.message);
+      // Continuer malgré l'erreur de fusion
+    }
+
+    // Mettre à jour les infos
+    user.telegram.username = telegramUser.username || user.telegram.username;
+    user.firstName = telegramUser.first_name || user.firstName;
+    user.lastName = telegramUser.last_name || user.lastName;
+    user.lastLogin = new Date();
+    user.lastIp = req.ip;
+    await user.save();
+
+  } else if (allMatches.length === 1) {
+    user = allMatches[0];
+    // Mettre à jour les infos Telegram
+    user.telegram.username = telegramUser.username || user.telegram.username;
+    user.firstName = telegramUser.first_name || user.firstName;
+    user.lastName = telegramUser.last_name || user.lastName;
+    user.lastLogin = new Date();
+    user.lastIp = req.ip;
+    await user.save();
+
+  } else {
+    // Aucun utilisateur trouvé → en créer un
     const username = telegramUser.username || `tg_${telegramUser.id}`;
     
     // Vérifier l'unicité du username
@@ -84,7 +140,7 @@ router.post('/telegram-login', asyncHandler(async (req, res) => {
       firstName: telegramUser.first_name || '',
       lastName: telegramUser.last_name || '',
       telegram: {
-        id: String(telegramUser.id),
+        id: telegramIdStr,
         username: telegramUser.username || '',
         linked: true,
       },
@@ -96,14 +152,6 @@ router.post('/telegram-login', asyncHandler(async (req, res) => {
       userId: user._id, 
       telegramId: telegramUser.id 
     });
-  } else {
-    // Mettre à jour les infos Telegram
-    user.telegram.username = telegramUser.username || user.telegram.username;
-    user.firstName = telegramUser.first_name || user.firstName;
-    user.lastName = telegramUser.last_name || user.lastName;
-    user.lastLogin = new Date();
-    user.lastIp = req.ip;
-    await user.save();
   }
 
   // Générer le token JWT
