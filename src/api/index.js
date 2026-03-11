@@ -32,6 +32,9 @@ import { requestLogger } from './middleware/requestLogger.js';
 export const createApiApp = () => {
   const app = express();
 
+  // Trust proxy (nécessaire derrière Render, Railway, Vercel, etc.)
+  app.set('trust proxy', 1);
+
   // Middlewares de sécurité
   app.use(helmet({
     contentSecurityPolicy: {
@@ -44,9 +47,12 @@ export const createApiApp = () => {
     },
   }));
 
-  // Configuration CORS
+  // Configuration CORS — nettoyer les trailing slashes des origines
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'])
+    .map(o => o.trim().replace(/\/+$/, ''));
+
   app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Telegram-Init-Data'],
