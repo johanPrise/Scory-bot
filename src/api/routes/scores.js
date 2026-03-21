@@ -652,7 +652,10 @@ router.get('/pending', asyncHandler(async (req, res) => {
   }
 
   // Construction du filtre
-  const filter = { status: 'pending' };
+  const filter = { 
+    status: 'pending',
+    'metadata.chatId': req.chatId // Filtrer par groupe
+  };
   
   if (activityId) filter.activity = activityId;
   if (teamId) filter.team = teamId;
@@ -951,7 +954,9 @@ router.get('/export', asyncHandler(async (req, res) => {
   }
 
   // Construction du filtre basé sur les paramètres
-  const filter = {};
+  const filter = {
+    'metadata.chatId': req.chatId // Filtrer par groupe
+  };
   
   // Filtrer par type d'onglet
   switch (tabType) {

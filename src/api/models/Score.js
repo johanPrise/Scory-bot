@@ -102,9 +102,9 @@ const scoreSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Index composé pour les recherches fréquentes
-scoreSchema.index({ user: 1, activity: 1, subActivity: 1 }, { unique: true });
-scoreSchema.index({ team: 1, activity: 1, subActivity: 1 }, { unique: true, sparse: true });
+// Index composé pour les recherches fréquentes - scopé par chatId pour isolation
+scoreSchema.index({ 'metadata.chatId': 1, user: 1, activity: 1, subActivity: 1 }, { unique: true });
+scoreSchema.index({ 'metadata.chatId': 1, team: 1, activity: 1, subActivity: 1 }, { unique: true, sparse: true });
 scoreSchema.index({ 'metadata.chatId': 1, createdAt: -1 });
 
 // Middleware pour calculer le score normalisé avant la sauvegarde

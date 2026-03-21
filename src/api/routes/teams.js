@@ -43,8 +43,8 @@ router.get('/', asyncHandler(async (req, res) => {
 
   // Options de pagination et tri
   const options = {
-    page: parseInt(page),
-    limit: parseInt(limit),
+    page: Number.parseInt(page),
+    limit: Number.parseInt(limit),
     sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 },
     populate: [
       { path: 'createdBy', select: 'username firstName lastName' },
@@ -198,10 +198,13 @@ router.post('/join', asyncHandler(async (req, res) => {
     throw createError(400, 'Code d\'invitation requis');
   }
 
-  // Chercher l'équipe par code
-  const team = await Team.findOne({ 'settings.joinCode': joinCode.toUpperCase() });
+  // Chercher l'équipe par code ET chatId pour isolation
+  const team = await Team.findOne({ 
+    'settings.joinCode': joinCode.toUpperCase(),
+    chatId: req.chatId // Vérifier que l'équipe est dans le bon groupe
+  });
   if (!team) {
-    throw createError(404, 'Code d\'invitation invalide ou équipe introuvable');
+    throw createError(404, 'Code d\'invitation invalide ou équipe introuvable dans ce groupe');
   }
 
   // Vérifier si l'utilisateur est déjà membre
@@ -362,13 +365,13 @@ router.get('/:id/members', asyncHandler(async (req, res) => {
 
   // Pagination manuelle
   const startIndex = (page - 1) * limit;
-  const endIndex = startIndex + parseInt(limit);
+  const endIndex = startIndex + Number.parseInt(limit);
   const paginatedMembers = members.slice(startIndex, endIndex);
 
   res.json({
     members: paginatedMembers,
     pagination: {
-      currentPage: parseInt(page),
+      currentPage: Number.parseInt(page),
       totalPages: Math.ceil(members.length / limit),
       totalMembers: members.length,
       hasNextPage: endIndex < members.length,

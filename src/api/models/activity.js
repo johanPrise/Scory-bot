@@ -154,6 +154,9 @@ const activitySchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
+// Index unique pour éviter les doublons de nom dans le même groupe
+activitySchema.index({ name: 1, chatId: 1 }, { unique: true });
+
 // Ajouter le plugin de pagination
 activitySchema.plugin(mongoosePaginate);
 
