@@ -12,6 +12,28 @@ const router = express.Router();
 router.use(authMiddleware);
 
 /**
+ * Obtenir la date de début selon la période fournie
+ */
+function getStartDateFromPeriod(period) {
+  const periodMs = {
+    day: 24 * 60 * 60 * 1000,
+    week: 7 * 24 * 60 * 60 * 1000,
+    month: 30 * 24 * 60 * 60 * 1000,
+    year: 365 * 24 * 60 * 60 * 1000
+  };
+
+  const ms = periodMs[period];
+  return ms ? new Date(Date.now() - ms) : null;
+}
+
+/**
+ * Alias pour compatibilité avec le code existant
+ */
+function getStartDateForPeriod(period) {
+  return getStartDateFromPeriod(period);
+}
+
+/**
  * GET /api/dashboard
  * Récupérer les données complètes du dashboard (stats + activité récente)
  * ?chatId=xxx pour filtrer par groupe Telegram
@@ -21,28 +43,10 @@ router.get('/', asyncHandler(async (req, res) => {
   const userId = req.userId;
 
   // Calculer la date de début selon la période
-  let startDate;
-  const now = new Date();
-  
-  switch (period) {
-    case 'day':
-      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      break;
-    case 'week':
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case 'month':
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      break;
-    case 'year':
-      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-      break;
-    default:
-      startDate = null;
-  }
+  const startDate = getStartDateForPeriod(period);
 
   const dateFilter = startDate ? { createdAt: { $gte: startDate } } : {};
-  
+
   // Filtre chatId pour les scores et activités
   const chatIdScoreFilter = chatId ? { 'metadata.chatId': chatId } : {};
   const chatIdActivityFilter = chatId ? { chatId } : {};
@@ -95,36 +99,45 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 /**
- * Fonction utilitaire pour obtenir le classement d'un utilisateur (dashboard)
+ * Construire le filtre de correspondance pour l'agrégation du classement
  */
-async function getUserRankingForDashboard(userId, period = 'month', chatId = null) {
-  let startDate;
-  const now = new Date();
-  
-  switch (period) {
-    case 'day':
-      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      break;
-    case 'week':
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case 'month':
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      break;
-    case 'year':
-      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-      break;
-    default:
-      startDate = null;
-  }
-
+function buildRankingMatchFilter(startDate, chatId) {
   const match = {
     status: 'approved',
     context: 'individual',
-    user: { $exists: true },
-    ...(startDate && { createdAt: { $gte: startDate } }),
-    ...(chatId && { 'metadata.chatId': chatId })
+    user: { $exists: true }
   };
+
+  if (startDate) {
+    match.createdAt = { $gte: startDate };
+  }
+
+  if (chatId) {
+    match['metadata.chatId'] = chatId;
+  }
+
+  return match;
+}
+
+/**
+ * Calculer la position de l'utilisateur dans le classement
+ */
+function calculateUserPosition(users, userId) {
+  const userIndex = users.findIndex(u => u.userId.toString() === userId.toString());
+
+  return {
+    position: userIndex >= 0 ? userIndex + 1 : null,
+    total: users.length,
+    score: userIndex >= 0 ? users[userIndex].score : 0
+  };
+}
+
+/**
+ * Fonction utilitaire pour obtenir le classement d'un utilisateur (dashboard)
+ */
+async function getUserRankingForDashboard(userId, period = 'month', chatId = null) {
+  const startDate = getStartDateFromPeriod(period);
+  const match = buildRankingMatchFilter(startDate, chatId);
 
   const pipeline = [
     { $match: match },
@@ -149,14 +162,7 @@ async function getUserRankingForDashboard(userId, period = 'month', chatId = nul
     return { position: null, total: 0 };
   }
 
-  const users = result[0].users;
-  const userIndex = users.findIndex(u => u.userId.toString() === userId.toString());
-  
-  return {
-    position: userIndex >= 0 ? userIndex + 1 : null,
-    total: users.length,
-    score: userIndex >= 0 ? users[userIndex].score : 0
-  };
+  return calculateUserPosition(result[0].users, userId);
 }
 
 /**
@@ -169,25 +175,7 @@ router.get('/stats', asyncHandler(async (req, res) => {
   const userRole = req.user.role;
 
   // Calculer la date de début selon la période
-  let startDate;
-  const now = new Date();
-  
-  switch (period) {
-    case 'day':
-      startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      break;
-    case 'week':
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case 'month':
-      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      break;
-    case 'year':
-      startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-      break;
-    default:
-      startDate = null; // Toutes les données
-  }
+  const startDate = getStartDateForPeriod(period);
 
   const dateFilter = startDate ? { createdAt: { $gte: startDate } } : {};
 
@@ -195,6 +183,7 @@ router.get('/stats', asyncHandler(async (req, res) => {
 
   // Statistiques pour les admins
   if (['admin', 'superadmin'].includes(userRole)) {
+    const now = new Date();
     const [
       totalUsers,
       activeUsers,

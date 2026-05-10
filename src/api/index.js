@@ -2,8 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { connectToDatabase } from '../config/database.js';
 import { bot } from '../config/bot.js';
 import logger from '../utils/logger.js';
@@ -87,6 +87,24 @@ export const createApiApp = () => {
     });
   });
 
+  // Middleware CSRF pour les routes API (state-mutating)
+  app.use('/api/', (req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    const origin = req.headers.origin;
+    const referer = req.headers.referer;
+    const source = origin || referer;
+    let sourceOrigin;
+    try {
+      sourceOrigin = source ? new URL(source).origin : null;
+    } catch {
+      sourceOrigin = null;
+    }
+    if (!sourceOrigin || !allowedOrigins.includes(sourceOrigin)) {
+      return res.status(403).json({ error: 'Requête CSRF rejetée' });
+    }
+    next();
+  });
+
   // Routes API
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);
@@ -98,17 +116,18 @@ export const createApiApp = () => {
   app.use('/api/feedback', feedbackRouter);
   app.use('/api/timers', timersRouter);
 
-  // Route webhook Telegram (production uniquement)
-  // node-telegram-bot-api attend le body brut en JSON
+  // Route webhook Telegram — secret token obligatoire
   const webhookPath = `/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
   app.post(webhookPath, (req, res) => {
-    // SECURITY: Valider le secret token si configuré
     const secretToken = process.env.TELEGRAM_WEBHOOK_SECRET;
-    if (secretToken && req.headers['x-telegram-bot-api-secret-token'] !== secretToken) {
+    if (!secretToken) {
+      logger.error('TELEGRAM_WEBHOOK_SECRET non configuré — webhook désactivé');
+      return res.status(403).send('Unauthorized');
+    }
+    if (req.headers['x-telegram-bot-api-secret-token'] !== secretToken) {
       logger.warn('Tentative d\'accès non autorisée au webhook Telegram');
       return res.status(403).send('Unauthorized');
     }
-
     bot.processUpdate(req.body);
     res.sendStatus(200);
   });
@@ -123,13 +142,12 @@ export const createApiApp = () => {
   });
 
   // ========== SPA FALLBACK (React Router) ==========
-  // Servir les fichiers statiques du dossier "web/dist" en production
-  const staticPath = path.join(__dirname, '../../web/dist');
+  const staticPath = path.resolve(__dirname, '../../web/dist');
+  const indexHtml = path.resolve(staticPath, 'index.html');
   app.use(express.static(staticPath));
 
-  // Toutes les requêtes GET qui ne sont pas des requêtes API retournent l'application React
   app.get('*', (req, res) => {
-    res.sendFile(path.join(staticPath, 'index.html'));
+    res.sendFile(indexHtml);
   });
   // =================================================
 

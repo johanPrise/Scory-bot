@@ -1,265 +1,575 @@
-import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as api from '../api';
 import { BackButton, LoadingSpinner, EmptyState, NoGroupSelected } from '../components';
 import { useToast } from '../components/Toast';
 import { useGroup } from '../components/GroupContext';
 
+const TEXT = {
+  title: 'Ajouter un score',
+  subtitle: 'Enregistrez un nouveau score',
+  activity: 'Activité *',
+  chooseActivity: '— Choisir une activité —',
+  subActivity: 'Sous-activité',
+  noSubActivity: '— Aucune —',
+  context: 'Contexte *',
+  individual: '👤 Individuel',
+  team: '👥 Équipe',
+  teamLabel: 'Équipe *',
+  chooseTeam: '— Choisir une équipe —',
+  noTeam: 'Aucune équipe disponible',
+  score: 'Score *',
+  maxScore: 'Score max *',
+  normalizedScore: 'Score normalisé :',
+  comments: 'Commentaires',
+  commentsPlaceholder: 'Notes, remarques...',
+  submitting: '⏳ Envoi...',
+  submit: '✅ Ajouter le score',
+  success: 'Score ajouté avec succès !',
+  requiredFields: 'Veuillez remplir tous les champs obligatoires',
+  teamRequired: 'Veuillez choisir une équipe',
+  submitError: "Erreur lors de l'ajout du score",
+};
+
+const inputStyle = {
+  width: '100%',
+  padding: '10px 12px',
+  borderRadius: 8,
+  border: '1px solid var(--scory-card-border)',
+  background: 'var(--tg-theme-bg-color)',
+  color: 'var(--tg-theme-text-color)',
+  fontSize: 15,
+  fontFamily: 'inherit',
+  outline: 'none',
+};
+
+const selectStyle = {
+  ...inputStyle,
+  appearance: 'none',
+  WebkitAppearance: 'none',
+};
+
+const labelStyle = {
+  fontSize: 13,
+  color: 'var(--tg-theme-hint-color)',
+  display: 'block',
+  marginBottom: 4,
+};
+
+const fieldsetStyle = {
+  border: 0,
+  margin: 0,
+  padding: 0,
+};
+
+const initialForm = activityId => ({
+  activityId,
+  subActivity: '',
+  value: '',
+  maxPossible: '100',
+  context: 'individual',
+  teamId: '',
+  comments: '',
+});
+
+function getValidationMessage(form) {
+  const hasRequiredFields =
+    form.activityId &&
+    form.value &&
+    form.maxPossible &&
+    form.context;
+
+  if (!hasRequiredFields) {
+    return TEXT.requiredFields;
+  }
+
+  const isMissingTeamId = form.context === 'team' && !form.teamId;
+  if (isMissingTeamId) {
+    return TEXT.teamRequired;
+  }
+
+  return null;
+}
+
+function isValidScoreCalculation(score, max) {
+  const hasFiniteScore = Number.isFinite(score);
+  const hasFiniteMax = Number.isFinite(max);
+  const hasPositiveMax = max > 0;
+
+  return hasFiniteScore && hasFiniteMax && hasPositiveMax;
+}
+
+function isTeamScoreWithId(form) {
+  return form.context === 'team' && Boolean(form.teamId);
+}
+
+function buildScorePayload(form) {
+  const payload = {
+    activityId: form.activityId,
+    value: Number(form.value),
+    maxPossible: Number(form.maxPossible),
+    context: form.context,
+    comments: form.comments || undefined,
+  };
+
+  if (form.subActivity) {
+    payload.subActivity = form.subActivity;
+  }
+
+  if (isTeamScoreWithId(form)) {
+    payload.teamId = form.teamId;
+  }
+
+  return payload;
+}
+
+function getNormalizedScore(value, maxPossible) {
+  if (!value || !maxPossible) return null;
+
+  const score = Number(value);
+  const max = Number(maxPossible);
+
+  if (!isValidScoreCalculation(score, max)) {
+    return null;
+  }
+
+  return ((score / max) * 100).toFixed(1);
+}
+
+function triggerTelegramFeedback(type) {
+  globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+}
+
+function FormCard({ children, marginBottom = 12 }) {
+  return (
+    <div className="card" style={{ marginBottom }}>
+      {children}
+    </div>
+  );
+}
+
+FormCard.propTypes = {
+  children: PropTypes.node.isRequired,
+  marginBottom: PropTypes.number,
+};
+
+function ActivitySelect({ activities, value, onChange }) {
+  return (
+    <FormCard>
+      <label htmlFor="activityId" style={labelStyle}>
+        {TEXT.activity}
+      </label>
+
+      <select
+        id="activityId"
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        required
+        style={selectStyle}
+      >
+        <option value="">{TEXT.chooseActivity}</option>
+
+        {activities.map(activity => (
+          <option key={activity._id} value={activity._id}>
+            {activity.name}
+          </option>
+        ))}
+      </select>
+    </FormCard>
+  );
+}
+
+ActivitySelect.propTypes = {
+  activities: PropTypes.arrayOf(
+    PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+function SubActivitySelect({ selectedActivity, value, onChange }) {
+  const subActivities = selectedActivity?.subActivities || [];
+
+  if (subActivities.length === 0) {
+    return null;
+  }
+
+  return (
+    <FormCard>
+      <label htmlFor="subActivity" style={labelStyle}>
+        {TEXT.subActivity}
+      </label>
+
+      <select
+        id="subActivity"
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        style={selectStyle}
+      >
+        <option value="">{TEXT.noSubActivity}</option>
+
+        {subActivities.map(subActivity => (
+          <option key={subActivity.name} value={subActivity.name}>
+            {subActivity.name} (/{subActivity.maxScore || 100})
+          </option>
+        ))}
+      </select>
+    </FormCard>
+  );
+}
+
+SubActivitySelect.propTypes = {
+  selectedActivity: PropTypes.shape({
+    subActivities: PropTypes.arrayOf(
+      PropTypes.shape({
+        name: PropTypes.string.isRequired,
+        maxScore: PropTypes.number,
+      })
+    ),
+  }),
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+function ContextSelector({ value, onChange }) {
+  return (
+    <FormCard>
+      <fieldset style={fieldsetStyle}>
+        <legend style={labelStyle}>{TEXT.context}</legend>
+
+        <div className="chips-row" style={{ marginBottom: 0, paddingBottom: 0 }}>
+          <button
+            type="button"
+            className={`chip ${value === 'individual' ? 'active' : ''}`}
+            aria-pressed={value === 'individual'}
+            onClick={() => onChange('individual')}
+          >
+            {TEXT.individual}
+          </button>
+
+          <button
+            type="button"
+            className={`chip ${value === 'team' ? 'active' : ''}`}
+            aria-pressed={value === 'team'}
+            onClick={() => onChange('team')}
+          >
+            {TEXT.team}
+          </button>
+        </div>
+      </fieldset>
+    </FormCard>
+  );
+}
+
+ContextSelector.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+function TeamSelect({ context, teams, value, onChange }) {
+  if (context !== 'team') {
+    return null;
+  }
+
+  return (
+    <FormCard>
+      <label htmlFor="teamId" style={labelStyle}>
+        {TEXT.teamLabel}
+      </label>
+
+      {teams.length > 0 ? (
+        <select
+          id="teamId"
+          value={value}
+          onChange={event => onChange(event.target.value)}
+          required
+          style={selectStyle}
+        >
+          <option value="">{TEXT.chooseTeam}</option>
+
+          {teams.map(team => (
+            <option key={team._id} value={team._id}>
+              {team.name}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <EmptyState icon="👥" text={TEXT.noTeam} />
+      )}
+    </FormCard>
+  );
+}
+
+TeamSelect.propTypes = {
+  context: PropTypes.string.isRequired,
+  teams: PropTypes.arrayOf(
+    PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+function ScoreFields({ value, maxPossible, onChange }) {
+  const normalizedScore = getNormalizedScore(value, maxPossible);
+
+  return (
+    <FormCard>
+      <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <label htmlFor="scoreValue" style={labelStyle}>
+            {TEXT.score}
+          </label>
+
+          <input
+            id="scoreValue"
+            type="number"
+            value={value}
+            onChange={event => onChange('value', event.target.value)}
+            placeholder="0"
+            min="0"
+            required
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <label htmlFor="maxPossible" style={labelStyle}>
+            {TEXT.maxScore}
+          </label>
+
+          <input
+            id="maxPossible"
+            type="number"
+            value={maxPossible}
+            onChange={event => onChange('maxPossible', event.target.value)}
+            placeholder="100"
+            min="1"
+            required
+            style={inputStyle}
+          />
+        </div>
+      </div>
+
+      {normalizedScore && (
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: 10,
+            padding: '8px 0',
+            fontSize: 14,
+            color: 'var(--tg-theme-hint-color)',
+          }}
+        >
+          {TEXT.normalizedScore}{' '}
+          <strong style={{ color: 'var(--tg-theme-accent-text-color)' }}>
+            {normalizedScore}%
+          </strong>
+        </div>
+      )}
+    </FormCard>
+  );
+}
+
+ScoreFields.propTypes = {
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  maxPossible: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+function CommentsField({ value, onChange }) {
+  return (
+    <FormCard marginBottom={16}>
+      <label htmlFor="comments" style={labelStyle}>
+        {TEXT.comments}
+      </label>
+
+      <textarea
+        id="comments"
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder={TEXT.commentsPlaceholder}
+        rows={2}
+        style={{ ...inputStyle, resize: 'none' }}
+      />
+    </FormCard>
+  );
+}
+
+CommentsField.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+function SubmitButton({ submitting }) {
+  return (
+    <button type="submit" className="btn btn-primary" disabled={submitting}>
+      {submitting ? TEXT.submitting : TEXT.submit}
+    </button>
+  );
+}
+
+SubmitButton.propTypes = {
+  submitting: PropTypes.bool.isRequired,
+};
+
 export default function AddScore() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useToast();
+  const { selectedGroupId } = useGroup();
 
   const preselectedActivity = searchParams.get('activityId') || '';
-  const { selectedGroupId } = useGroup();
 
   const [activities, setActivities] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState(() => initialForm(preselectedActivity));
 
-  const [form, setForm] = useState({
-    activityId: preselectedActivity,
-    subActivity: '',
-    value: '',
-    maxPossible: '100',
-    context: 'individual',
-    teamId: '',
-    comments: '',
-  });
+  const selectedActivity = useMemo(() => {
+    return activities.find(activity => activity._id === form.activityId) || null;
+  }, [activities, form.activityId]);
 
-  const [selectedActivity, setSelectedActivity] = useState(null);
+  const loadData = useCallback(async () => {
+    setLoading(true);
 
-  useEffect(() => {
-    if (selectedGroupId) {
-      loadData();
-    }
-  }, [selectedGroupId]);
-
-  useEffect(() => {
-    if (form.activityId && activities.length) {
-      const act = activities.find(a => a._id === form.activityId);
-      setSelectedActivity(act || null);
-    } else {
-      setSelectedActivity(null);
-    }
-  }, [form.activityId, activities]);
-
-  const loadData = async () => {
     try {
-      const [actRes, teamRes] = await Promise.allSettled([
+      const [activityResult, teamResult] = await Promise.allSettled([
         api.getActivities({ limit: 100, includeSubActivities: 'true' }),
-        api.getTeams()
+        api.getTeams(),
       ]);
-      if (actRes.status === 'fulfilled') setActivities(actRes.value.activities || []);
-      if (teamRes.status === 'fulfilled') setTeams(teamRes.value.teams || []);
-    } catch (err) {
-      console.error(err);
+
+      if (activityResult.status === 'fulfilled') {
+        setActivities(activityResult.value.activities || []);
+      }
+
+      if (teamResult.status === 'fulfilled') {
+        setTeams(teamResult.value.teams || []);
+      }
+    } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!selectedGroupId) return;
+
+    loadData();
+  }, [selectedGroupId, loadData]);
+
+  const updateField = (field, value) => {
+    setForm(currentForm => ({
+      ...currentForm,
+      [field]: value,
+    }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.activityId || !form.value || !form.maxPossible || !form.context) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+  const updateActivity = activityId => {
+    setForm(currentForm => ({
+      ...currentForm,
+      activityId,
+      subActivity: '',
+    }));
+  };
+
+  const updateContext = context => {
+    setForm(currentForm => ({
+      ...currentForm,
+      context,
+      teamId: context === 'individual' ? '' : currentForm.teamId,
+    }));
+  };
+
+  const handleSubmit = async event => {
+    event.preventDefault();
+
+    const validationMessage = getValidationMessage(form);
+
+    if (validationMessage) {
+      toast.error(validationMessage);
       return;
     }
 
     setSubmitting(true);
+
     try {
-      const payload = {
-        activityId: form.activityId,
-        value: Number(form.value),
-        maxPossible: Number(form.maxPossible),
-        context: form.context,
-        comments: form.comments || undefined,
-      };
+      await api.addScore(buildScorePayload(form));
 
-      if (form.subActivity) payload.subActivity = form.subActivity;
-      if (form.context === 'team' && form.teamId) payload.teamId = form.teamId;
-      // For individual, we auto-assign the current user on the backend
+      triggerTelegramFeedback('success');
+      toast.success(TEXT.success);
 
-      await api.addScore(payload);
-      globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-      toast.success('Score ajouté avec succès !');
       setTimeout(() => navigate(-1), 800);
-    } catch (err) {
-      globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('error');
-      toast.error(err.message || 'Erreur lors de l\'ajout du score');
+    } catch (error) {
+      triggerTelegramFeedback('error');
+      toast.error(error.message || TEXT.submitError);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const inputStyle = {
-    width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid var(--scory-card-border)',
-    background: 'var(--tg-theme-bg-color)',
-    color: 'var(--tg-theme-text-color)',
-    fontSize: 15, fontFamily: 'inherit', outline: 'none'
-  };
-
-  const labelStyle = {
-    fontSize: 13, color: 'var(--tg-theme-hint-color)',
-    display: 'block', marginBottom: 4
-  };
-
-  if (loading) return <div className="page"><LoadingSpinner /></div>;
-
-  // Bloquer l'affichage si aucun groupe n'est sélectionné
   if (!selectedGroupId) {
     return <NoGroupSelected />;
+  }
+
+  if (loading) {
+    return (
+      <div className="page">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (
     <div className="page">
       <div className="page-header slide-up">
         <BackButton fallback="/activities" />
-        <h1 className="page-title">Ajouter un score</h1>
-        <div className="page-subtitle">Enregistrez un nouveau score</div>
+        <h1 className="page-title">{TEXT.title}</h1>
+        <div className="page-subtitle">{TEXT.subtitle}</div>
       </div>
 
       <form onSubmit={handleSubmit} className="slide-up-delay-1">
-        {/* Activité */}
-        <div className="card" style={{ marginBottom: 12 }}>
-          <label htmlFor="activityId" style={labelStyle}>Activité *</label>
-          <select
-            id="activityId"
-            value={form.activityId}
-            onChange={e => setForm({ ...form, activityId: e.target.value, subActivity: '' })}
-            required
-            style={{ ...inputStyle, appearance: 'none', WebkitAppearance: 'none' }}
-          >
-            <option value="">— Choisir une activité —</option>
-            {activities.map(a => (
-              <option key={a._id} value={a._id}>{a.name}</option>
-            ))}
-          </select>
-        </div>
+        <ActivitySelect
+          activities={activities}
+          value={form.activityId}
+          onChange={updateActivity}
+        />
 
-        {/* Sous-activité (si disponible) */}
-        {selectedActivity?.subActivities?.length > 0 && (
-          <div className="card" style={{ marginBottom: 12 }}>
-            <label htmlFor="subActivity" style={labelStyle}>Sous-activité</label>
-            <select
-              id="subActivity"
-              value={form.subActivity}
-              onChange={e => setForm({ ...form, subActivity: e.target.value })}
-              style={{ ...inputStyle, appearance: 'none', WebkitAppearance: 'none' }}
-            >
-              <option value="">— Aucune —</option>
-              {selectedActivity.subActivities.map(sub => (
-                <option key={sub.name} value={sub.name}>{sub.name} (/{sub.maxScore || 100})</option>
-              ))}
-            </select>
-          </div>
-        )}
+        <SubActivitySelect
+          selectedActivity={selectedActivity}
+          value={form.subActivity}
+          onChange={value => updateField('subActivity', value)}
+        />
 
-        {/* Contexte */}
-        <div className="card" style={{ marginBottom: 12 }}>
-          <label style={labelStyle} id="context-label">Contexte *</label>
-          <div className="chips-row" style={{ marginBottom: 0, paddingBottom: 0 }} role="group" aria-labelledby="context-label">
-            <button
-              type="button"
-              className={`chip ${form.context === 'individual' ? 'active' : ''}`}
-              onClick={() => setForm({ ...form, context: 'individual', teamId: '' })}
-            >
-              👤 Individuel
-            </button>
-            <button
-              type="button"
-              className={`chip ${form.context === 'team' ? 'active' : ''}`}
-              onClick={() => setForm({ ...form, context: 'team' })}
-            >
-              👥 Équipe
-            </button>
-          </div>
-        </div>
+        <ContextSelector value={form.context} onChange={updateContext} />
 
-        {/* Équipe (si contexte team) */}
-        {form.context === 'team' && (
-          <div className="card" style={{ marginBottom: 12 }}>
-            <label htmlFor="teamId" style={labelStyle}>Équipe *</label>
-            {teams.length > 0 ? (
-              <select
-                id="teamId"
-                value={form.teamId}
-                onChange={e => setForm({ ...form, teamId: e.target.value })}
-                required
-                style={{ ...inputStyle, appearance: 'none', WebkitAppearance: 'none' }}
-              >
-                <option value="">— Choisir une équipe —</option>
-                {teams.map(t => (
-                  <option key={t._id} value={t._id}>{t.name}</option>
-                ))}
-              </select>
-            ) : (
-              <EmptyState icon="👥" text="Aucune équipe disponible" />
-            )}
-          </div>
-        )}
+        <TeamSelect
+          context={form.context}
+          teams={teams}
+          value={form.teamId}
+          onChange={value => updateField('teamId', value)}
+        />
 
-        {/* Score */}
-        <div className="card" style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label htmlFor="scoreValue" style={labelStyle}>Score *</label>
-              <input
-                id="scoreValue"
-                type="number"
-                value={form.value}
-                onChange={e => setForm({ ...form, value: e.target.value })}
-                placeholder="0"
-                min="0"
-                required
-                style={inputStyle}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label htmlFor="maxPossible" style={labelStyle}>Score max *</label>
-              <input
-                id="maxPossible"
-                type="number"
-                value={form.maxPossible}
-                onChange={e => setForm({ ...form, maxPossible: e.target.value })}
-                placeholder="100"
-                min="1"
-                required
-                style={inputStyle}
-              />
-            </div>
-          </div>
-          {form.value && form.maxPossible && (
-            <div style={{
-              textAlign: 'center', marginTop: 10, padding: '8px 0',
-              fontSize: 14, color: 'var(--tg-theme-hint-color)'
-            }}>
-              Score normalisé : <strong style={{ color: 'var(--tg-theme-accent-text-color)' }}>
-                {((Number(form.value) / Number(form.maxPossible)) * 100).toFixed(1)}%
-              </strong>
-            </div>
-          )}
-        </div>
+        <ScoreFields
+          value={form.value}
+          maxPossible={form.maxPossible}
+          onChange={updateField}
+        />
 
-        {/* Commentaires */}
-        <div className="card" style={{ marginBottom: 16 }}>
-          <label htmlFor="comments" style={labelStyle}>Commentaires</label>
-          <textarea
-            id="comments"
-            value={form.comments}
-            onChange={e => setForm({ ...form, comments: e.target.value })}
-            placeholder="Notes, remarques..."
-            rows={2}
-            style={{ ...inputStyle, resize: 'none' }}
-          />
-        </div>
+        <CommentsField
+          value={form.comments}
+          onChange={value => updateField('comments', value)}
+        />
 
-        {/* Submit */}
-        <button type="submit" className="btn btn-primary" disabled={submitting}>
-          {submitting ? '⏳ Envoi...' : '✅ Ajouter le score'}
-        </button>
+        <SubmitButton submitting={submitting} />
       </form>
     </div>
   );

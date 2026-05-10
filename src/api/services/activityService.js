@@ -12,49 +12,83 @@ const handleError = (error, customMessage) => {
 };
 
 /**
+ * Construit un filtre { _id, chatId } réutilisable
+ */
+const buildIdFilter = (id, chatId) => {
+  const filter = { _id: String(id) };
+  if (chatId) filter.chatId = String(chatId);
+  return filter;
+};
+
+/**
+ * Charge une activité par ID et lève une erreur si elle est introuvable
+ */
+const getActivityById = async (id, chatId, errorMessage = 'Activité non trouvée') => {
+  const activity = await Activity.findOne(buildIdFilter(id, chatId));
+  if (!activity) throw new Error(errorMessage);
+  return activity;
+};
+
+/**
+ * Retourne la date de début pour une période relative
+ */
+const getPeriodStartDate = (period) => {
+  const periodMs = {
+    day: 24 * 60 * 60 * 1000,
+    week: 7 * 24 * 60 * 60 * 1000,
+    month: 30 * 24 * 60 * 60 * 1000,
+    year: 365 * 24 * 60 * 60 * 1000
+  };
+  const ms = periodMs[period];
+  return ms ? new Date(Date.now() - ms) : null;
+};
+
+/**
+ * Lie une activité à une équipe si teamId est fourni
+ */
+const linkActivityToTeam = async (teamId, activityId) => {
+  if (!teamId) return;
+  const team = await Team.findById(teamId);
+  if (team) {
+    team.activities.push(activityId);
+    await team.save();
+  }
+};
+
+const DISALLOWED_UPDATE_FIELDS = new Set(['_id', 'createdBy', 'createdAt', 'chatId']);
+
+/**
+ * Applique les populates et le tri standard sur une query Activity
+ */
+const withStandardPopulate = (query) =>
+  query
+    .populate('createdBy', 'username firstName lastName')
+    .populate('teamId', 'name description')
+    .sort({ createdAt: -1 });
+
+/**
  * Crée une nouvelle activité
  */
 export const createActivity = async ({ name, description, createdBy, chatId, teamId }) => {
   try {
     logger.info(`Creating new activity: ${name}`, { createdBy, chatId, teamId });
-    
-    // Vérifier que l'utilisateur créateur existe
-    const creator = await User.findById(createdBy);
-    if (!creator) {
-      throw new Error('Utilisateur créateur non trouvé');
-    }
 
-    // Si teamId est fourni, vérifier que l'équipe existe
+    const creator = await User.findById(createdBy);
+    if (!creator) throw new Error('Utilisateur créateur non trouvé');
+
     if (teamId) {
       const team = await Team.findById(teamId);
-      if (!team) {
-        throw new Error('Équipe non trouvée');
-      }
+      if (!team) throw new Error('Équipe non trouvée');
     }
 
-    // Créer l'activité
     const activity = new Activity({
-      name,
-      description,
-      createdBy,
-      chatId,
+      name, description, createdBy, chatId,
       teamId: teamId || undefined,
-      settings: {
-        isActive: true,
-        startDate: new Date(),
-        isRecurring: false,
-        maxParticipants: 50
-      }
+      settings: { isActive: true, startDate: new Date(), isRecurring: false, maxParticipants: 50 }
     });
 
     await activity.save();
-
-    // Ajouter l'activité à l'équipe si applicable
-    if (teamId) {
-      const team = await Team.findById(teamId);
-      team.activities.push(activity._id);
-      await team.save();
-    }
+    await linkActivityToTeam(teamId, activity._id);
 
     logger.info(`Activity created: ${activity._id}`, { name, createdBy });
     return activity;
@@ -123,10 +157,7 @@ export const listActivities = async ({ includeSubActivities = false, chatId, tea
 
     if (teamId) filter.teamId = String(teamId);
     
-    const activities = await Activity.find(filter)
-      .populate('createdBy', 'username firstName lastName')
-      .populate('teamId', 'name description')
-      .sort({ createdAt: -1 });
+    const activities = await withStandardPopulate(Activity.find(filter));
 
     // Filtrer les sous-activités si demandé
     const result = activities.map(activity => {
@@ -151,26 +182,7 @@ export const getActivityHistory = async ({ userId, limit = 10, period = 'day', c
   try {
     logger.info('Fetching activity history', { userId, limit, period, chatId, teamId });
     
-    // Calculer la date de début selon la période
-    let startDate;
-    const now = new Date();
-    
-    switch (period) {
-      case 'day':
-        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        break;
-      case 'week':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'month':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case 'year':
-        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        startDate = null;
-    }
+    const startDate = getPeriodStartDate(period);
 
     // Construction du filtre
     const filter = {};
@@ -179,12 +191,7 @@ export const getActivityHistory = async ({ userId, limit = 10, period = 'day', c
     if (teamId) filter.teamId = String(teamId);
     if (startDate) filter.createdAt = { $gte: startDate };
     
-    const activities = await Activity.find(filter)
-      .populate('createdBy', 'username firstName lastName')
-      .populate('teamId', 'name description')
-      .sort({ createdAt: -1 })
-      .limit(limit);
-    
+    const activities = await withStandardPopulate(Activity.find(filter)).limit(limit);
     logger.info(`Fetched ${activities.length} history entries`, { userId, period });
     return activities;
   } catch (error) {
@@ -197,18 +204,10 @@ export const getActivityHistory = async ({ userId, limit = 10, period = 'day', c
  */
 export const getActivity = async (id, chatId) => {
   try {
-    const filter = { _id: String(id) };
-    if (chatId) filter.chatId = String(chatId);
-    
-    const activity = await Activity.findOne(filter)
+    const activity = await getActivityById(id, chatId);
+    return await activity
       .populate('createdBy', 'username firstName lastName')
       .populate('teamId', 'name description members');
-    
-    if (!activity) {
-      throw new Error('Activité non trouvée');
-    }
-    
-    return activity;
   } catch (error) {
     handleError(error, 'Error getting activity');
   }
@@ -221,13 +220,7 @@ export const getAllActivities = async (chatId) => {
   try {
     const filter = {};
     if (chatId) filter.chatId = String(chatId);
-    
-    const activities = await Activity.find(filter)
-      .populate('createdBy', 'username firstName lastName')
-      .populate('teamId', 'name description')
-      .sort({ createdAt: -1 });
-    
-    return activities;
+    return await withStandardPopulate(Activity.find(filter));
   } catch (error) {
     handleError(error, 'Error getting all activities');
   }
@@ -238,19 +231,18 @@ export const getAllActivities = async (chatId) => {
  */
 export const updateActivity = async (id, updateData, chatId) => {
   try {
-    const filter = { _id: String(id) };
-    if (chatId) filter.chatId = String(chatId);
-    
-    const activity = await Activity.findOne(filter);
-    if (!activity) {
-      throw new Error('Activité non trouvée');
-    }
+    const sanitizedUpdateData = Object.fromEntries(
+      Object.entries(updateData || {}).filter(([key]) => !DISALLOWED_UPDATE_FIELDS.has(key))
+    );
 
-    // Appliquer les mises à jour
-    Object.assign(activity, updateData);
-    await activity.save();
-    
-    return activity;
+    const updatedActivity = await Activity.findOneAndUpdate(
+      buildIdFilter(id, chatId),
+      { $set: sanitizedUpdateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedActivity) throw new Error('Activité non trouvée');
+    return updatedActivity;
   } catch (error) {
     handleError(error, 'Error updating activity');
   }
@@ -261,29 +253,17 @@ export const updateActivity = async (id, updateData, chatId) => {
  */
 export const deleteActivity = async (id, chatId) => {
   try {
-    const filter = { _id: String(id) };
-    if (chatId) filter.chatId = String(chatId);
-    
-    const activity = await Activity.findOne(filter);
-    if (!activity) {
-      throw new Error('Activité non trouvée');
-    }
+    const activity = await getActivityById(id, chatId);
 
-    // Retirer l'activité de l'équipe si applicable
     if (activity.teamId) {
       const team = await Team.findById(activity.teamId);
       if (team) {
-        team.activities = team.activities.filter(actId => 
-          actId.toString() !== activity._id.toString()
-        );
+        team.activities = team.activities.filter(actId => actId.toString() !== activity._id.toString());
         await team.save();
       }
     }
 
-    // IMPORTANT: Supprimer tous les scores associés en cascade pour éviter
-    // les données fantômes (scores orphelins)
     await Score.deleteMany({ activity: String(id) });
-
     await Activity.findByIdAndDelete(String(id));
     return true;
   } catch (error) {
@@ -296,18 +276,9 @@ export const deleteActivity = async (id, chatId) => {
  */
 export const addParticipant = async (activityId, participantName, chatId) => {
   try {
-    const filter = { _id: String(activityId) };
-    if (chatId) filter.chatId = String(chatId);
-    
-    const activity = await Activity.findOne(filter);
-    if (!activity) {
-      throw new Error('Activité non trouvée');
-    }
-
-    // Mettre à jour les statistiques
+    const activity = await getActivityById(activityId, chatId);
     activity.stats.totalParticipants += 1;
     await activity.save();
-    
     return activity;
   } catch (error) {
     handleError(error, 'Error adding participant');
@@ -317,27 +288,16 @@ export const addParticipant = async (activityId, participantName, chatId) => {
 /**
  * Ajoute un score pour une activité (legacy - utiliser scoreService à la place)
  */
-export const addScore = async (activityId, participantName, subActivityName, score, chatId) => {
+export const addScore = async ({ activityId, subActivityName, score, chatId }) => {
   try {
-    const filter = { _id: String(activityId) };
-    if (chatId) filter.chatId = String(chatId);
-    
-    const activity = await Activity.findOne(filter);
-    if (!activity) {
-      throw new Error('Activité non trouvée');
-    }
+    const activity = await getActivityById(activityId, chatId);
 
-    // Mettre à jour les statistiques
     activity.stats.totalSubmissions += 1;
     activity.stats.lastSubmission = new Date();
-    
-    // Calculer la moyenne des scores
-    const currentAverage = activity.stats.averageScore || 0;
-    const totalSubmissions = activity.stats.totalSubmissions;
+    const { totalSubmissions, averageScore: currentAverage = 0 } = activity.stats;
     activity.stats.averageScore = ((currentAverage * (totalSubmissions - 1)) + score) / totalSubmissions;
-    
+
     await activity.save();
-    
     return activity;
   } catch (error) {
     handleError(error, 'Error adding score');
@@ -355,18 +315,10 @@ export const searchActivities = async (query, filters = {}, limit = 10) => {
         { description: { $regex: String(query), $options: 'i' } }
       ]
     };
-    
     if (filters.chatId) filter.chatId = String(filters.chatId);
     if (filters.teamId) filter.teamId = String(filters.teamId);
     if (filters.createdBy) filter.createdBy = String(filters.createdBy);
-    
-    const activities = await Activity.find(filter)
-      .populate('createdBy', 'username firstName lastName')
-      .populate('teamId', 'name description')
-      .sort({ createdAt: -1 })
-      .limit(limit);
-    
-    return activities;
+    return await withStandardPopulate(Activity.find(filter)).limit(limit);
   } catch (error) {
     handleError(error, 'Error searching activities');
   }
@@ -377,14 +329,7 @@ export const searchActivities = async (query, filters = {}, limit = 10) => {
  */
 export const getActivityStats = async (activityId, chatId) => {
   try {
-    const filter = { _id: String(activityId) };
-    if (chatId) filter.chatId = String(chatId);
-    
-    const activity = await Activity.findOne(filter);
-    if (!activity) {
-      throw new Error('Activité non trouvée');
-    }
-
+    const activity = await getActivityById(activityId, chatId);
     return {
       ...activity.stats.toObject(),
       subActivitiesCount: activity.subActivities.length,

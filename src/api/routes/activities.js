@@ -2,12 +2,11 @@ import express from 'express';
 import { Activity } from '../models/activity.js';
 import Team from '../models/Team.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
-import { authMiddleware, requireTeamPermission } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/auth.js';
 import { requireChatId, validateChatAccess } from '../middleware/chatIdValidator.js';
 import logger from '../../utils/logger.js';
-import { bot } from '../../config/bot.js'; // Import du bot Telegram
-import User from '../models/User.js';
 import { notifyActivityMembers, notifyActivityMembersSubActivity } from '../utils/notifications.js';
+import { resourceInChatFilter, scoresForChatFilter } from '../utils/chatScope.js';
 
 const router = express.Router();
 
@@ -51,8 +50,8 @@ router.get('/', asyncHandler(async (req, res) => {
 
   // Options de pagination et tri
   const options = {
-    page: parseInt(page),
-    limit: parseInt(limit),
+    page: Number.parseInt(page),
+    limit:  Number.parseInt(limit),
     sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 },
     populate: [
       { path: 'createdBy', select: 'username firstName lastName' },
@@ -91,7 +90,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { includeSubActivities = 'true' } = req.query;
 
-  const activity = await Activity.findById(id)
+  const activity = await Activity.findOne(resourceInChatFilter(id, req.chatId))
     .populate('createdBy', 'username firstName lastName')
     .populate('teamId', 'name description members');
 
@@ -140,9 +139,11 @@ router.post('/', asyncHandler(async (req, res) => {
   // Utiliser le chatId validé par le middleware
   const effectiveChatId = req.chatId;
 
+  let team = null;
+
   // Si teamId est fourni, vérifier que l'utilisateur a les permissions
   if (teamId) {
-    const team = await Team.findById(teamId);
+    team = await Team.findOne(resourceInChatFilter(teamId, effectiveChatId));
     if (!team) {
       throw createError(404, 'Équipe non trouvée');
     }
@@ -176,8 +177,7 @@ router.post('/', asyncHandler(async (req, res) => {
   await activity.save();
 
   // Ajouter l'activité à l'équipe si applicable
-  if (teamId) {
-    const team = await Team.findById(teamId);
+  if (team) {
     team.activities.push(activity._id);
     await team.save();
   }
@@ -214,7 +214,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name, description, settings } = req.body;
 
-  const activity = await Activity.findById(id).populate('teamId');
+  const activity = await Activity.findOne(resourceInChatFilter(id, req.chatId)).populate('teamId');
   if (!activity) {
     throw createError(404, 'Activité non trouvée');
   }
@@ -269,7 +269,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
 router.delete('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const activity = await Activity.findById(id).populate('teamId');
+  const activity = await Activity.findOne(resourceInChatFilter(id, req.chatId)).populate('teamId');
   if (!activity) {
     throw createError(404, 'Activité non trouvée');
   }
@@ -291,14 +291,14 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 
   // Retirer l'activité de l'équipe si applicable
   if (activity.teamId) {
-    const team = await Team.findById(activity.teamId._id);
+    const team = await Team.findOne(resourceInChatFilter(activity.teamId._id, req.chatId));
     team.activities = team.activities.filter(actId => 
       actId.toString() !== activity._id.toString()
     );
     await team.save();
   }
 
-  await Activity.findByIdAndDelete(String(id));
+  await Activity.deleteOne(resourceInChatFilter(id, req.chatId));
 
   logger.info(`Activité supprimée: ${activity.name}`, { 
     activityId: activity._id,
@@ -325,7 +325,7 @@ router.post('/:id/subactivities', asyncHandler(async (req, res) => {
     throw createError(400, 'Nom de la sous-activité requis');
   }
 
-  const activity = await Activity.findById(id).populate('teamId');
+  const activity = await Activity.findOne(resourceInChatFilter(id, req.chatId)).populate('teamId');
   if (!activity) {
     throw createError(404, 'Activité non trouvée');
   }
@@ -368,7 +368,7 @@ router.post('/:id/subactivities', asyncHandler(async (req, res) => {
   });
 
   // Notifier les membres/admins
-  const subActivity = activity.subActivities[activity.subActivities.length - 1];
+  const subActivity = activity.subActivities.at(-1);
   await notifyActivityMembersSubActivity(req, activity, 'created', subActivity);
 
   res.status(201).json({
@@ -390,7 +390,7 @@ router.put('/:id/subactivities/:subId', asyncHandler(async (req, res) => {
   const { id, subId } = req.params;
   const { name, description, maxScore } = req.body;
 
-  const activity = await Activity.findById(id).populate('teamId');
+  const activity = await Activity.findOne(resourceInChatFilter(id, req.chatId)).populate('teamId');
   if (!activity) {
     throw createError(404, 'Activité non trouvée');
   }
@@ -450,7 +450,7 @@ router.put('/:id/subactivities/:subId', asyncHandler(async (req, res) => {
 router.delete('/:id/subactivities/:subId', asyncHandler(async (req, res) => {
   const { id, subId } = req.params;
 
-  const activity = await Activity.findById(id).populate('teamId');
+  const activity = await Activity.findOne(resourceInChatFilter(id, req.chatId)).populate('teamId');
   if (!activity) {
     throw createError(404, 'Activité non trouvée');
   }
@@ -502,13 +502,22 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
     period = 'month' 
   } = req.query;
 
-  const activity = await Activity.findById(id);
+  // Seul un admin ou l'utilisateur lui-même peut filtrer par userId
+  if (userId) {
+    const isSelf = String(req.userId) === String(userId);
+    const isAdmin = ['admin', 'superadmin'].includes(req.user.role);
+    if (!isSelf && !isAdmin) {
+      throw createError(403, 'Permissions insuffisantes pour filtrer par utilisateur');
+    }
+  }
+
+  const activity = await Activity.findOne(resourceInChatFilter(id, req.chatId));
   if (!activity) {
     throw createError(404, 'Activité non trouvée');
   }
 
   // Construire le filtre pour l'historique
-  const filter = { activity: id };
+  const filter = { activity: id, ...scoresForChatFilter(req.chatId) };
   
   if (userId) filter.user = userId;
   
@@ -541,6 +550,8 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
   const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
   const Score = (await import('../models/Score.js')).default;
   
+  const isAdmin = ['admin', 'superadmin'].includes(req.user.role);
+
   const [scores, totalEntries] = await Promise.all([
     Score.find(filter)
       .populate('user', 'username firstName lastName')
@@ -560,11 +571,14 @@ router.get('/:id/history', asyncHandler(async (req, res) => {
       user: s.user,
       team: s.team,
       value: s.value,
-      maxPossible: s.maxPossible,
       normalizedScore: s.normalizedScore,
       subActivity: s.subActivity,
       status: s.status,
-      comments: s.metadata?.comments,
+      // Champs sensibles réservés aux admins
+      ...(isAdmin && {
+        maxPossible: s.maxPossible,
+        comments: s.metadata?.comments,
+      }),
       createdAt: s.createdAt
     })),
     pagination: {

@@ -23,11 +23,11 @@ async function check() {
     const body = await res.text();
     console.log("BODY:", body);
   } catch(e) {
-    if (e.cause && e.cause.code === 'ECONNREFUSED') {
+    if (e.cause?.code === 'ECONNREFUSED') {
       console.error("Local API server is not running on port 3001.");
     } else {
       console.error(e);
     }
   }
 }
-check();
+await check();

@@ -2,13 +2,15 @@
 import express from 'express';
 import Timer from '../models/Timer.js';
 import mongoose from 'mongoose';
-import { bot } from '../../config/bot.js'; // Import du bot Telegram
-import User from '../models/User.js';
 import { notifyActivityParticipantsTimerEnded } from '../utils/notifications.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = express.Router();
+
+const isValidDuration = (d) => d && !Number.isNaN(Number(d)) && d > 0;
+const toObjectId = (id) => id ? new mongoose.Types.ObjectId(String(id)) : undefined;
+const findActiveTimer = (name, activityId) =>
+  Timer.findOne({ name: String(name), activityId: activityId ? String(activityId) : undefined, running: true });
 
 // Toutes les routes nécessitent une authentification
 router.use(authMiddleware);
@@ -17,11 +19,10 @@ router.use(authMiddleware);
 router.post('/start', async (req, res) => {
   try {
     const { name, duration, activityId } = req.body;
-    if (!name || !duration || isNaN(duration) || duration <= 0) {
+    if (!name || !isValidDuration(duration)) {
       return res.status(400).json({ error: 'Nom et durée valides requis' });
     }
-    // Un timer actif du même nom pour la même activité ?
-    const existing = await Timer.findOne({ name: String(name), activityId: activityId ? String(activityId) : undefined, running: true });
+    const existing = await findActiveTimer(name, activityId);
     if (existing) {
       return res.status(400).json({ error: 'Un timer avec ce nom est déjà actif pour cette activité' });
     }
@@ -32,7 +33,7 @@ router.post('/start', async (req, res) => {
       startedAt: now,
       endTime: new Date(now.getTime() + Number(duration) * 60000),
       running: true,
-      activityId: activityId ? new mongoose.Types.ObjectId(activityId) : undefined,
+      activityId: toObjectId(activityId),
       createdBy: req.user?._id
     });
     res.status(201).json({ timer });
@@ -45,7 +46,7 @@ router.post('/start', async (req, res) => {
 router.post('/stop', async (req, res) => {
   try {
     const { name, activityId } = req.body;
-    const timer = await Timer.findOne({ name: String(name), activityId: activityId ? String(activityId) : undefined, running: true });
+    const timer = await findActiveTimer(name, activityId);
     if (!timer) {
       return res.status(404).json({ error: 'Timer non trouvé ou déjà arrêté' });
     }

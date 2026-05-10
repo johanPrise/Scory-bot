@@ -8,7 +8,6 @@
 import dotenv from 'dotenv';
 import axios from 'axios';
 import TelegramBot from 'node-telegram-bot-api';
-import logger from '../src/utils/logger.js';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -32,6 +31,34 @@ class IntegrationTester {
   }
 
   /**
+   * Test un endpoint avec gestion des erreurs
+   */
+  async testEndpoint({ name, url, options: { method, data = null, expectedStatus = 200 } = {} }) {
+    try {
+      const response = await axios({
+        method,
+        url,
+        data,
+        timeout: 5000
+      });
+      
+      this.testResults.api.tests.push({
+        name,
+        status: response.status === expectedStatus ? 'pass' : 'fail',
+        details: `Status: ${response.status}`
+      });
+    } catch (error) {
+      const status = error.response?.status;
+      const isExpected = status === expectedStatus;
+      this.testResults.api.tests.push({
+        name,
+        status: isExpected ? 'pass' : 'fail',
+        details: `Expected ${expectedStatus}, got ${status || 'no response'}`
+      });
+    }
+  }
+
+  /**
    * Test de l'API Server
    */
   async testApiServer() {
@@ -39,54 +66,13 @@ class IntegrationTester {
     
     try {
       // Test 1: Health check
-      const healthResponse = await axios.get(`${this.apiUrl}/health`, {
-        timeout: 5000
-      });
-      
-      this.testResults.api.tests.push({
-        name: 'Health Check',
-        status: healthResponse.status === 200 ? 'pass' : 'fail',
-        details: `Status: ${healthResponse.status}`
-      });
+      await this.testEndpoint({ name: 'Health Check', url: `${this.apiUrl}/health`, options: { method: 'get', expectedStatus: 200 } });
 
       // Test 2: Auth endpoint
-      try {
-        const authResponse = await axios.post(`${this.apiUrl}/auth/login`, {
-          username: 'test',
-          password: 'test'
-        }, { timeout: 5000 });
-        
-        this.testResults.api.tests.push({
-          name: 'Auth Endpoint',
-          status: 'pass',
-          details: 'Endpoint accessible'
-        });
-      } catch (authError) {
-        this.testResults.api.tests.push({
-          name: 'Auth Endpoint',
-          status: authError.response?.status === 401 ? 'pass' : 'fail',
-          details: `Expected 401, got ${authError.response?.status || 'no response'}`
-        });
-      }
+      await this.testEndpoint({ name: 'Auth Endpoint', url: `${this.apiUrl}/auth/login`, options: { method: 'post', data: { username: 'test', password: 'test' }, expectedStatus: 401 } });
 
       // Test 3: Users endpoint
-      try {
-        const usersResponse = await axios.get(`${this.apiUrl}/users`, {
-          timeout: 5000
-        });
-        
-        this.testResults.api.tests.push({
-          name: 'Users Endpoint',
-          status: 'pass',
-          details: 'Endpoint accessible'
-        });
-      } catch (usersError) {
-        this.testResults.api.tests.push({
-          name: 'Users Endpoint',
-          status: usersError.response?.status === 401 ? 'pass' : 'fail',
-          details: `Expected 401, got ${usersError.response?.status || 'no response'}`
-        });
-      }
+      await this.testEndpoint({ name: 'Users Endpoint', url: `${this.apiUrl}/users`, options: { method: 'get', expectedStatus: 401 } });
 
       this.testResults.api.status = 'pass';
       console.log('✅ Serveur API: Tests réussis');
@@ -404,7 +390,7 @@ async function main() {
 
 // Exécuter si appelé directement
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  await main();
 }
 
 export { IntegrationTester };

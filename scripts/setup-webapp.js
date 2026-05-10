@@ -2,8 +2,8 @@
 
 import dotenv from 'dotenv';
 import TelegramBot from 'node-telegram-bot-api';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 dotenv.config();
 
@@ -67,4 +67,4 @@ async function setupWebApp() {
   }
 }
 
-setupWebApp();
+await setupWebApp();

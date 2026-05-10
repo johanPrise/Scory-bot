@@ -245,7 +245,7 @@ async function main() {
 
 // Exécuter si appelé directement
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  await main();
 }
 
 export { TelegramWebAppConfigurator };

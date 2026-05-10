@@ -1,9 +1,9 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { SocksProxyAgent } from 'socks-proxy-agent';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { TELEGRAM_CONFIG, ENV_CONFIG } from './telegram.js';
 import { logCriticalError, logUserAction } from '../utils/logger.js';
 
@@ -19,9 +19,20 @@ const config = {
 };
 
 // Vérifier le token du bot
-const token = process.env.TELEGRAM_BOT_TOKEN;
+let token = process.env.TELEGRAM_BOT_TOKEN;
+
+if (env !== 'production') {
+  if (process.env.DEV_TELEGRAM_BOT_TOKEN) {
+    token = process.env.DEV_TELEGRAM_BOT_TOKEN;
+    console.log('🤖 Mode Développement : Utilisation de DEV_TELEGRAM_BOT_TOKEN (Bot Fantôme)');
+  } else {
+    console.warn('⚠️ ATTENTION : DEV_TELEGRAM_BOT_TOKEN non défini dans le fichier .env');
+    console.warn('⚠️ Polling sur le bot principal : cela DÉSACTIVERA le webhook en production pour vos utilisateurs !');
+  }
+}
+
 if (!token) {
-  const errorMsg = '❌ ERREUR: TELEGRAM_BOT_TOKEN est manquant dans les variables d\'environnement';
+  const errorMsg = '❌ ERREUR: Aucun Token Telegram (TELEGRAM_BOT_TOKEN ou DEV_TELEGRAM_BOT_TOKEN) trouvé dans .env';
   console.error(errorMsg);
   logCriticalError(new Error(errorMsg), { context: 'Initialisation du bot' });
   process.exit(1);
@@ -39,7 +50,7 @@ const botOptions = {
     agentClass: process.env.HTTP_PROXY ? SocksProxyAgent : null,
     agentOptions: process.env.HTTP_PROXY ? {
       socksHost: process.env.PROXY_HOST || 'localhost',
-      socksPort: parseInt(process.env.PROXY_PORT) || 1080
+      socksPort: Number.parseInt(process.env.PROXY_PORT) || 1080
     } : null
   }
 };
@@ -143,8 +154,8 @@ export async function saveCommandsToFile(botUsername = null) {
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const commandsDir = path.join(__dirname, '..', 'logs');
-    const commandsPath = path.join(commandsDir, 'commands.json');
+    const commandsDir = path.resolve(__dirname, '..', 'logs');
+    const commandsPath = path.resolve(commandsDir, 'commands.json');
     
     // Créer le répertoire s'il n'existe pas
     if (!fs.existsSync(commandsDir)) {
@@ -167,15 +178,11 @@ export async function saveCommandsToFile(botUsername = null) {
     if (fs.existsSync(commandsPath)) {
       try {
         const existingData = JSON.parse(await fs.promises.readFile(commandsPath, 'utf8'));
-        // Comparer sans la date de mise à jour
-        const { lastUpdated: _, ...existingCommands } = existingData;
-        const { lastUpdated: __, ...newCommands } = commandsData;
-        
-        if (JSON.stringify(existingCommands) === JSON.stringify(newCommands)) {
+        const omitLastUpdated = ({ lastUpdated, ...rest }) => rest;
+        if (JSON.stringify(omitLastUpdated(existingData)) === JSON.stringify(omitLastUpdated(commandsData))) {
           shouldSave = false;
         }
-      } catch (error) {
-        // Si erreur de lecture, on sauvegarde
+      } catch {
         shouldSave = true;
       }
     }

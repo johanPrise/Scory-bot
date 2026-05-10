@@ -3,11 +3,25 @@ import User from '../../api/models/User.js';
 import ChatGroup from '../../api/models/ChatGroup.js';
 import logger from '../../utils/logger.js';
 
-/**
- * In-memory store for conversational user sessions
- * Expected payload: { step: string, [key: string]: any }
- */
-export const userSessions = new Map();
+import BotSession from '../../api/models/BotSession.js';
+
+export const userSessions = {
+  get: async (userId) => {
+    const session = await BotSession.findOne({ userId: String(userId) });
+    return session ? { step: session.step, ...session.data } : null;
+  },
+  set: async (userId, data) => {
+    const { step, ...otherData } = data;
+    await BotSession.findOneAndUpdate(
+      { userId: String(userId) },
+      { userId: String(userId), step, data: otherData },
+      { upsert: true, new: true }
+    );
+  },
+  delete: async (userId) => {
+    await BotSession.deleteOne({ userId: String(userId) });
+  }
+};
 
 /**
  * Résout un ID Telegram en ObjectId MongoDB
@@ -71,50 +85,37 @@ export const validateParams = (params, required) => {
  * @param {string} mongoUserId - L'ObjectId MongoDB de l'utilisateur (optionnel, sera résolu si absent)
  * @returns {Promise<Object|null>} Le document ChatGroup ou null en cas d'erreur
  */
+const resolveOrCreateUser = async (from, chatId) => {
+  const existing = await resolveUserId(from.id);
+  if (existing) return existing;
+
+  const user = await User.create({
+    username: from.username || `user_${from.id}`,
+    firstName: from.first_name || '',
+    lastName: from.last_name || '',
+    telegram: {
+      id: String(from.id),
+      username: from.username || '',
+      chatId: String(chatId),
+      linked: true
+    },
+    status: 'active'
+  });
+  logger.info(`Utilisateur auto-créé lors du tracking: ${from.id} (${from.first_name})`);
+  return user._id;
+};
+
 export const trackGroup = async (msg, mongoUserId = null) => {
   try {
-    const chat = msg.chat;
-    const from = msg.from;
-    
-    // Ne tracker que les groupes, pas les conversations privées
+    const { chat, from } = msg;
     if (chat.type === 'private') return null;
 
-    // Résoudre l'ID MongoDB si non fourni
-    if (!mongoUserId) {
-      mongoUserId = await resolveUserId(from.id);
-      
-      // Si l'utilisateur n'existe pas, le créer automatiquement
-      if (!mongoUserId) {
-        const user = await User.create({
-          username: from.username || `user_${from.id}`,
-          firstName: from.first_name || '',
-          lastName: from.last_name || '',
-          telegram: {
-            id: String(from.id),
-            username: from.username || '',
-            chatId: String(chat.id),
-            linked: true
-          },
-          status: 'active'
-        });
-        mongoUserId = user._id;
-        logger.info(`Utilisateur auto-créé lors du tracking: ${from.id} (${from.first_name})`);
-      }
-    }
+    const resolvedId = mongoUserId ?? await resolveOrCreateUser(from, chat.id);
 
-    const group = await ChatGroup.upsertGroup(
-      {
-        chatId: chat.id,
-        title: chat.title || `Groupe ${chat.id}`,
-        type: chat.type
-      },
-      {
-        mongoUserId,
-        telegramId: from.id
-      }
+    return await ChatGroup.upsertGroup(
+      { chatId: chat.id, title: chat.title || `Groupe ${chat.id}`, type: chat.type },
+      { mongoUserId: resolvedId, telegramId: from.id }
     );
-
-    return group;
   } catch (error) {
     logger.error('Erreur lors du tracking du groupe:', {
       chatId: msg?.chat?.id,
@@ -124,4 +125,3 @@ export const trackGroup = async (msg, mongoUserId = null) => {
     return null;
   }
 };
-

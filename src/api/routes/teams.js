@@ -6,6 +6,7 @@ import { authMiddleware, requireTeamPermission } from '../middleware/auth.js';
 import { requireChatId, validateChatAccess } from '../middleware/chatIdValidator.js';
 import logger from '../../utils/logger.js';
 import { notifyUserAddedToTeam } from '../utils/notifications.js';
+import { resourceInChatFilter } from '../utils/chatScope.js';
 
 const router = express.Router();
 
@@ -85,7 +86,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
     });
   }
 
-  const team = await Team.findById(id).populate(populateOptions);
+  const team = await Team.findOne(resourceInChatFilter(id, req.chatId)).populate(populateOptions);
 
   if (!team) {
     throw createError(404, 'Équipe non trouvée');
@@ -248,7 +249,7 @@ router.put('/:id', requireTeamPermission('manage_team'), asyncHandler(async (req
   const { id } = req.params;
   const { name, description, settings } = req.body;
 
-  const team = await Team.findById(id);
+  const team = await Team.findOne(resourceInChatFilter(id, req.chatId));
   if (!team) {
     throw createError(404, 'Équipe non trouvée');
   }
@@ -297,7 +298,7 @@ router.put('/:id', requireTeamPermission('manage_team'), asyncHandler(async (req
 router.delete('/:id', requireTeamPermission('manage_team'), asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const team = await Team.findById(id);
+  const team = await Team.findOne(resourceInChatFilter(id, req.chatId));
   if (!team) {
     throw createError(404, 'Équipe non trouvée');
   }
@@ -316,7 +317,7 @@ router.delete('/:id', requireTeamPermission('manage_team'), asyncHandler(async (
     }
   }
 
-  await Team.findByIdAndDelete(id);
+  await Team.deleteOne(resourceInChatFilter(id, req.chatId));
 
   logger.info(`Équipe supprimée: ${team.name}`, { 
     teamId: team._id,
@@ -336,7 +337,7 @@ router.get('/:id/members', asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { page = 1, limit = 20, role } = req.query;
 
-  const team = await Team.findById(id)
+  const team = await Team.findOne(resourceInChatFilter(id, req.chatId))
     .populate({
       path: 'members.userId',
       select: 'username firstName lastName avatar stats'
@@ -392,7 +393,7 @@ router.post('/:id/members', requireTeamPermission('manage_members'), asyncHandle
     throw createError(400, 'userId ou username requis');
   }
 
-  const team = await Team.findById(id);
+  const team = await Team.findOne(resourceInChatFilter(id, req.chatId));
   if (!team) {
     throw createError(404, 'Équipe non trouvée');
   }
@@ -444,7 +445,7 @@ router.put('/:id/members/:userId', requireTeamPermission('manage_roles'), asyncH
   const { id, userId } = req.params;
   const { isAdmin } = req.body;
 
-  const team = await Team.findById(id);
+  const team = await Team.findOne(resourceInChatFilter(id, req.chatId));
   if (!team) {
     throw createError(404, 'Équipe non trouvée');
   }
@@ -486,7 +487,7 @@ router.put('/:id/members/:userId', requireTeamPermission('manage_roles'), asyncH
 router.delete('/:id/members/:userId', requireTeamPermission('manage_members'), asyncHandler(async (req, res) => {
   const { id, userId } = req.params;
 
-  const team = await Team.findById(id);
+  const team = await Team.findOne(resourceInChatFilter(id, req.chatId));
   if (!team) {
     throw createError(404, 'Équipe non trouvée');
   }
@@ -522,9 +523,7 @@ router.delete('/:id/members/:userId', requireTeamPermission('manage_members'), a
  */
 router.get('/:id/stats', asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { period = 'month' } = req.query;
-
-  const team = await Team.findById(id);
+  const team = await Team.findOne(resourceInChatFilter(id, req.chatId));
   if (!team) {
     throw createError(404, 'Équipe non trouvée');
   }

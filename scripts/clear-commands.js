@@ -65,4 +65,4 @@ async function clearAndSetCommands() {
   }
 }
 
-clearAndSetCommands();
+await clearAndSetCommands();

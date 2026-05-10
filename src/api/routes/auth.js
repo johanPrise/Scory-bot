@@ -1,13 +1,36 @@
+import mongoose from 'mongoose';
+
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import User from '../models/User.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware } from '../middleware/auth.js';
 import logger from '../../utils/logger.js';
 
 const router = express.Router();
+
+/**
+ * Valide le hash des données Telegram
+ */
+function validateTelegramHash(params, botToken, hash) {
+  const webAppSecret = process.env.TELEGRAM_WEBAPP_SECRET || 'WebAppData';
+  const secretKey = crypto.createHmac('sha256', webAppSecret).update(botToken).digest();
+  const computedHash = crypto.createHmac('sha256', secretKey).update(params).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(computedHash, 'hex'), Buffer.from(hash, 'hex'));
+}
+
+/**
+ * Construit la chaîne de vérification à partir des paramètres
+ */
+function buildDataCheckString(params) {
+  const dataCheckArr = [];
+  for (const [key, value] of params.entries()) {
+    dataCheckArr.push(`${key}=${value}`);
+  }
+  dataCheckArr.sort((a, b) => a.localeCompare(b));
+  return dataCheckArr.join('\n');
+}
 
 /**
  * Valide les données initData de Telegram WebApp
@@ -20,17 +43,9 @@ function validateTelegramInitData(initData, botToken) {
     if (!hash) return null;
 
     params.delete('hash');
-    const dataCheckArr = [];
-    for (const [key, value] of params.entries()) {
-      dataCheckArr.push(`${key}=${value}`);
-    }
-    dataCheckArr.sort();
-    const dataCheckString = dataCheckArr.join('\n');
+    const dataCheckString = buildDataCheckString(params);
 
-    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-    const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-
-    if (computedHash !== hash) return null;
+    if (!validateTelegramHash(dataCheckString, botToken, hash)) return null;
 
     // Extraire les données utilisateur
     const userString = params.get('user');
@@ -38,7 +53,8 @@ function validateTelegramInitData(initData, botToken) {
 
     return JSON.parse(userString);
   } catch (err) {
-    return null;
+    if (err instanceof SyntaxError) return null;
+    throw err;
   }
 }
 
@@ -83,26 +99,31 @@ router.post('/telegram-login', asyncHandler(async (req, res) => {
 
     // Transférer les éventuelles données des doublons vers le compte principal
     // (scores, teams, etc. qui référencent les doublons)
+    const session = await mongoose.startSession();
+    session.startTransaction();
     try {
       const Score = (await import('../models/Score.js')).default;
       const Team = (await import('../models/Team.js')).default;
       const ChatGroup = (await import('../models/ChatGroup.js')).default;
 
-      await Promise.all([
-        Score.updateMany({ user: { $in: duplicateIds } }, { $set: { user: user._id } }),
-        Team.updateMany({ 'members.user': { $in: duplicateIds } }, { $set: { 'members.$.user': user._id } }),
-        ChatGroup.updateMany(
-          { 'members.userId': { $in: duplicateIds } },
-          { $set: { 'members.$.userId': user._id } }
-        )
-      ]);
+      await Score.updateMany({ user: { $in: duplicateIds } }, { $set: { user: user._id } }, { session });
+      await Team.updateMany({ 'members.user': { $in: duplicateIds } }, { $set: { 'members.$.user': user._id } }, { session });
+      await ChatGroup.updateMany(
+        { 'members.userId': { $in: duplicateIds } },
+        { $set: { 'members.$.userId': user._id } },
+        { session }
+      );
 
       // Supprimer les doublons
-      await User.deleteMany({ _id: { $in: duplicateIds } });
+      await User.deleteMany({ _id: { $in: duplicateIds } }, { session });
+      await session.commitTransaction();
       logger.info(`Doublons supprimés et données transférées vers ${user._id}`);
     } catch (mergeErr) {
+      await session.abortTransaction();
       logger.error('Erreur lors de la fusion des doublons:', mergeErr.message);
       // Continuer malgré l'erreur de fusion
+    } finally {
+      session.endSession();
     }
 
     // Mettre à jour les infos

@@ -3,62 +3,70 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const ALLOWED_ORIGIN = new URL(API_BASE).origin;
 
-/**
- * Récupère le chatId du contexte Telegram (passé via query params, start_param ou l'objet natif TG)
- * et le stocke en sessionStorage pour les appels API suivants
- */
-export const getChatId = () => {
-  // D'abord vérifier le sessionStorage (persistance intra-session)
-  const stored = sessionStorage.getItem('scory_chatId');
-  if (stored) return stored;
-
-  // Depuis l'objet Telegram natif direct (si ouvert dans le groupe)
-  const tgChatId = globalThis.Telegram?.WebApp?.initDataUnsafe?.chat?.id;
-  if (tgChatId) {
-    sessionStorage.setItem('scory_chatId', tgChatId.toString());
-    return tgChatId.toString();
+// Valide que l'URL construite reste sur l'origine autorisée (CWE-918)
+const buildUrl = (endpoint) => {
+  const url = new URL(`${API_BASE}${endpoint}`);
+  if (url.origin !== ALLOWED_ORIGIN) {
+    throw new Error(`Origine non autorisée: ${url.origin}`);
   }
+  return url.toString();
+};
 
-  // Sinon extraire des query params de l'URL
+// Sanitise un chatId pour n'autoriser que des chiffres et le signe - (CWE-79)
+const sanitizeChatId = (value) => {
+  if (!value) return null;
+  const clean = String(value).replaceAll(/[^0-9-]/g, '');
+  return clean || null;
+};
+
+// ===== Sources de chatId =====
+const getChatIdFromSession = () => sessionStorage.getItem('scory_chatId');
+
+const getChatIdFromTelegram = () => {
+  const id = globalThis.Telegram?.WebApp?.initDataUnsafe?.chat?.id;
+  return id ? sanitizeChatId(id.toString()) : null;
+};
+
+const getChatIdFromUrl = () => {
   const params = new URLSearchParams(globalThis.location?.search || '');
-  const urlChatId = params.get('chatId') || params.get('chat_id');
-  if (urlChatId) {
-    sessionStorage.setItem('scory_chatId', urlChatId);
-    return urlChatId;
-  }
+  return sanitizeChatId(params.get('chatId') || params.get('chat_id'));
+};
 
-  // Ou depuis les données Telegram start_param (raccourcis)
+const getChatIdFromStartParam = () => {
   const startParam = globalThis.Telegram?.WebApp?.initDataUnsafe?.start_param;
-  if (startParam) {
-    const parts = startParam.split('_');
-    const chatIdx = parts.indexOf('chat');
-    if (chatIdx >= 0 && parts[chatIdx + 1]) {
-      sessionStorage.setItem('scory_chatId', parts[chatIdx + 1]);
-      return parts[chatIdx + 1];
-    }
-  }
-
-  return null;
+  if (!startParam) return null;
+  const parts = startParam.split('_');
+  const chatIdx = parts.indexOf('chat');
+  return chatIdx >= 0 ? sanitizeChatId(parts[chatIdx + 1]) : null;
 };
 
 /**
- * Récupère le token d'auth depuis l'initData Telegram ou le localStorage
+ * Récupère le chatId du contexte Telegram et le stocke en sessionStorage
+ */
+export const getChatId = () => {
+  const stored = getChatIdFromSession();
+  if (stored) return stored;
+
+  const id = getChatIdFromTelegram()
+    ?? getChatIdFromUrl()
+    ?? getChatIdFromStartParam();
+
+  if (id) sessionStorage.setItem('scory_chatId', id);
+  return id;
+};
+
+/**
+ * Récupère les headers d'authentification
  */
 const getAuthHeaders = () => {
   const headers = { 'Content-Type': 'application/json' };
-  
-  // Token JWT si disponible (prioritaire)
   const token = localStorage.getItem('scory_token');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-  
-  // En mode Telegram, on envoie aussi le initData comme fallback
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   if (globalThis.Telegram?.WebApp?.initData) {
     headers['X-Telegram-Init-Data'] = globalThis.Telegram.WebApp.initData;
   }
-  
   return headers;
 };
 
@@ -66,27 +74,31 @@ const getAuthHeaders = () => {
  * Requête API générique
  */
 const apiRequest = async (endpoint, options = {}) => {
-  const url = `${API_BASE}${endpoint}`;
-  
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        ...getAuthHeaders(),
-        ...options.headers,
-      },
-    });
+  const url = buildUrl(endpoint);
+  const response = await fetch(url, {
+    ...options,
+    headers: { ...getAuthHeaders(), ...options.headers },
+  });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-      throw new Error(error.error?.message || error.message || `Erreur ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`API Error [${endpoint}]:`, error);
-    throw error;
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ message: 'Erreur réseau' }));
+    throw new Error(err.error?.message || err.message || `Erreur ${response.status}`);
   }
+
+  return response.json();
+};
+
+// ===== Helpers =====
+const requireChatId = (context) => {
+  const chatId = getChatId();
+  const suffix = context ? ` pour ${context}` : '';
+  if (!chatId) throw new Error(`Un groupe doit être sélectionné${suffix}`);
+  return chatId;
+};
+
+const buildQuery = (params) => {
+  const query = new URLSearchParams(params ?? undefined).toString();
+  return query ? `?${query}` : '';
 };
 
 // ===== AUTH =====
@@ -94,185 +106,116 @@ export const getMe = () => apiRequest('/auth/me');
 
 export const loginWithTelegram = async () => {
   const initData = globalThis.Telegram?.WebApp?.initData;
-  if (!initData) {
-    throw new Error('Pas de données Telegram disponibles');
-  }
+  if (!initData) throw new Error('Pas de données Telegram disponibles');
   const result = await apiRequest('/auth/telegram-login', {
     method: 'POST',
     body: JSON.stringify({ initData }),
   });
-  // Sauvegarder le token JWT
-  if (result.token) {
-    localStorage.setItem('scory_token', result.token);
-  }
+  if (result.token) localStorage.setItem('scory_token', result.token);
   return result;
 };
 
 // ===== ACTIVITIES =====
 export const getActivities = (params = {}) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour accéder aux activités');
-  }
-  params.chatId = chatId;
-  const query = new URLSearchParams(params).toString();
-  return apiRequest(`/activities${query ? '?' + query : ''}`);
+  params.chatId = requireChatId('accéder aux activités');
+  return apiRequest(`/activities${buildQuery(params)}`);
 };
 
 export const createActivity = (data) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour créer une activité');
-  }
-  data = { ...data, chatId };
-  return apiRequest('/activities', { method: 'POST', body: JSON.stringify(data) });
+  const chatId = requireChatId('créer une activité');
+  return apiRequest('/activities', { method: 'POST', body: JSON.stringify({ ...data, chatId }) });
 };
 
 export const getActivity = (id) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné');
-  }
-  return apiRequest(`/activities/${id}?chatId=${chatId}`);
+  const chatId = requireChatId();
+  return apiRequest(`/activities/${id}${buildQuery({ chatId })}`);
 };
 
 // ===== SCORES =====
 export const getScores = (params = {}) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour accéder aux scores');
-  }
-  params.chatId = chatId;
-  const query = new URLSearchParams(params).toString();
-  return apiRequest(`/scores${query ? '?' + query : ''}`);
+  params.chatId = requireChatId('accéder aux scores');
+  return apiRequest(`/scores${buildQuery(params)}`);
 };
 
 export const getRankings = (params = {}) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour accéder aux classements');
-  }
-  params.chatId = chatId;
-  const query = new URLSearchParams(params).toString();
-  return apiRequest(`/scores/rankings${query ? '?' + query : ''}`);
+  params.chatId = requireChatId('accéder aux classements');
+  return apiRequest(`/scores/rankings${buildQuery(params)}`);
 };
 
 export const getPersonalScores = (params = {}) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour accéder à vos scores');
-  }
-  params.chatId = chatId;
-  const query = new URLSearchParams(params).toString();
-  return apiRequest(`/scores/personal${query ? '?' + query : ''}`);
+  params.chatId = requireChatId('accéder à vos scores');
+  return apiRequest(`/scores/personal${buildQuery(params)}`);
 };
 
 export const addScore = (data) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour ajouter un score');
-  }
-  data = { ...data, metadata: { ...(data.metadata || {}), chatId } };
-  return apiRequest('/scores', { method: 'POST', body: JSON.stringify(data) });
+  const chatId = requireChatId('ajouter un score');
+  return apiRequest('/scores', {
+    method: 'POST',
+    body: JSON.stringify({ ...data, metadata: { ...(data.metadata), chatId } }),
+  });
 };
+
+export const getPendingScores = (params) =>
+  apiRequest('/scores/pending' + buildQuery(params));
+
+export const approveScore = (id, data) =>
+  apiRequest(`/scores/${id}/approve`, { method: 'PUT', ...(data && { body: JSON.stringify(data) }) });
+
+export const rejectScore = (id, data) =>
+  apiRequest(`/scores/${id}/reject`, { method: 'PUT', body: JSON.stringify(data) });
+
+export const deleteScore = (id) => apiRequest(`/scores/${id}`, { method: 'DELETE' });
 
 // ===== TEAMS =====
 export const getTeams = (params = {}) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour accéder aux équipes');
-  }
-  params.chatId = chatId;
-  const query = new URLSearchParams(params).toString();
-  return apiRequest(`/teams${query ? '?' + query : ''}`);
+  params.chatId = requireChatId('accéder aux équipes');
+  return apiRequest(`/teams${buildQuery(params)}`);
 };
 
 export const createTeam = (data) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour créer une équipe');
-  }
-  data = { ...data, chatId };
-  return apiRequest('/teams', { method: 'POST', body: JSON.stringify(data) });
+  const chatId = requireChatId('créer une équipe');
+  return apiRequest('/teams', { method: 'POST', body: JSON.stringify({ ...data, chatId }) });
 };
 
 export const getTeam = (id) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné');
-  }
-  return apiRequest(`/teams/${id}?chatId=${chatId}`);
+  const chatId = requireChatId();
+  return apiRequest(`/teams/${id}${buildQuery({ chatId })}`);
 };
 
 export const getTeamMembers = (id) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné');
-  }
-  return apiRequest(`/teams/${id}/members?chatId=${chatId}`);
+  const chatId = requireChatId();
+  return apiRequest(`/teams/${id}/members${buildQuery({ chatId })}`);
 };
 
 export const getTeamStats = (id) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné');
-  }
-  return apiRequest(`/teams/${id}/stats?chatId=${chatId}`);
+  const chatId = requireChatId();
+  return apiRequest(`/teams/${id}/stats${buildQuery({ chatId })}`);
 };
 
 export const joinTeam = (joinCode) =>
   apiRequest('/teams/join', { method: 'POST', body: JSON.stringify({ joinCode }) });
 
+export const deleteTeam = (id) => apiRequest(`/teams/${id}`, { method: 'DELETE' });
+
 // ===== DASHBOARD =====
 export const getDashboard = (params = {}) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour accéder au dashboard');
-  }
-  params.chatId = chatId;
-  const query = new URLSearchParams(params).toString();
-  return apiRequest(`/dashboard${query ? '?' + query : ''}`);
+  params.chatId = requireChatId('accéder au dashboard');
+  return apiRequest(`/dashboard${buildQuery(params)}`);
 };
-
-// ===== SCORES (extended) =====
-export const getPendingScores = (params = {}) => {
-  const query = new URLSearchParams(params).toString();
-  return apiRequest(`/scores/pending${query ? '?' + query : ''}`);
-};
-
-export const approveScore = (id, data = {}) =>
-  apiRequest(`/scores/${id}/approve`, { method: 'PUT', body: JSON.stringify(data) });
-
-export const rejectScore = (id, data) =>
-  apiRequest(`/scores/${id}/reject`, { method: 'PUT', body: JSON.stringify(data) });
 
 // ===== ACTIVITIES (extended) =====
 export const getActivityHistory = (id, params = {}) => {
-  const chatId = getChatId();
-  if (!chatId) {
-    throw new Error('Un groupe doit être sélectionné pour accéder à l\'historique');
-  }
-  params.chatId = chatId;
-  const query = new URLSearchParams(params).toString();
-  return apiRequest(`/activities/${id}/history${query ? '?' + query : ''}`);
+  params.chatId = requireChatId("accéder à l'historique");
+  return apiRequest(`/activities/${id}/history${buildQuery(params)}`);
 };
 
 export const addSubActivity = (activityId, data) =>
   apiRequest(`/activities/${activityId}/subactivities`, { method: 'POST', body: JSON.stringify(data) });
 
-export const deleteActivity = (id) =>
-  apiRequest(`/activities/${id}`, { method: 'DELETE' });
+export const deleteActivity = (id) => apiRequest(`/activities/${id}`, { method: 'DELETE' });
 
 export const deleteSubActivity = (activityId, subId) =>
   apiRequest(`/activities/${activityId}/subactivities/${subId}`, { method: 'DELETE' });
-
-// ===== TEAMS (extended) =====
-export const deleteTeam = (id) =>
-  apiRequest(`/teams/${id}`, { method: 'DELETE' });
-
-// ===== SCORES (delete) =====
-export const deleteScore = (id) =>
-  apiRequest(`/scores/${id}`, { method: 'DELETE' });
 
 // ===== USER =====
 export const getUserProfile = () => apiRequest('/auth/me');

@@ -38,6 +38,7 @@ export const validateChatAccess = async (req, res, next) => {
   try {
     const { chatId } = req;
     const userId = req.user?._id;
+    const telegramId = req.user?.telegram?.id ? String(req.user.telegram.id) : null;
     
     if (!userId) {
       logger.warn('Requête rejetée: utilisateur non authentifié', {
@@ -51,16 +52,22 @@ export const validateChatAccess = async (req, res, next) => {
       });
     }
     
+    const memberCriteria = [{ 'members.userId': userId }];
+    if (telegramId) {
+      memberCriteria.push({ 'members.telegramId': telegramId });
+    }
+
     // Vérifier que le groupe existe et que l'utilisateur en est membre
     const group = await ChatGroup.findOne({
       chatId,
-      'members.userId': userId,
-      isActive: true
+      isActive: true,
+      $or: memberCriteria
     });
     
     if (!group) {
       logger.warn('Accès au groupe refusé', {
         userId,
+        telegramId,
         chatId,
         path: req.path
       });

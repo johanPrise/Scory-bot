@@ -41,8 +41,8 @@ router.get('/', requireRole('admin', 'superadmin'), asyncHandler(async (req, res
 
   // Options de pagination et tri
   const options = {
-    page: parseInt(page),
-    limit: parseInt(limit),
+    page: Number.parseInt(page),
+    limit: Number.parseInt(limit),
     sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 },
     select: '-password',
     populate: {
@@ -166,20 +166,17 @@ router.put('/:id', asyncHandler(async (req, res) => {
   }
 
   // Champs que l'utilisateur peut modifier sur son propre profil
-  const userEditableFields = ['firstName', 'lastName', 'avatar', 'settings'];
-  
-  // Champs que seuls les admins peuvent modifier
-  const adminOnlyFields = ['role', 'status', 'emailVerified'];
+  const userEditableFields = new Set(['firstName', 'lastName', 'avatar', 'settings']);
+  const adminOnlyFields = new Set(['role', 'status', 'emailVerified']);
 
-  // Filtrer les mises à jour selon les permissions
   const allowedUpdates = {};
   
   for (const [key, value] of Object.entries(updates)) {
-    if (userEditableFields.includes(key)) {
+    if (userEditableFields.has(key)) {
       allowedUpdates[key] = value;
-    } else if (adminOnlyFields.includes(key) && ['admin', 'superadmin'].includes(requestingUser.role)) {
+    } else if (adminOnlyFields.has(key) && ['admin', 'superadmin'].includes(requestingUser.role)) {
       allowedUpdates[key] = value;
-    } else if (!adminOnlyFields.includes(key) && !userEditableFields.includes(key)) {
+    } else if (!adminOnlyFields.has(key) && !userEditableFields.has(key)) {
       throw createError(400, `Champ non modifiable: ${key}`);
     }
   }
@@ -339,7 +336,7 @@ router.post('/link-telegram', asyncHandler(async (req, res) => {
   }
   // Chercher un utilisateur temporaire avec ce code
   const tgUser = await User.findOne({ 'telegram.linkCode': code, 'telegram.linked': false });
-  if (!tgUser || !tgUser.telegram || !tgUser.telegram.id) {
+  if (!tgUser?.telegram?.id) {
     throw createError(404, 'Code de liaison invalide ou expiré');
   }
   // Vérifier si ce Telegram est déjà lié à un autre compte
@@ -371,7 +368,7 @@ router.post('/link-telegram', asyncHandler(async (req, res) => {
  */
 router.post('/unlink-telegram', asyncHandler(async (req, res) => {
   const user = req.user;
-  if (!user.telegram || !user.telegram.linked) {
+  if (!user.telegram?.linked) {
     throw createError(400, 'Aucun compte Telegram lié à ce profil');
   }
   user.telegram = {

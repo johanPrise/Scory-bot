@@ -148,7 +148,8 @@ chatGroupSchema.statics.getUserGroups = async function(mongoUserId, telegramId =
   const groups = await this.find(query, projection).sort({ updatedAt: -1 });
 
   // Auto-heal : corriger les members.userId désynchronisés
-  if (telegramId && groups.length > 0 && mongoUserId) {
+  const shouldHeal = telegramId && mongoUserId && groups.length > 0;
+  if (shouldHeal) {
     await this._healMemberUserIds(groups, mongoUserId, String(telegramId));
   }
 
