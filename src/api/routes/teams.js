@@ -236,7 +236,7 @@ router.post('/join', asyncHandler(async (req, res) => {
       id: team._id,
       name: team.name,
       description: team.description,
-      memberCount: team.members.length + 1,
+      memberCount: team.members.length,
     }
   });
 }));

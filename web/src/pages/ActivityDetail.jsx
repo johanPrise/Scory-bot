@@ -37,8 +37,12 @@ export default function ActivityDetail() {
   const subActivities = activityDetail.activity.subActivities || [];
 
   return (
-    <div className="page">
-      <ActivityHeader activity={activityDetail.activity} selectedGroup={selectedGroup} />
+    <div className="page activity-detail-page">
+      <ActivityHeader
+        activity={activityDetail.activity}
+        selectedGroup={selectedGroup}
+        subActivitiesCount={subActivities.length}
+      />
 
       <ActivityStats stats={activityDetail.activity.stats} />
 
@@ -88,7 +92,7 @@ function ActivityNotFound({ error, onBack }) {
   return (
     <div className="page">
       <EmptyState icon="❌" text={error?.message || 'Activité introuvable'} />
-      <button className="btn btn-secondary" onClick={onBack}>
+      <button type="button" className="btn btn-secondary" onClick={onBack}>
         ← Retour aux activités
       </button>
     </div>
@@ -100,41 +104,44 @@ ActivityNotFound.propTypes = {
   onBack: PropTypes.func.isRequired,
 };
 
-function ActivityHeader({ activity, selectedGroup }) {
+function ActivityHeader({ activity, selectedGroup, subActivitiesCount }) {
   return (
-    <div className="page-header slide-up">
+    <section className="activity-detail-hero slide-up">
       <BackButton fallback={ACTIVITIES_ROUTE} />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div className="list-item-icon" style={{ fontSize: 32 }}>
+      <div className="activity-detail-hero-main">
+        <div className="activity-detail-icon">
           {TYPE_EMOJIS[activity.type] || '📌'}
         </div>
 
-        <div>
-          <h1 className="page-title">{activity.name}</h1>
-          <div className="page-subtitle">
+        <div className="activity-detail-copy">
+          <div className="dashboard-eyebrow">{activity.settings?.isActive ? 'Active' : 'Inactive'}</div>
+          <h1>{activity.name}</h1>
+          <p>
             {activity.description || 'Pas de description'}
-          </div>
+          </p>
         </div>
       </div>
 
-      <SelectedGroupLabel selectedGroup={selectedGroup} />
-    </div>
+      <div className="activity-detail-meta-row">
+        <SelectedGroupLabel selectedGroup={selectedGroup} />
+        <span>{subActivitiesCount} sous-activité{subActivitiesCount > 1 ? 's' : ''}</span>
+      </div>
+    </section>
   );
 }
 
 ActivityHeader.propTypes = {
   activity: PropTypes.object.isRequired,
   selectedGroup: PropTypes.object,
+  subActivitiesCount: PropTypes.number.isRequired,
 };
 
 function SelectedGroupLabel({ selectedGroup }) {
   if (!selectedGroup) return null;
 
   return (
-    <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', marginTop: 4 }}>
-      📍 {selectedGroup.title || 'Groupe'}
-    </div>
+    <span>{selectedGroup.title || 'Groupe'}</span>
   );
 }
 
@@ -144,7 +151,7 @@ SelectedGroupLabel.propTypes = {
 
 function ActivityStats({ stats }) {
   return (
-    <div className="stats-grid slide-up-delay-1">
+    <div className="activity-stat-strip slide-up-delay-1">
       <StatCard value={stats?.totalParticipants || 0} label="Participants" />
       <StatCard value={stats?.totalSubmissions || 0} label="Scores" />
       <StatCard value={formatAverageScore(stats?.averageScore)} label="Moyenne" />
@@ -164,23 +171,24 @@ function formatAverageScore(averageScore) {
 
 function ActivityActions({ activityId, navigate, deleting, onDelete }) {
   return (
-    <div className="slide-up-delay-1" style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+    <div className="activity-action-row slide-up-delay-1">
       <button
+        type="button"
         className="btn btn-primary"
-        style={{ flex: 1 }}
         onClick={() => navigate(`/add-score?activityId=${activityId}`)}
       >
-        🎯 Ajouter un score
+        Ajouter un score
       </button>
 
       <button
+        type="button"
         className="btn btn-secondary"
-        style={{ flex: 'none', padding: '10px 14px' }}
         onClick={onDelete}
         disabled={deleting}
         title="Supprimer l'activité"
+        aria-label="Supprimer l'activité"
       >
-        {deleting ? '⏳' : '🗑'}
+        {deleting ? '...' : '🗑'}
       </button>
     </div>
   );

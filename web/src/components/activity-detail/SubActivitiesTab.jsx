@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types';
-import { ListItem, EmptyState } from '../index';
+import { EmptyState } from '../index';
 import SubActivityForm from './SubActivityForm';
 
 export default function SubActivitiesTab({
@@ -8,7 +8,7 @@ export default function SubActivitiesTab({
   handleAddSubActivity, handleDeleteSubActivity,
 }) {
   return (
-    <div>
+    <div className="subactivities-panel">
       {showSubForm ? (
         <SubActivityForm
           subForm={subForm}
@@ -18,28 +18,31 @@ export default function SubActivitiesTab({
           onCancel={closeSubForm}
         />
       ) : (
-        <button className="btn btn-secondary" style={{ marginBottom: 12 }} onClick={openSubForm}>
-          ➕ Ajouter une sous-activité
+        <button className="btn btn-secondary subactivity-add-button" onClick={openSubForm}>
+          Ajouter une sous-activité
         </button>
       )}
       {subActivities.length > 0 ? (
         subActivities.map((sub) => (
-          <ListItem
-            key={sub._id || `sub-${sub.name}`}
-            icon="📎"
-            title={sub.name}
-            subtitle={sub.description || 'Pas de description'}
-            value={`/${sub.maxScore || 100}`}
-            trailing={
+          <article className="subactivity-card" key={sub._id || `sub-${sub.name}`}>
+            <div className="subactivity-icon">⌁</div>
+            <div className="subactivity-body">
+              <h3>{sub.name}</h3>
+              <p>{sub.description || 'Pas de description'}</p>
+              <span>Score max {sub.maxScore || 100}</span>
+            </div>
+            <div className="subactivity-actions">
               <button
-                onClick={(e) => { e.stopPropagation(); handleDeleteSubActivity(sub._id, sub.name); }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: 4, opacity: 0.6 }}
+                type="button"
+                className="score-delete-button"
+                onClick={() => handleDeleteSubActivity(sub._id || sub.name, sub.name)}
                 title="Supprimer"
+                aria-label={`Supprimer ${sub.name}`}
               >
                 🗑
               </button>
-            }
-          />
+            </div>
+          </article>
         ))
       ) : (
         <EmptyState icon="📦" text="Aucune sous-activité" />

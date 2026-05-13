@@ -3,9 +3,9 @@ import { TYPE_EMOJIS } from '../../constants/activityTypes';
 
 function InfoRow({ label, value }) {
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontWeight: 600 }}>{value}</div>
+    <div className="activity-info-row">
+      <div>{label}</div>
+      <strong>{value}</strong>
     </div>
   );
 }
@@ -19,16 +19,21 @@ InfoTab.propTypes = {
   activity: PropTypes.object.isRequired,
 };
 
+function formatDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? 'Date inconnue'
+    : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 export default function InfoTab({ activity }) {
   return (
-    <div className="card">
+    <div className="activity-info-panel">
       <InfoRow label="Type" value={`${TYPE_EMOJIS[activity.type] || '📌'} ${activity.type || 'Autre'}`} />
       <InfoRow label="Statut" value={activity.settings?.isActive ? '🟢 Active' : '🔴 Inactive'} />
       <InfoRow
         label="Créée le"
-        value={new Date(activity.createdAt).toLocaleDateString('fr-FR', {
-          day: 'numeric', month: 'long', year: 'numeric',
-        })}
+        value={formatDate(activity.createdAt)}
       />
       {activity.createdBy && (
         <InfoRow

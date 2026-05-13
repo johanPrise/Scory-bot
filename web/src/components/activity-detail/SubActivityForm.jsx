@@ -2,11 +2,9 @@ import PropTypes from 'prop-types';
 
 export default function SubActivityForm({ subForm, submittingSub, updateSubForm, onSubmit, onCancel }) {
   return (
-    <form onSubmit={onSubmit} className="card card-glow" style={{ marginBottom: 12 }}>
-      <div style={{ marginBottom: 10 }}>
-        <label htmlFor="subName" style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', display: 'block', marginBottom: 4 }}>
-          Nom *
-        </label>
+    <form onSubmit={onSubmit} className="subactivity-form">
+      <label className="form-group" htmlFor="subName">
+        <span className="form-label">Nom *</span>
         <input
           id="subName"
           type="text"
@@ -16,11 +14,9 @@ export default function SubActivityForm({ subForm, submittingSub, updateSubForm,
           required
           className="form-input"
         />
-      </div>
-      <div style={{ marginBottom: 10 }}>
-        <label htmlFor="subDesc" style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', display: 'block', marginBottom: 4 }}>
-          Description
-        </label>
+      </label>
+      <label className="form-group" htmlFor="subDesc">
+        <span className="form-label">Description</span>
         <input
           id="subDesc"
           type="text"
@@ -29,11 +25,9 @@ export default function SubActivityForm({ subForm, submittingSub, updateSubForm,
           placeholder="Description optionnelle"
           className="form-input"
         />
-      </div>
-      <div style={{ marginBottom: 12 }}>
-        <label htmlFor="subMaxScore" style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', display: 'block', marginBottom: 4 }}>
-          Score max
-        </label>
+      </label>
+      <label className="form-group" htmlFor="subMaxScore">
+        <span className="form-label">Score max</span>
         <input
           id="subMaxScore"
           type="number"
@@ -42,12 +36,12 @@ export default function SubActivityForm({ subForm, submittingSub, updateSubForm,
           min="1"
           className="form-input"
         />
-      </div>
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submittingSub}>
-          {submittingSub ? '⏳' : '✅'} Ajouter
+      </label>
+      <div className="form-actions">
+        <button type="submit" className="btn btn-primary" disabled={submittingSub}>
+          {submittingSub ? 'Ajout...' : 'Ajouter'}
         </button>
-        <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={onCancel}>
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Annuler
         </button>
       </div>

@@ -17,6 +17,26 @@ router.use(authMiddleware);
 router.use(requireChatId);
 router.use(validateChatAccess);
 
+const normalizeSubActivityId = (subId) => {
+  try {
+    return decodeURIComponent(subId);
+  } catch {
+    return subId;
+  }
+};
+
+const findSubActivityIndex = (activity, subId) => {
+  const decodedSubId = normalizeSubActivityId(subId);
+  return activity.subActivities.findIndex(subActivity =>
+    String(subActivity._id || '') === decodedSubId || subActivity.name === decodedSubId
+  );
+};
+
+const getSubActivityByParam = (activity, subId) => {
+  const index = findSubActivityIndex(activity, subId);
+  return index >= 0 ? { subActivity: activity.subActivities[index], index } : null;
+};
+
 /**
  * GET /api/activities
  * Récupérer la liste des activités
@@ -374,10 +394,11 @@ router.post('/:id/subactivities', asyncHandler(async (req, res) => {
   res.status(201).json({
     message: 'Sous-activité ajoutée avec succès',
     subActivity: {
-      name,
-      description,
-      maxScore,
-      createdAt: new Date()
+      id: subActivity._id,
+      name: subActivity.name,
+      description: subActivity.description,
+      maxScore: subActivity.maxScore,
+      createdAt: subActivity.createdAt
     }
   });
 }));
@@ -410,11 +431,12 @@ router.put('/:id/subactivities/:subId', asyncHandler(async (req, res) => {
     throw createError(403, 'Permissions insuffisantes');
   }
 
-  // Trouver la sous-activité
-  const subActivity = activity.subActivities.id(subId);
-  if (!subActivity) {
+  // Trouver la sous-activité par _id, ou par nom pour les anciennes données sans _id.
+  const match = getSubActivityByParam(activity, subId);
+  if (!match) {
     throw createError(404, 'Sous-activité non trouvée');
   }
+  const { subActivity } = match;
 
   // Mettre à jour les champs
   if (name !== undefined) subActivity.name = name;
@@ -470,9 +492,14 @@ router.delete('/:id/subactivities/:subId', asyncHandler(async (req, res) => {
     throw createError(403, 'Permissions insuffisantes');
   }
 
-  // Supprimer la sous-activité
-  const subActivity = activity.subActivities.id(subId);
-  activity.subActivities.pull(subId);
+  // Supprimer la sous-activité par _id, ou par nom pour les anciennes données sans _id.
+  const match = getSubActivityByParam(activity, subId);
+  if (!match) {
+    throw createError(404, 'Sous-activité non trouvée');
+  }
+
+  const { subActivity, index } = match;
+  activity.subActivities.splice(index, 1);
   await activity.save();
 
   // Notifier les membres/admins

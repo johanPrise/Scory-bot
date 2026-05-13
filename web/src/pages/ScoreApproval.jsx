@@ -1,167 +1,325 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import PropTypes from 'prop-types';
 import * as api from '../api';
-import { BackButton, LoadingSpinner, EmptyState } from '../components';
+import { BackButton, EmptyState, LoadingSpinner, NoGroupSelected } from '../components';
+import { useGroup } from '../components/GroupContext';
 import { useToast } from '../components/Toast';
+
+function notify(type) {
+  globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+}
+
+function formatDate(value) {
+  if (!value) return 'Date inconnue';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? 'Date inconnue'
+    : date.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+}
+
+function getScoreOwner(score) {
+  if (score.team?.name) return score.team.name;
+  return score.user?.username || score.user?.firstName || 'Utilisateur';
+}
+
+function getScoreContext(score) {
+  const parts = [score.activity?.name || 'Activité'];
+  if (score.subActivity) parts.push(score.subActivity);
+  if (score.team?.name && score.user) parts.push(`via ${score.user.username || score.user.firstName || 'membre'}`);
+  return parts.join(' · ');
+}
+
+function getApprovalStats(scores) {
+  const totalPoints = scores.reduce((sum, score) => sum + (Number(score.value) || 0), 0);
+  const teamScores = scores.filter(score => score.team).length;
+
+  return {
+    total: scores.length,
+    points: totalPoints,
+    teams: teamScores,
+  };
+}
+
+function ApprovalHero({ stats }) {
+  return (
+    <section className="approval-hero slide-up">
+      <div>
+        <BackButton fallback="/" />
+        <div className="dashboard-eyebrow">Admin</div>
+        <h1 className="approval-title">Approbation</h1>
+        <p className="approval-subtitle">File de validation des scores du groupe.</p>
+      </div>
+      <div className="approval-hero-meter" aria-label={`${stats.total} scores en attente`}>
+        <span>En attente</span>
+        <strong>{stats.total}</strong>
+      </div>
+    </section>
+  );
+}
+
+ApprovalHero.propTypes = {
+  stats: PropTypes.shape({
+    total: PropTypes.number.isRequired,
+  }).isRequired,
+};
+
+function ApprovalMetrics({ stats }) {
+  return (
+    <section className="metric-strip slide-up-delay-1" aria-label="Résumé des scores à approuver">
+      <div className="metric-tile metric-tile-score">
+        <div className="metric-value">{stats.total}</div>
+        <div className="metric-label">Scores</div>
+      </div>
+      <div className="metric-tile">
+        <div className="metric-value">{stats.points}</div>
+        <div className="metric-label">Points</div>
+      </div>
+      <div className="metric-tile metric-tile-leader">
+        <div className="metric-value">{stats.teams}</div>
+        <div className="metric-label">Équipes</div>
+      </div>
+    </section>
+  );
+}
+
+ApprovalMetrics.propTypes = {
+  stats: PropTypes.shape({
+    total: PropTypes.number.isRequired,
+    points: PropTypes.number.isRequired,
+    teams: PropTypes.number.isRequired,
+  }).isRequired,
+};
+
+function RejectPanel({ score, reason, busy, onReasonChange, onConfirm, onCancel }) {
+  if (!score) return null;
+
+  return (
+    <section className="approval-reject-panel slide-up">
+      <div className="approval-reject-header">
+        <div>
+          <div className="dashboard-eyebrow">Rejet</div>
+          <h2>{getScoreOwner(score)}</h2>
+        </div>
+        <button type="button" className="icon-button" onClick={onCancel} aria-label="Fermer le rejet">
+          ×
+        </button>
+      </div>
+      <label className="form-group" htmlFor="rejectReason">
+        <span className="form-label">Raison du rejet</span>
+        <textarea
+          id="rejectReason"
+          className="form-textarea"
+          value={reason}
+          onChange={event => onReasonChange(event.target.value)}
+          placeholder="Explique pourquoi ce score est rejeté."
+          rows={3}
+        />
+      </label>
+      <div className="form-actions">
+        <button type="button" className="btn btn-primary approval-danger-primary" onClick={onConfirm} disabled={busy}>
+          {busy ? 'Rejet...' : 'Rejeter'}
+        </button>
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+          Annuler
+        </button>
+      </div>
+    </section>
+  );
+}
+
+RejectPanel.propTypes = {
+  score: PropTypes.object,
+  reason: PropTypes.string.isRequired,
+  busy: PropTypes.bool.isRequired,
+  onReasonChange: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+};
+
+function PendingScoreCard({ score, busy, onApprove, onReject }) {
+  return (
+    <article className="approval-score-card">
+      <div className="approval-score-main">
+        <div className="approval-score-icon">✓</div>
+        <div className="approval-score-body">
+          <h2>{getScoreOwner(score)}</h2>
+          <p>{getScoreContext(score)}</p>
+        </div>
+        <div className="approval-score-value">
+          <strong>{score.value}</strong>
+          <span>/{score.maxPossible || 100}</span>
+        </div>
+      </div>
+
+      {score.metadata?.comments && (
+        <blockquote className="approval-score-comment">{score.metadata.comments}</blockquote>
+      )}
+
+      <div className="approval-score-meta">
+        <span>{formatDate(score.createdAt)}</span>
+        <span>{score.context === 'team' || score.team ? 'Score équipe' : 'Score joueur'}</span>
+      </div>
+
+      <div className="approval-score-actions">
+        <button type="button" className="btn btn-primary" onClick={() => onApprove(score._id)} disabled={busy}>
+          {busy ? '...' : 'Approuver'}
+        </button>
+        <button type="button" className="btn btn-secondary approval-reject-button" onClick={() => onReject(score)} disabled={busy}>
+          Rejeter
+        </button>
+      </div>
+    </article>
+  );
+}
+
+PendingScoreCard.propTypes = {
+  score: PropTypes.object.isRequired,
+  busy: PropTypes.bool.isRequired,
+  onApprove: PropTypes.func.isRequired,
+  onReject: PropTypes.func.isRequired,
+};
+
+function PendingList({ scores, actionId, onApprove, onReject }) {
+  if (scores.length === 0) {
+    return <EmptyState icon="✅" text="Aucun score en attente d'approbation." />;
+  }
+
+  return (
+    <section className="approval-list slide-up-delay-2" aria-label="Scores en attente">
+      {scores.map(score => (
+        <PendingScoreCard
+          key={score._id}
+          score={score}
+          busy={actionId === score._id}
+          onApprove={onApprove}
+          onReject={onReject}
+        />
+      ))}
+    </section>
+  );
+}
+
+PendingList.propTypes = {
+  scores: PropTypes.array.isRequired,
+  actionId: PropTypes.string,
+  onApprove: PropTypes.func.isRequired,
+  onReject: PropTypes.func.isRequired,
+};
 
 export default function ScoreApproval() {
   const toast = useToast();
+  const { selectedGroupId } = useGroup();
   const [scores, setScores] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [actionId, setActionId] = useState(null); // score id being acted on
-  const [rejectModal, setRejectModal] = useState(null); // score id for rejection
+  const [actionId, setActionId] = useState(null);
+  const [rejectScore, setRejectScore] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
 
-  useEffect(() => {
-    loadPending();
-  }, []);
+  const stats = useMemo(() => getApprovalStats(scores), [scores]);
 
-  const loadPending = async () => {
+  const loadPending = useCallback(async () => {
+    setLoading(true);
+
     try {
       const data = await api.getPendingScores({ limit: 50 });
       setScores(data.scores || []);
-    } catch (err) {
-      if (err.message?.includes('403')) {
-        toast.error('Accès réservé aux administrateurs');
+    } catch (error) {
+      if (error.message?.includes('403')) {
+        toast.error('Accès réservé aux administrateurs.');
       } else {
-        toast.error('Erreur de chargement');
+        toast.error('Erreur de chargement.');
       }
+      setScores([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const handleApprove = async (id) => {
+  useEffect(() => {
+    if (!selectedGroupId) return;
+    loadPending();
+  }, [loadPending, selectedGroupId]);
+
+  const handleApprove = useCallback(async id => {
     setActionId(id);
+
     try {
       await api.approveScore(id);
-      globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-      toast.success('Score approuvé');
-      setScores(prev => prev.filter(s => s._id !== id));
-    } catch (err) {
-      toast.error(err.message || 'Erreur');
+      notify('success');
+      toast.success('Score approuvé.');
+      setScores(prev => prev.filter(score => score._id !== id));
+    } catch (error) {
+      notify('error');
+      toast.error(error.message || 'Erreur.');
     } finally {
       setActionId(null);
     }
-  };
+  }, [toast]);
 
-  const handleReject = async () => {
+  const openRejectPanel = useCallback(score => {
+    setRejectScore(score);
+    setRejectReason('');
+  }, []);
+
+  const closeRejectPanel = useCallback(() => {
+    setRejectScore(null);
+    setRejectReason('');
+  }, []);
+
+  const handleReject = useCallback(async () => {
+    if (!rejectScore) return;
     if (!rejectReason.trim()) {
-      toast.warning('Veuillez indiquer une raison');
+      toast.warning('Veuillez indiquer une raison.');
       return;
     }
-    setActionId(rejectModal);
+
+    setActionId(rejectScore._id);
+
     try {
-      await api.rejectScore(rejectModal, { reason: rejectReason });
-      globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
-      toast.success('Score rejeté');
-      setScores(prev => prev.filter(s => s._id !== rejectModal));
-      setRejectModal(null);
-      setRejectReason('');
-    } catch (err) {
-      toast.error(err.message || 'Erreur');
+      await api.rejectScore(rejectScore._id, { reason: rejectReason.trim() });
+      notify('success');
+      toast.success('Score rejeté.');
+      setScores(prev => prev.filter(score => score._id !== rejectScore._id));
+      closeRejectPanel();
+    } catch (error) {
+      notify('error');
+      toast.error(error.message || 'Erreur.');
     } finally {
       setActionId(null);
     }
-  };
+  }, [closeRejectPanel, rejectReason, rejectScore, toast]);
+
+  if (!selectedGroupId) return <NoGroupSelected />;
 
   return (
-    <div className="page">
-      <div className="page-header slide-up">
-        <BackButton fallback="/" />
-        <h1 className="page-title">Approbation</h1>
-        <div className="page-subtitle">{scores.length} score{scores.length !== 1 ? 's' : ''} en attente</div>
-      </div>
+    <div className="page approval-page">
+      <ApprovalHero stats={stats} />
+      <ApprovalMetrics stats={stats} />
 
-      {/* Reject modal */}
-      {rejectModal && (
-        <div className="card card-glow slide-up" style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Raison du rejet</div>
-          <textarea
-            value={rejectReason}
-            onChange={e => setRejectReason(e.target.value)}
-            placeholder="Expliquez pourquoi ce score est rejeté..."
-            rows={3}
-            style={{
-              width: '100%', padding: '10px 12px', borderRadius: 8, resize: 'none',
-              border: '1px solid var(--scory-card-border)',
-              background: 'var(--tg-theme-bg-color)',
-              color: 'var(--tg-theme-text-color)',
-              fontSize: 14, fontFamily: 'inherit', outline: 'none',
-              marginBottom: 12,
-            }}
-          />
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              className="btn btn-primary"
-              style={{ flex: 1, background: 'var(--tg-theme-destructive-text-color)' }}
-              onClick={handleReject}
-              disabled={actionId === rejectModal}
-            >
-              {actionId === rejectModal ? '⏳' : '❌'} Rejeter
-            </button>
-            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setRejectModal(null); setRejectReason(''); }}>
-              Annuler
-            </button>
-          </div>
-        </div>
-      )}
+      <RejectPanel
+        score={rejectScore}
+        reason={rejectReason}
+        busy={Boolean(rejectScore && actionId === rejectScore._id)}
+        onReasonChange={setRejectReason}
+        onConfirm={handleReject}
+        onCancel={closeRejectPanel}
+      />
 
       {loading ? (
         <LoadingSpinner />
-      ) : scores.length === 0 ? (
-        <EmptyState icon="✅" text="Aucun score en attente d'approbation" />
       ) : (
-        <div className="slide-up-delay-1">
-          {scores.map(score => (
-            <div className="card" key={score._id} style={{ marginBottom: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <div className="list-item-icon" style={{ fontSize: 24 }}>🎯</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 15 }}>
-                    {score.user?.username || score.user?.firstName || 'Utilisateur'}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)' }}>
-                    {score.activity?.name || 'Activité'}
-                    {score.subActivity && ` · ${score.subActivity}`}
-                  </div>
-                </div>
-                <div style={{ fontWeight: 700, fontSize: 18, color: 'var(--tg-theme-accent-text-color)' }}>
-                  {score.value}/{score.maxPossible}
-                </div>
-              </div>
-
-              {score.metadata?.comments && (
-                <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', marginBottom: 8, fontStyle: 'italic' }}>
-                  « {score.metadata.comments} »
-                </div>
-              )}
-
-              <div style={{ fontSize: 12, color: 'var(--tg-theme-hint-color)', marginBottom: 10 }}>
-                {new Date(score.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                {score.team && ` · Équipe: ${score.team.name}`}
-              </div>
-
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  className="btn btn-primary"
-                  style={{ flex: 1, padding: '10px 0', fontSize: 13 }}
-                  onClick={() => handleApprove(score._id)}
-                  disabled={actionId === score._id}
-                >
-                  {actionId === score._id ? '⏳' : '✅'} Approuver
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  style={{ flex: 1, padding: '10px 0', fontSize: 13, color: 'var(--tg-theme-destructive-text-color)' }}
-                  onClick={() => setRejectModal(score._id)}
-                  disabled={actionId === score._id}
-                >
-                  ❌ Rejeter
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <PendingList
+          scores={scores}
+          actionId={actionId}
+          onApprove={handleApprove}
+          onReject={openRejectPanel}
+        />
       )}
     </div>
   );

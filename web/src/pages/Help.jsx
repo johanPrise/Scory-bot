@@ -1,108 +1,123 @@
+import PropTypes from 'prop-types';
 import { BackButton } from '../components';
 
 const sections = [
   {
-    title: '🏠 Accueil',
+    eyebrow: 'Vue',
+    title: 'Accueil',
     items: [
-      'Consultez vos statistiques personnelles (points, activités, rang)',
-      'Voyez vos scores récents et le Top 3 du classement',
-    ]
+      'Consultez vos points, votre rang et les scores récents.',
+      'Accédez vite au scoreboard et à la saisie de score.',
+    ],
   },
   {
-    title: '📋 Activités',
+    eyebrow: 'Catalogue',
+    title: 'Activités',
     items: [
-      'Listez toutes les activités disponibles',
-      'Créez une nouvelle activité (nom, description, type)',
-      'Consultez le détail d\'une activité (participants, scores, sous-activités)',
-      'Ajoutez des sous-activités à une activité existante',
-    ]
+      'Créez une activité avec type, description et variantes.',
+      "Ajoutez des sous-activités pour gérer plusieurs épreuves.",
+      "Ouvrez le détail pour suivre les scores d'une activité.",
+    ],
   },
   {
-    title: '🎯 Scores',
+    eyebrow: 'Saisie',
+    title: 'Scores',
     items: [
-      'Ajoutez un score depuis la page d\'une activité ou via le bouton « + Score »',
-      'Choisissez le contexte : individuel ou équipe',
-      'Les scores sont soumis en attente d\'approbation par un admin',
-      'Consultez votre historique de scores dans votre profil',
-    ]
+      'Choisissez une activité, un joueur ou une équipe.',
+      'Indiquez le score obtenu et le maximum possible.',
+      'Les scores passent en validation quand une approbation admin est requise.',
+    ],
   },
   {
-    title: '🏆 Classement',
+    eyebrow: 'Compétition',
+    title: 'Classement',
     items: [
-      'Filtrez par période : jour, semaine, mois, année, tout',
-      'Basculez entre classement individuel et par équipe',
-      'Filtrez par activité spécifique',
-    ]
+      'Filtrez par période, type de classement et activité.',
+      'Comparez les joueurs ou les équipes du groupe.',
+    ],
   },
   {
-    title: '👥 Équipes',
+    eyebrow: 'Collectif',
+    title: 'Équipes',
     items: [
-      'Créez une équipe et partagez le code d\'invitation',
-      'Rejoignez une équipe en entrant son code',
-      'Consultez les membres et statistiques de chaque équipe',
-    ]
+      "Créez une équipe et partagez son code d'invitation.",
+      'Rejoignez une équipe depuis un code.',
+      'Consultez membres, points, activités et capacité.',
+    ],
   },
   {
-    title: '👤 Profil',
-    items: [
-      'Modifiez vos informations (prénom, nom)',
-      'Vérifiez que votre compte Telegram est lié',
-      'Consultez vos statistiques personnelles détaillées',
-    ]
-  },
-  {
-    title: '🤖 Commandes Bot',
+    eyebrow: 'Bot',
+    title: 'Commandes',
     items: [
       '/start — Démarrer et lier votre compte',
-      '/help — Afficher l\'aide',
+      '/help — Afficher l’aide',
       '/score — Ajouter un score',
       '/ranking — Voir le classement',
       '/activities — Lister les activités',
       '/createactivity — Créer une activité',
       '/createteam — Créer une équipe',
-      '/app — Ouvrir l\'application complète',
-    ]
-  }
+      '/app — Ouvrir l’application complète',
+    ],
+  },
 ];
+
+function HelpHero() {
+  return (
+    <section className="help-hero slide-up">
+      <div>
+        <BackButton fallback="/" />
+        <div className="dashboard-eyebrow">Guide</div>
+        <h1 className="help-title">Aide</h1>
+        <p className="help-subtitle">Les repères utiles pour piloter Scory sans friction.</p>
+      </div>
+      <div className="help-hero-meter" aria-label={`${sections.length} sections d'aide`}>
+        <span>Sections</span>
+        <strong>{sections.length}</strong>
+      </div>
+    </section>
+  );
+}
+
+function HelpSection({ section, index }) {
+  return (
+    <article className={`help-section slide-up-delay-${Math.min(index + 1, 3)}`}>
+      <div className="help-section-header">
+        <span>{section.eyebrow}</span>
+        <h2>{section.title}</h2>
+      </div>
+      <div className="help-section-list">
+        {section.items.map(item => (
+          <div className="help-row" key={item}>
+            <span aria-hidden="true">✓</span>
+            <p>{item}</p>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+HelpSection.propTypes = {
+  section: PropTypes.shape({
+    eyebrow: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    items: PropTypes.arrayOf(PropTypes.string).isRequired,
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+};
 
 export default function Help() {
   return (
-    <div className="page">
-      <div className="page-header slide-up">
-        <BackButton fallback="/" />
-        <h1 className="page-title">Aide</h1>
-        <div className="page-subtitle">Comment utiliser Scory</div>
-      </div>
+    <div className="page help-page">
+      <HelpHero />
 
-      {sections.map((section, i) => (
-        <div key={section.title} className={`slide-up-delay-${Math.min(i + 1, 3)}`} style={{ marginBottom: 16 }}>
-          <div className="section-header">
-            <h2 className="section-title">{section.title}</h2>
-          </div>
-          <div className="card">
-            {section.items.map((item) => (
-              <div
-                key={item}
-                style={{
-                  padding: '8px 0',
-                  borderBottom: section.items.indexOf(item) < section.items.length - 1 ? '1px solid var(--scory-card-border)' : 'none',
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                  color: 'var(--tg-theme-text-color)',
-                }}
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+      <section className="help-grid" aria-label="Guide Scory">
+        {sections.map((section, index) => (
+          <HelpSection key={section.title} section={section} index={index} />
+        ))}
+      </section>
 
-      <div className="slide-up-delay-3" style={{ marginTop: 24, textAlign: 'center' }}>
-        <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)' }}>
-          Scory Bot v1.0 — Système de scoring collaboratif
-        </div>
-      </div>
+      <footer className="help-footer">Scory Bot v1.0 · Système de scoring collaboratif</footer>
     </div>
   );
 }

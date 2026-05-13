@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import * as api from '../api';
 import { getChatId } from '../api';
@@ -91,7 +92,9 @@ export function GroupProvider({ children }) {
   );
 }
 
-
+GroupProvider.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 /**
  * Hook pour accéder au contexte de groupe
@@ -105,5 +108,4 @@ export function useGroup() {
   return context;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export default GroupContext;

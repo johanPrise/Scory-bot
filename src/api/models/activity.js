@@ -72,7 +72,7 @@ const subActivitySchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-}, { _id: false });
+});
 
 const activitySchema = new mongoose.Schema({
   name: {

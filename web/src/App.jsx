@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Home from './pages/Home';
 import Activities from './pages/Activities';
@@ -10,37 +10,12 @@ import Profile from './pages/Profile';
 import AddScore from './pages/AddScore';
 import ScoreApproval from './pages/ScoreApproval';
 import Help from './pages/Help';
+import { LoadingSpinner } from './components';
 import { ToastProvider } from './components/Toast';
 import { GroupProvider } from './components/GroupContext';
-import GroupSelector from './components/GroupSelector';
+import AppShell from './components/AppShell';
 import * as api from './api';
 import { getChatId } from './api';
-
-function BottomNav() {
-
-  const tabs = [
-    { path: '/', icon: '🏠', label: 'Accueil' },
-    { path: '/activities', icon: '📋', label: 'Activités' },
-    { path: '/rankings', icon: '🏆', label: 'Classement' },
-    { path: '/teams', icon: '👥', label: 'Équipes' },
-    { path: '/profile', icon: '👤', label: 'Profil' },
-  ];
-
-  return (
-    <nav className="bottom-nav">
-      {tabs.map(tab => (
-        <NavLink
-          key={tab.path}
-          to={tab.path}
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-        >
-          <span className="nav-icon">{tab.icon}</span>
-          {tab.label}
-        </NavLink>
-      ))}
-    </nav>
-  );
-}
 
 function App() {
   const [authReady, setAuthReady] = useState(false);
@@ -98,8 +73,8 @@ function App() {
 
   if (!authReady) {
     return (
-      <div className="page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <div className="loading"><div className="spinner" /></div>
+      <div className="auth-loading-page">
+        <LoadingSpinner label="Initialisation de Scory..." />
       </div>
     );
   }
@@ -108,20 +83,20 @@ function App() {
     <ToastProvider>
       <BrowserRouter>
         <GroupProvider>
-          <GroupSelector />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/activities" element={<Activities />} />
-            <Route path="/activities/:id" element={<ActivityDetail />} />
-            <Route path="/rankings" element={<Rankings />} />
-            <Route path="/teams" element={<Teams />} />
-            <Route path="/teams/:id" element={<TeamDetail />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/add-score" element={<AddScore />} />
-            <Route path="/approval" element={<ScoreApproval />} />
-            <Route path="/help" element={<Help />} />
-          </Routes>
-          <BottomNav />
+          <AppShell>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/activities" element={<Activities />} />
+              <Route path="/activities/:id" element={<ActivityDetail />} />
+              <Route path="/rankings" element={<Rankings />} />
+              <Route path="/teams" element={<Teams />} />
+              <Route path="/teams/:id" element={<TeamDetail />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/add-score" element={<AddScore />} />
+              <Route path="/approval" element={<ScoreApproval />} />
+              <Route path="/help" element={<Help />} />
+            </Routes>
+          </AppShell>
         </GroupProvider>
       </BrowserRouter>
     </ToastProvider>

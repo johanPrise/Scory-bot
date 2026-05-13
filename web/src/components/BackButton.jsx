@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 
 export default function BackButton({ fallback = '/' }) {
@@ -5,8 +6,8 @@ export default function BackButton({ fallback = '/' }) {
 
   return (
     <button
-      className="btn btn-secondary"
-      style={{ marginBottom: 16, padding: '8px 16px', fontSize: 14 }}
+      type="button"
+      className="back-button"
       onClick={() => {
         globalThis.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
         navigate(fallback);
@@ -16,3 +17,7 @@ export default function BackButton({ fallback = '/' }) {
     </button>
   );
 }
+
+BackButton.propTypes = {
+  fallback: PropTypes.string,
+};

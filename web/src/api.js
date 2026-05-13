@@ -240,7 +240,7 @@ export const deleteActivity = (id) =>
 
 export const deleteSubActivity = (activityId, subId) =>
   apiRequest(
-    `/activities/${activityId}/subactivities/${subId}${buildQuery(withChatId({}, 'supprimer une sous-activité'))}`,
+    `/activities/${activityId}/subactivities/${encodeURIComponent(subId)}${buildQuery(withChatId({}, 'supprimer une sous-activité'))}`,
     { method: 'DELETE' }
   );
 

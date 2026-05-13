@@ -2,106 +2,85 @@ import PropTypes from 'prop-types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import * as api from '../api';
-import { BackButton, LoadingSpinner, EmptyState, NoGroupSelected } from '../components';
+import { BackButton, EmptyState, LoadingSpinner, NoGroupSelected } from '../components';
 import { useToast } from '../components/Toast';
 import { useGroup } from '../components/GroupContext';
 
 const TEXT = {
-  title: 'Ajouter un score',
-  subtitle: 'Enregistrez un nouveau score',
-  activity: 'Activité *',
-  chooseActivity: '— Choisir une activité —',
-  subActivity: 'Sous-activité',
-  noSubActivity: '— Aucune —',
-  context: 'Contexte *',
-  individual: '👤 Individuel',
-  team: '👥 Équipe',
-  teamLabel: 'Équipe *',
-  chooseTeam: '— Choisir une équipe —',
-  noTeam: 'Aucune équipe disponible',
-  score: 'Score *',
-  maxScore: 'Score max *',
-  normalizedScore: 'Score normalisé :',
-  comments: 'Commentaires',
-  commentsPlaceholder: 'Notes, remarques...',
-  submitting: '⏳ Envoi...',
-  submit: '✅ Ajouter le score',
+  title: 'Nouveau score',
+  subtitle: 'Choisis la cible, l’activité, puis valide la performance.',
   success: 'Score ajouté avec succès !',
-  requiredFields: 'Veuillez remplir tous les champs obligatoires',
-  teamRequired: 'Veuillez choisir une équipe',
   submitError: "Erreur lors de l'ajout du score",
+  noActivity: 'Aucune activité disponible.',
+  noMember: 'Aucun membre disponible dans ce groupe.',
+  noTeam: 'Aucune équipe disponible.',
+  commentPlaceholder: 'Note optionnelle, contexte, preuve...',
 };
 
-const inputStyle = {
-  width: '100%',
-  padding: '10px 12px',
-  borderRadius: 8,
-  border: '1px solid var(--scory-card-border)',
-  background: 'var(--tg-theme-bg-color)',
-  color: 'var(--tg-theme-text-color)',
-  fontSize: 15,
-  fontFamily: 'inherit',
-  outline: 'none',
-};
-
-const selectStyle = {
-  ...inputStyle,
-  appearance: 'none',
-  WebkitAppearance: 'none',
-};
-
-const labelStyle = {
-  fontSize: 13,
-  color: 'var(--tg-theme-hint-color)',
-  display: 'block',
-  marginBottom: 4,
-};
-
-const fieldsetStyle = {
-  border: 0,
-  margin: 0,
-  padding: 0,
-};
+const DEFAULT_MAX_POSSIBLE = '100';
 
 const initialForm = activityId => ({
   activityId,
   subActivity: '',
   value: '',
-  maxPossible: '100',
+  maxPossible: DEFAULT_MAX_POSSIBLE,
   context: 'individual',
+  userId: '',
   teamId: '',
   comments: '',
 });
 
-function getValidationMessage(form) {
-  const hasRequiredFields =
-    form.activityId &&
-    form.value &&
-    form.maxPossible &&
-    form.context;
+function triggerTelegramFeedback(type) {
+  globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+}
 
-  if (!hasRequiredFields) {
-    return TEXT.requiredFields;
-  }
-
-  const isMissingTeamId = form.context === 'team' && !form.teamId;
-  if (isMissingTeamId) {
-    return TEXT.teamRequired;
-  }
-
-  return null;
+function triggerTelegramImpact() {
+  globalThis.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
 }
 
 function isValidScoreCalculation(score, max) {
-  const hasFiniteScore = Number.isFinite(score);
-  const hasFiniteMax = Number.isFinite(max);
-  const hasPositiveMax = max > 0;
-
-  return hasFiniteScore && hasFiniteMax && hasPositiveMax;
+  return Number.isFinite(score) && Number.isFinite(max) && max > 0;
 }
 
-function isTeamScoreWithId(form) {
-  return form.context === 'team' && Boolean(form.teamId);
+function getNormalizedScore(value, maxPossible) {
+  if (!value || !maxPossible) return null;
+
+  const score = Number(value);
+  const max = Number(maxPossible);
+
+  if (!isValidScoreCalculation(score, max)) return null;
+  return Math.round((score / max) * 100);
+}
+
+function getDisplayName(user = {}) {
+  const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+  return user.username || fullName || 'Membre';
+}
+
+function getInitials(name) {
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function mapGroupMembers(members = []) {
+  return members
+    .map(member => {
+      const user = member.userId || {};
+      const id = typeof user === 'string' ? user : user._id;
+      const name = getDisplayName(user);
+
+      return {
+        id,
+        name,
+        role: member.role || 'member',
+        initials: getInitials(name),
+      };
+    })
+    .filter(member => member.id);
 }
 
 function buildScorePayload(form) {
@@ -113,309 +92,456 @@ function buildScorePayload(form) {
     comments: form.comments || undefined,
   };
 
-  if (form.subActivity) {
-    payload.subActivity = form.subActivity;
-  }
-
-  if (isTeamScoreWithId(form)) {
-    payload.teamId = form.teamId;
-  }
+  if (form.subActivity) payload.subActivity = form.subActivity;
+  if (form.context === 'team') payload.teamId = form.teamId;
+  if (form.context === 'individual') payload.userId = form.userId;
 
   return payload;
 }
 
-function getNormalizedScore(value, maxPossible) {
-  if (!value || !maxPossible) return null;
+function getValidationMessage(form) {
+  if (!form.activityId) return 'Choisis une activité.';
+  if (form.context === 'individual' && !form.userId) return 'Choisis un participant.';
+  if (form.context === 'team' && !form.teamId) return 'Choisis une équipe.';
+  if (!form.value || !form.maxPossible) return 'Renseigne le score et le maximum.';
+  if (!isValidScoreCalculation(Number(form.value), Number(form.maxPossible))) return 'Le score maximum doit être supérieur à 0.';
 
-  const score = Number(value);
-  const max = Number(maxPossible);
+  return null;
+}
 
-  if (!isValidScoreCalculation(score, max)) {
-    return null;
+async function fetchScoreFormData(selectedGroupId) {
+  return Promise.allSettled([
+    api.getActivities({ limit: 100, includeSubActivities: 'true' }),
+    api.getTeams(),
+    api.getGroup(selectedGroupId),
+  ]);
+}
+
+function applyActivityResult(result, setActivities, setDefaultActivity) {
+  if (result.status === 'fulfilled') {
+    const fetchedActivities = result.value.activities || [];
+    setActivities(fetchedActivities);
+    setDefaultActivity(fetchedActivities);
   }
-
-  return ((score / max) * 100).toFixed(1);
 }
 
-function triggerTelegramFeedback(type) {
-  globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+function applyTeamResult(result, setTeams) {
+  if (result.status === 'fulfilled') {
+    setTeams(result.value.teams || []);
+  }
 }
 
-function FormCard({ children, marginBottom = 12 }) {
+function applyGroupResult(result, setMembers) {
+  if (result.status === 'fulfilled') {
+    setMembers(mapGroupMembers(result.value.group?.members));
+  }
+}
+
+function applyScoreFormData(results, setters) {
+  const [activityResult, teamResult, groupResult] = results;
+
+  applyActivityResult(activityResult, setters.setActivities, setters.setDefaultActivity);
+  applyTeamResult(teamResult, setters.setTeams);
+  applyGroupResult(groupResult, setters.setMembers);
+}
+
+function useScoreOptions(selectedGroupId, setDefaultActivity) {
+  const [activities, setActivities] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      const results = await fetchScoreFormData(selectedGroupId);
+      applyScoreFormData(results, { setActivities, setTeams, setMembers, setDefaultActivity });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedGroupId, setDefaultActivity]);
+
+  useEffect(() => {
+    if (selectedGroupId) {
+      loadData();
+    }
+  }, [selectedGroupId, loadData]);
+
+  return { activities, teams, members, loading };
+}
+
+function useScoreForm(preselectedActivity) {
+  const [form, setForm] = useState(() => initialForm(preselectedActivity));
+
+  const setDefaultActivity = useCallback(activities => {
+    setForm(currentForm => {
+      const defaultActivityId = activities[0]?._id;
+
+      if (currentForm.activityId) return currentForm;
+      if (defaultActivityId) return { ...currentForm, activityId: defaultActivityId };
+      return currentForm;
+    });
+  }, []);
+
+  const updateField = useCallback((field, value) => {
+    setForm(currentForm => ({ ...currentForm, [field]: value }));
+  }, []);
+
+  const updateActivity = useCallback(activity => {
+    triggerTelegramImpact();
+    setForm(currentForm => ({
+      ...currentForm,
+      activityId: activity._id,
+      subActivity: '',
+      maxPossible: DEFAULT_MAX_POSSIBLE,
+    }));
+  }, []);
+
+  const updateSubActivity = useCallback(subActivity => {
+    triggerTelegramImpact();
+    setForm(currentForm => ({
+      ...currentForm,
+      subActivity: subActivity?.name || '',
+      maxPossible: String(subActivity?.maxScore || DEFAULT_MAX_POSSIBLE),
+    }));
+  }, []);
+
+  const updateContext = useCallback(context => {
+    triggerTelegramImpact();
+    setForm(currentForm => ({
+      ...currentForm,
+      context,
+      teamId: context === 'individual' ? '' : currentForm.teamId,
+      userId: context === 'team' ? '' : currentForm.userId,
+    }));
+  }, []);
+
+  return { form, setDefaultActivity, updateActivity, updateContext, updateField, updateSubActivity };
+}
+
+function FlowHeader({ groupName }) {
   return (
-    <div className="card" style={{ marginBottom }}>
-      {children}
+    <div className="score-flow-header slide-up">
+      <BackButton fallback="/" />
+      <div className="score-flow-kicker">Scoreboard</div>
+      <h1 className="score-flow-title">{TEXT.title}</h1>
+      <p className="score-flow-subtitle">{TEXT.subtitle}</p>
+      <div className="score-flow-group">📍 {groupName}</div>
     </div>
   );
 }
 
-FormCard.propTypes = {
-  children: PropTypes.node.isRequired,
-  marginBottom: PropTypes.number,
+FlowHeader.propTypes = {
+  groupName: PropTypes.string.isRequired,
 };
 
-function ActivitySelect({ activities, value, onChange }) {
+function StepSection({ number, title, children }) {
   return (
-    <FormCard>
-      <label htmlFor="activityId" style={labelStyle}>
-        {TEXT.activity}
-      </label>
-
-      <select
-        id="activityId"
-        value={value}
-        onChange={event => onChange(event.target.value)}
-        required
-        style={selectStyle}
-      >
-        <option value="">{TEXT.chooseActivity}</option>
-
-        {activities.map(activity => (
-          <option key={activity._id} value={activity._id}>
-            {activity.name}
-          </option>
-        ))}
-      </select>
-    </FormCard>
-  );
-}
-
-ActivitySelect.propTypes = {
-  activities: PropTypes.arrayOf(
-    PropTypes.shape({
-      _id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
-
-function SubActivitySelect({ selectedActivity, value, onChange }) {
-  const subActivities = selectedActivity?.subActivities || [];
-
-  if (subActivities.length === 0) {
-    return null;
-  }
-
-  return (
-    <FormCard>
-      <label htmlFor="subActivity" style={labelStyle}>
-        {TEXT.subActivity}
-      </label>
-
-      <select
-        id="subActivity"
-        value={value}
-        onChange={event => onChange(event.target.value)}
-        style={selectStyle}
-      >
-        <option value="">{TEXT.noSubActivity}</option>
-
-        {subActivities.map(subActivity => (
-          <option key={subActivity.name} value={subActivity.name}>
-            {subActivity.name} (/{subActivity.maxScore || 100})
-          </option>
-        ))}
-      </select>
-    </FormCard>
-  );
-}
-
-SubActivitySelect.propTypes = {
-  selectedActivity: PropTypes.shape({
-    subActivities: PropTypes.arrayOf(
-      PropTypes.shape({
-        name: PropTypes.string.isRequired,
-        maxScore: PropTypes.number,
-      })
-    ),
-  }),
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
-
-function ContextSelector({ value, onChange }) {
-  return (
-    <FormCard>
-      <fieldset style={fieldsetStyle}>
-        <legend style={labelStyle}>{TEXT.context}</legend>
-
-        <div className="chips-row" style={{ marginBottom: 0, paddingBottom: 0 }}>
-          <button
-            type="button"
-            className={`chip ${value === 'individual' ? 'active' : ''}`}
-            aria-pressed={value === 'individual'}
-            onClick={() => onChange('individual')}
-          >
-            {TEXT.individual}
-          </button>
-
-          <button
-            type="button"
-            className={`chip ${value === 'team' ? 'active' : ''}`}
-            aria-pressed={value === 'team'}
-            onClick={() => onChange('team')}
-          >
-            {TEXT.team}
-          </button>
-        </div>
-      </fieldset>
-    </FormCard>
-  );
-}
-
-ContextSelector.propTypes = {
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
-
-function TeamSelect({ context, teams, value, onChange }) {
-  if (context !== 'team') {
-    return null;
-  }
-
-  return (
-    <FormCard>
-      <label htmlFor="teamId" style={labelStyle}>
-        {TEXT.teamLabel}
-      </label>
-
-      {teams.length > 0 ? (
-        <select
-          id="teamId"
-          value={value}
-          onChange={event => onChange(event.target.value)}
-          required
-          style={selectStyle}
-        >
-          <option value="">{TEXT.chooseTeam}</option>
-
-          {teams.map(team => (
-            <option key={team._id} value={team._id}>
-              {team.name}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <EmptyState icon="👥" text={TEXT.noTeam} />
-      )}
-    </FormCard>
-  );
-}
-
-TeamSelect.propTypes = {
-  context: PropTypes.string.isRequired,
-  teams: PropTypes.arrayOf(
-    PropTypes.shape({
-      _id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
-
-function ScoreFields({ value, maxPossible, onChange }) {
-  const normalizedScore = getNormalizedScore(value, maxPossible);
-
-  return (
-    <FormCard>
-      <div style={{ display: 'flex', gap: 12 }}>
-        <div style={{ flex: 1 }}>
-          <label htmlFor="scoreValue" style={labelStyle}>
-            {TEXT.score}
-          </label>
-
-          <input
-            id="scoreValue"
-            type="number"
-            value={value}
-            onChange={event => onChange('value', event.target.value)}
-            placeholder="0"
-            min="0"
-            required
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <label htmlFor="maxPossible" style={labelStyle}>
-            {TEXT.maxScore}
-          </label>
-
-          <input
-            id="maxPossible"
-            type="number"
-            value={maxPossible}
-            onChange={event => onChange('maxPossible', event.target.value)}
-            placeholder="100"
-            min="1"
-            required
-            style={inputStyle}
-          />
-        </div>
+    <section className="score-step">
+      <div className="score-step-heading">
+        <span>{number}</span>
+        <h2>{title}</h2>
       </div>
-
-      {normalizedScore && (
-        <div
-          style={{
-            textAlign: 'center',
-            marginTop: 10,
-            padding: '8px 0',
-            fontSize: 14,
-            color: 'var(--tg-theme-hint-color)',
-          }}
-        >
-          {TEXT.normalizedScore}{' '}
-          <strong style={{ color: 'var(--tg-theme-accent-text-color)' }}>
-            {normalizedScore}%
-          </strong>
-        </div>
-      )}
-    </FormCard>
+      {children}
+    </section>
   );
 }
 
-ScoreFields.propTypes = {
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  maxPossible: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  onChange: PropTypes.func.isRequired,
+StepSection.propTypes = {
+  number: PropTypes.string.isRequired,
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
 };
 
-function CommentsField({ value, onChange }) {
+function OptionCard({ active, title, subtitle, meta, initials, onClick }) {
   return (
-    <FormCard marginBottom={16}>
-      <label htmlFor="comments" style={labelStyle}>
-        {TEXT.comments}
-      </label>
-
-      <textarea
-        id="comments"
-        value={value}
-        onChange={event => onChange(event.target.value)}
-        placeholder={TEXT.commentsPlaceholder}
-        rows={2}
-        style={{ ...inputStyle, resize: 'none' }}
-      />
-    </FormCard>
-  );
-}
-
-CommentsField.propTypes = {
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-};
-
-function SubmitButton({ submitting }) {
-  return (
-    <button type="submit" className="btn btn-primary" disabled={submitting}>
-      {submitting ? TEXT.submitting : TEXT.submit}
+    <button
+      type="button"
+      className={`option-card${active ? ' active' : ''}`}
+      aria-pressed={active}
+      onClick={onClick}
+    >
+      {initials && <span className="option-avatar">{initials}</span>}
+      <span className="option-body">
+        <span className="option-title">{title}</span>
+        {subtitle && <span className="option-subtitle">{subtitle}</span>}
+      </span>
+      {meta && <span className="option-meta">{meta}</span>}
     </button>
   );
 }
 
-SubmitButton.propTypes = {
+OptionCard.propTypes = {
+  active: PropTypes.bool.isRequired,
+  title: PropTypes.string.isRequired,
+  subtitle: PropTypes.string,
+  meta: PropTypes.string,
+  initials: PropTypes.string,
+  onClick: PropTypes.func.isRequired,
+};
+
+function ContextToggle({ value, onChange }) {
+  return (
+    <fieldset className="segmented-control">
+      <legend className="sr-only">Type de score</legend>
+      <button
+        type="button"
+        className={value === 'individual' ? 'active' : ''}
+        aria-pressed={value === 'individual'}
+        onClick={() => onChange('individual')}
+      >
+        Individuel
+      </button>
+      <button
+        type="button"
+        className={value === 'team' ? 'active' : ''}
+        aria-pressed={value === 'team'}
+        onClick={() => onChange('team')}
+      >
+        Équipe
+      </button>
+    </fieldset>
+  );
+}
+
+ContextToggle.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+function ActivityStep({ activities, selectedActivityId, selectedSubActivity, onActivityChange, onSubActivityChange }) {
+  const selectedActivity = activities.find(activity => activity._id === selectedActivityId);
+  const subActivities = selectedActivity?.subActivities || [];
+  const isGeneralSubActivity = selectedSubActivity === '';
+
+  return (
+    <StepSection number="01" title="Activité">
+      {activities.length > 0 ? (
+        <div className="option-list">
+          {activities.map(activity => (
+            <OptionCard
+              key={activity._id}
+              active={activity._id === selectedActivityId}
+              title={activity.name}
+              subtitle={activity.description}
+              meta={`${activity.subActivities?.length || 0} sous-activité${activity.subActivities?.length > 1 ? 's' : ''}`}
+              onClick={() => onActivityChange(activity)}
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyState icon="📋" text={TEXT.noActivity} />
+      )}
+
+      {subActivities.length > 0 && (
+        <div className="subchoice-row" aria-label="Sous-activité">
+          <button
+            type="button"
+            className={isGeneralSubActivity ? 'active' : ''}
+            onClick={() => onSubActivityChange(null)}
+          >
+            Général
+          </button>
+          {subActivities.map(subActivity => (
+            <button
+              key={subActivity.name}
+              type="button"
+              className={selectedSubActivity === subActivity.name ? 'active' : ''}
+              onClick={() => onSubActivityChange(subActivity)}
+            >
+              {subActivity.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </StepSection>
+  );
+}
+
+ActivityStep.propTypes = {
+  activities: PropTypes.array.isRequired,
+  selectedActivityId: PropTypes.string.isRequired,
+  selectedSubActivity: PropTypes.string.isRequired,
+  onActivityChange: PropTypes.func.isRequired,
+  onSubActivityChange: PropTypes.func.isRequired,
+};
+
+function TeamOptions({ teams, selectedTeamId, onTeamChange }) {
+  return teams.map(team => (
+    <OptionCard
+      key={team._id}
+      active={team._id === selectedTeamId}
+      title={team.name}
+      subtitle={`${team.members?.length || 0} membre${team.members?.length > 1 ? 's' : ''}`}
+      initials="👥"
+      onClick={() => onTeamChange(team._id)}
+    />
+  ));
+}
+
+TeamOptions.propTypes = {
+  teams: PropTypes.array.isRequired,
+  selectedTeamId: PropTypes.string.isRequired,
+  onTeamChange: PropTypes.func.isRequired,
+};
+
+function MemberOptions({ members, selectedUserId, onUserChange }) {
+  return members.map(member => (
+    <OptionCard
+      key={member.id}
+      active={member.id === selectedUserId}
+      title={member.name}
+      subtitle={member.role}
+      initials={member.initials}
+      onClick={() => onUserChange(member.id)}
+    />
+  ));
+}
+
+MemberOptions.propTypes = {
+  members: PropTypes.array.isRequired,
+  selectedUserId: PropTypes.string.isRequired,
+  onUserChange: PropTypes.func.isRequired,
+};
+
+function TargetChoices({ context, members, teams, selectedUserId, selectedTeamId, onUserChange, onTeamChange }) {
+  if (context === 'team' && teams.length === 0) {
+    return <EmptyState icon="👥" text={TEXT.noTeam} />;
+  }
+
+  if (context === 'individual' && members.length === 0) {
+    return <EmptyState icon="◉" text={TEXT.noMember} />;
+  }
+
+  return (
+    <div className="option-list compact">
+      {context === 'team' ? (
+        <TeamOptions teams={teams} selectedTeamId={selectedTeamId} onTeamChange={onTeamChange} />
+      ) : (
+        <MemberOptions members={members} selectedUserId={selectedUserId} onUserChange={onUserChange} />
+      )}
+    </div>
+  );
+}
+
+TargetChoices.propTypes = {
+  context: PropTypes.string.isRequired,
+  members: PropTypes.array.isRequired,
+  teams: PropTypes.array.isRequired,
+  selectedUserId: PropTypes.string.isRequired,
+  selectedTeamId: PropTypes.string.isRequired,
+  onUserChange: PropTypes.func.isRequired,
+  onTeamChange: PropTypes.func.isRequired,
+};
+
+function TargetStep({ context, members, teams, selectedUserId, selectedTeamId, onContextChange, onUserChange, onTeamChange }) {
+  return (
+    <StepSection number="02" title="Cible">
+      <ContextToggle value={context} onChange={onContextChange} />
+
+      <TargetChoices
+        context={context}
+        members={members}
+        teams={teams}
+        selectedUserId={selectedUserId}
+        selectedTeamId={selectedTeamId}
+        onUserChange={onUserChange}
+        onTeamChange={onTeamChange}
+      />
+    </StepSection>
+  );
+}
+
+TargetStep.propTypes = {
+  context: PropTypes.string.isRequired,
+  members: PropTypes.array.isRequired,
+  teams: PropTypes.array.isRequired,
+  selectedUserId: PropTypes.string.isRequired,
+  selectedTeamId: PropTypes.string.isRequired,
+  onContextChange: PropTypes.func.isRequired,
+  onUserChange: PropTypes.func.isRequired,
+  onTeamChange: PropTypes.func.isRequired,
+};
+
+function ScoreStep({ value, maxPossible, comments, onChange }) {
+  const normalizedScore = getNormalizedScore(value, maxPossible);
+
+  return (
+    <StepSection number="03" title="Performance">
+      <div className="score-input-grid">
+        <label className="score-input-card" htmlFor="scoreValue">
+          <span>Score</span>
+          <input
+            id="scoreValue"
+            type="number"
+            min="0"
+            value={value}
+            onChange={event => onChange('value', event.target.value)}
+            placeholder="0"
+          />
+        </label>
+
+        <label className="score-input-card" htmlFor="maxPossible">
+          <span>Maximum</span>
+          <input
+            id="maxPossible"
+            type="number"
+            min="1"
+            value={maxPossible}
+            onChange={event => onChange('maxPossible', event.target.value)}
+            placeholder="100"
+          />
+        </label>
+      </div>
+
+      <div className="normalized-score-card">
+        <span>Score normalisé</span>
+        <strong>{normalizedScore ?? '—'}%</strong>
+      </div>
+
+      <label className="form-group" htmlFor="comments">
+        <span className="form-label">Commentaire</span>
+        <textarea
+          id="comments"
+          className="form-textarea"
+          rows={3}
+          value={comments}
+          onChange={event => onChange('comments', event.target.value)}
+          placeholder={TEXT.commentPlaceholder}
+        />
+      </label>
+    </StepSection>
+  );
+}
+
+ScoreStep.propTypes = {
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  maxPossible: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  comments: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+function SubmitPanel({ validationMessage, submitting }) {
+  return (
+    <div className="submit-panel">
+      {validationMessage ? (
+        <div className="submit-hint">{validationMessage}</div>
+      ) : (
+        <div className="submit-hint ready">Tout est prêt.</div>
+      )}
+
+      <button type="submit" className="btn btn-primary" disabled={Boolean(validationMessage) || submitting}>
+        {submitting ? 'Envoi...' : 'Valider le score'}
+      </button>
+    </div>
+  );
+}
+
+SubmitPanel.propTypes = {
+  validationMessage: PropTypes.string,
   submitting: PropTypes.bool.isRequired,
 };
 
@@ -423,76 +549,25 @@ export default function AddScore() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useToast();
-  const { selectedGroupId } = useGroup();
-
+  const { selectedGroupId, selectedGroup } = useGroup();
   const preselectedActivity = searchParams.get('activityId') || '';
 
-  const [activities, setActivities] = useState([]);
-  const [teams, setTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState(() => initialForm(preselectedActivity));
+  const {
+    form,
+    setDefaultActivity,
+    updateActivity,
+    updateContext,
+    updateField,
+    updateSubActivity,
+  } = useScoreForm(preselectedActivity);
+  const { activities, teams, members, loading } = useScoreOptions(selectedGroupId, setDefaultActivity);
 
-  const selectedActivity = useMemo(() => {
-    return activities.find(activity => activity._id === form.activityId) || null;
-  }, [activities, form.activityId]);
-
-  const loadData = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const [activityResult, teamResult] = await Promise.allSettled([
-        api.getActivities({ limit: 100, includeSubActivities: 'true' }),
-        api.getTeams(),
-      ]);
-
-      if (activityResult.status === 'fulfilled') {
-        setActivities(activityResult.value.activities || []);
-      }
-
-      if (teamResult.status === 'fulfilled') {
-        setTeams(teamResult.value.teams || []);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!selectedGroupId) return;
-
-    loadData();
-  }, [selectedGroupId, loadData]);
-
-  const updateField = (field, value) => {
-    setForm(currentForm => ({
-      ...currentForm,
-      [field]: value,
-    }));
-  };
-
-  const updateActivity = activityId => {
-    setForm(currentForm => ({
-      ...currentForm,
-      activityId,
-      subActivity: '',
-    }));
-  };
-
-  const updateContext = context => {
-    setForm(currentForm => ({
-      ...currentForm,
-      context,
-      teamId: context === 'individual' ? '' : currentForm.teamId,
-    }));
-  };
+  const groupName = selectedGroup?.title || 'Groupe';
+  const validationMessage = useMemo(() => getValidationMessage(form), [form]);
 
   const handleSubmit = async event => {
     event.preventDefault();
-
-    const validationMessage = getValidationMessage(form);
 
     if (validationMessage) {
       toast.error(validationMessage);
@@ -503,10 +578,8 @@ export default function AddScore() {
 
     try {
       await api.addScore(buildScorePayload(form));
-
       triggerTelegramFeedback('success');
       toast.success(TEXT.success);
-
       setTimeout(() => navigate(-1), 800);
     } catch (error) {
       triggerTelegramFeedback('error');
@@ -516,9 +589,7 @@ export default function AddScore() {
     }
   };
 
-  if (!selectedGroupId) {
-    return <NoGroupSelected />;
-  }
+  if (!selectedGroupId) return <NoGroupSelected />;
 
   if (loading) {
     return (
@@ -529,47 +600,37 @@ export default function AddScore() {
   }
 
   return (
-    <div className="page">
-      <div className="page-header slide-up">
-        <BackButton fallback="/activities" />
-        <h1 className="page-title">{TEXT.title}</h1>
-        <div className="page-subtitle">{TEXT.subtitle}</div>
-      </div>
+    <div className="page score-flow-page">
+      <FlowHeader groupName={groupName} />
 
-      <form onSubmit={handleSubmit} className="slide-up-delay-1">
-        <ActivitySelect
+      <form className="score-flow-form slide-up-delay-1" onSubmit={handleSubmit}>
+        <ActivityStep
           activities={activities}
-          value={form.activityId}
-          onChange={updateActivity}
+          selectedActivityId={form.activityId}
+          selectedSubActivity={form.subActivity}
+          onActivityChange={updateActivity}
+          onSubActivityChange={updateSubActivity}
         />
 
-        <SubActivitySelect
-          selectedActivity={selectedActivity}
-          value={form.subActivity}
-          onChange={value => updateField('subActivity', value)}
-        />
-
-        <ContextSelector value={form.context} onChange={updateContext} />
-
-        <TeamSelect
+        <TargetStep
           context={form.context}
+          members={members}
           teams={teams}
-          value={form.teamId}
-          onChange={value => updateField('teamId', value)}
+          selectedUserId={form.userId}
+          selectedTeamId={form.teamId}
+          onContextChange={updateContext}
+          onUserChange={value => updateField('userId', value)}
+          onTeamChange={value => updateField('teamId', value)}
         />
 
-        <ScoreFields
+        <ScoreStep
           value={form.value}
           maxPossible={form.maxPossible}
+          comments={form.comments}
           onChange={updateField}
         />
 
-        <CommentsField
-          value={form.comments}
-          onChange={value => updateField('comments', value)}
-        />
-
-        <SubmitButton submitting={submitting} />
+        <SubmitPanel validationMessage={validationMessage} submitting={submitting} />
       </form>
     </div>
   );

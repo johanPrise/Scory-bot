@@ -1,17 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import * as api from '../api';
+import { EmptyState, LoadingSpinner, NoGroupSelected } from '../components';
 import { useToast } from '../components/Toast';
 import { useGroup } from '../components/GroupContext';
-import { NoGroupSelected, LoadingSpinner } from '../components';
 
 const INITIAL_TEAM_DATA = {
   team: null,
   members: [],
   stats: null,
   loading: true,
+  teamId: null,
 };
+
+function getFulfilledValue(result) {
+  return result.status === 'fulfilled' ? result.value : null;
+}
 
 function getTeamFromResponse(response) {
   return response?.team || response || null;
@@ -25,11 +30,7 @@ function getStatsFromResponse(response) {
   return response?.stats || response || null;
 }
 
-function getFulfilledValue(result) {
-  return result.status === 'fulfilled' ? result.value : null;
-}
-
-function normalizeTeamResults(results) {
+function normalizeTeamResults(teamId, results) {
   const [teamResult, membersResult, statsResult] = results;
 
   return {
@@ -37,37 +38,44 @@ function normalizeTeamResults(results) {
     members: getMembersFromResponse(getFulfilledValue(membersResult)),
     stats: getStatsFromResponse(getFulfilledValue(statsResult)),
     loading: false,
+    teamId,
   };
 }
 
 function useTeamData(teamId, enabled) {
   const [data, setData] = useState(INITIAL_TEAM_DATA);
 
-  const loadTeam = useCallback(async () => {
-    setData((current) => ({ ...current, loading: true }));
-
-    try {
-      const results = await Promise.allSettled([
-        api.getTeam(teamId),
-        api.getTeamMembers(teamId),
-        api.getTeamStats(teamId),
-      ]);
-
-      setData(normalizeTeamResults(results));
-    } catch (err) {
-      console.error('Erreur chargement équipe:', err);
-      setData((current) => ({ ...current, loading: false }));
-    }
-  }, [teamId]);
-
   useEffect(() => {
-    if (!enabled) {
-      setData({ ...INITIAL_TEAM_DATA, loading: false });
-      return;
-    }
+    if (!enabled) return undefined;
 
-    loadTeam();
-  }, [enabled, loadTeam]);
+    let cancelled = false;
+
+    const loadTeam = async () => {
+      try {
+        const results = await Promise.allSettled([
+          api.getTeam(teamId),
+          api.getTeamMembers(teamId),
+          api.getTeamStats(teamId),
+        ]);
+
+        if (!cancelled) setData(normalizeTeamResults(teamId, results));
+      } catch (error) {
+        console.error('Erreur chargement équipe:', error);
+        if (!cancelled) {
+          setData(current => ({ ...current, teamId, loading: false }));
+        }
+      }
+    };
+
+    void loadTeam();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, teamId]);
+
+  if (!enabled) return { ...INITIAL_TEAM_DATA, loading: false, teamId };
+  if (data.teamId !== teamId) return { ...INITIAL_TEAM_DATA, teamId };
 
   return data;
 }
@@ -76,139 +84,190 @@ function getDeleteMessage(teamName) {
   return `Supprimer l'équipe "${teamName || 'cette équipe'}" ? Cette action est irréversible.`;
 }
 
+async function confirmAction(message) {
+  const tg = globalThis.Telegram?.WebApp;
+  if (tg?.showConfirm) {
+    return new Promise(resolve => tg.showConfirm(message, resolve));
+  }
+
+  return globalThis.confirm(message);
+}
+
+function notify(type) {
+  globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(type);
+}
+
 function useDeleteTeam({ teamId, teamName, navigate, toast }) {
   const [deleting, setDeleting] = useState(false);
 
-  const deleteTeam = useCallback(() => {
-    return executeTeamDeletion({
-      teamId,
-      navigate,
-      toast,
-      setDeleting,
-    });
-  }, [teamId, navigate, toast]);
+  const confirmDelete = useCallback(async () => {
+    const confirmed = await confirmAction(getDeleteMessage(teamName));
+    if (!confirmed) return;
 
-  const confirmDelete = useCallback(() => {
-    requestTeamDeleteConfirmation({
-      teamName,
-      onConfirm: deleteTeam,
-    });
-  }, [teamName, deleteTeam]);
+    setDeleting(true);
 
-  return {
-    deleting,
-    confirmDelete,
-  };
-}
-function getJoinCode(team) {
-  return team?.settings?.joinCode || '';
+    try {
+      await api.deleteTeam(teamId);
+      notify('success');
+      toast.success('Équipe supprimée.');
+      navigate('/teams');
+    } catch (error) {
+      notify('error');
+      toast.error(error.message || "Impossible de supprimer l'équipe.");
+    } finally {
+      setDeleting(false);
+    }
+  }, [navigate, teamId, teamName, toast]);
+
+  return { deleting, confirmDelete };
 }
 
 function useJoinCode(team) {
-  const joinCode = getJoinCode(team);
+  const joinCode = team?.settings?.joinCode || '';
 
-  const copyJoinCode = useCallback(() => {
+  const copyJoinCode = useCallback(async () => {
     if (!joinCode) return;
 
-    navigator.clipboard?.writeText(joinCode);
-    globalThis.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+    try {
+      await navigator.clipboard?.writeText(joinCode);
+      notify('success');
+    } catch {
+      notify('error');
+    }
   }, [joinCode]);
 
-  return {
-    joinCode,
-    copyJoinCode,
-  };
+  return { joinCode, copyJoinCode };
 }
 
-function canLoadTeam(id, selectedGroupId) {
-  return Boolean(id) && Boolean(selectedGroupId);
+function canLoadTeam(teamId, selectedGroupId) {
+  return Boolean(teamId && selectedGroupId);
 }
 
 function getTeamName(team) {
-  return team ? team.name : '';
+  return team?.name || '';
 }
 
-function getTeamDetailViewState(selectedGroupId, loading, team) {
+function getTeamViewState(selectedGroupId, loading, team) {
   if (!selectedGroupId) return 'no-group';
   if (loading) return 'loading';
   if (!team) return 'not-found';
-
   return 'ready';
 }
 
-function createTeamDetailModel({
-  navigate,
-  groupContext,
-  teamData,
-  deleteTeam,
-  joinCode,
-  activeTab,
-  setActiveTab,
-}) {
+function getMemberCount(team, members, stats) {
+  return stats?.memberCount || team?.members?.length || members.length || 0;
+}
+
+function getAdminCount(team, members, stats) {
+  if (stats?.adminCount !== undefined) return stats.adminCount;
+  const source = members.length ? members : team?.members || [];
+  return source.filter(member => member.isAdmin).length;
+}
+
+function getTotalScore(team, stats) {
+  return stats?.totalScore || team?.stats?.totalScore || 0;
+}
+
+function getActivitiesCount(team, stats) {
+  return stats?.activitiesCount || team?.activities?.length || 0;
+}
+
+function getGroupName(selectedGroup) {
+  return selectedGroup?.title || 'Groupe';
+}
+
+function getCapacity(team) {
+  return team?.settings?.maxMembers || 10;
+}
+
+function getTeamSummary({ team, members, stats, selectedGroup }) {
   return {
-    viewState: getTeamDetailViewState(
-      groupContext.selectedGroupId,
-      teamData.loading,
-      teamData.team
-    ),
-    team: teamData.team,
-    members: teamData.members,
-    stats: teamData.stats,
-    selectedGroup: groupContext.selectedGroup,
-    activeTab,
-    setActiveTab,
-    navigate,
-    deleting: deleteTeam.deleting,
-    confirmDelete: deleteTeam.confirmDelete,
-    joinCode: joinCode.joinCode,
-    copyJoinCode: joinCode.copyJoinCode,
+    memberCount: getMemberCount(team, members, stats),
+    adminCount: getAdminCount(team, members, stats),
+    totalScore: getTotalScore(team, stats),
+    activitiesCount: getActivitiesCount(team, stats),
+    capacity: getCapacity(team),
+    groupName: getGroupName(selectedGroup),
   };
+}
+
+function getInitials(name) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map(part => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || '?';
+}
+
+function getMemberUser(member) {
+  return member.userId || member;
+}
+
+function getMemberName(member) {
+  const user = getMemberUser(member);
+  const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+
+  return user.username || fullName || member.username || 'Membre';
+}
+
+function getMemberScore(member) {
+  const user = getMemberUser(member);
+  return user.stats?.totalScore || 0;
+}
+
+function getMemberKey(member, index) {
+  const user = getMemberUser(member);
+  return user._id || user.userId || user.username || member.username || index;
+}
+
+function formatShortDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('fr-FR');
+}
+
+function formatLongDate(value) {
+  if (!value) return '—';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? '—'
+    : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function getCreatorName(createdBy) {
+  return createdBy?.username || createdBy?.firstName || '—';
 }
 
 function useTeamDetailModel() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const groupContext = useGroup();
-
-  const teamData = useTeamData(id, canLoadTeam(id, groupContext.selectedGroupId));
-
-  const deleteTeam = useDeleteTeam({
+  const { selectedGroupId, selectedGroup } = useGroup();
+  const teamData = useTeamData(id, canLoadTeam(id, selectedGroupId));
+  const [activeTab, setActiveTab] = useState('members');
+  const { deleting, confirmDelete } = useDeleteTeam({
     teamId: id,
     teamName: getTeamName(teamData.team),
     navigate,
     toast,
   });
-
   const joinCode = useJoinCode(teamData.team);
-  const [activeTab, setActiveTab] = useState('members');
 
-  return createTeamDetailModel({
-    id,
-    navigate,
-    groupContext,
-    teamData,
-    deleteTeam,
-    joinCode,
+  return {
+    viewState: getTeamViewState(selectedGroupId, teamData.loading, teamData.team),
+    team: teamData.team,
+    members: teamData.members,
+    stats: teamData.stats,
+    selectedGroup,
     activeTab,
     setActiveTab,
-  });
-}
-
-function getActivitiesCount(stats) {
-  return stats ? stats.activitiesCount || 0 : 0;
-}
-
-function getGroupName(selectedGroup) {
-  return selectedGroup ? selectedGroup.title || 'Groupe' : 'Groupe';
-}
-
-function getTeamSummary({ team, members, stats, selectedGroup }) {
-  return {
-    memberCount: getMemberCount(team, members),
-    totalScore: getTotalScore(team, stats),
-    activitiesCount: getActivitiesCount(stats),
-    groupName: getGroupName(selectedGroup),
+    navigate,
+    deleting,
+    confirmDelete,
+    joinCode: joinCode.joinCode,
+    copyJoinCode: joinCode.copyJoinCode,
   };
 }
 
@@ -228,27 +287,18 @@ function TeamDetailReady({
   const summary = getTeamSummary({ team, members, stats, selectedGroup });
 
   return (
-    <div className="page">
-      <TeamHeader team={team} onBack={onBack} />
-
-      <TeamStats
-        memberCount={summary.memberCount}
-        totalScore={summary.totalScore}
-        activitiesCount={summary.activitiesCount}
-        groupName={summary.groupName}
-      />
-
+    <div className="page team-detail-page">
+      <TeamHero team={team} summary={summary} onBack={onBack} />
+      <TeamStatStrip summary={summary} />
       <JoinCodeCard joinCode={joinCode} onCopy={copyJoinCode} />
-
-      <DeleteTeamButton deleting={deleting} onDelete={confirmDelete} />
-
       <TeamTabs activeTab={activeTab} memberCount={summary.memberCount} onTabChange={setActiveTab} />
-
       <TeamTabContent
         activeTab={activeTab}
         members={members}
         team={team}
-        memberCount={summary.memberCount}
+        summary={summary}
+        deleting={deleting}
+        onDelete={confirmDelete}
       />
     </div>
   );
@@ -259,7 +309,7 @@ TeamDetailReady.propTypes = {
   members: PropTypes.array.isRequired,
   stats: PropTypes.object,
   selectedGroup: PropTypes.object,
-  activeTab: PropTypes.string.isRequired,
+  activeTab: PropTypes.oneOf(['members', 'info']).isRequired,
   setActiveTab: PropTypes.func.isRequired,
   onBack: PropTypes.func.isRequired,
   deleting: PropTypes.bool.isRequired,
@@ -283,7 +333,6 @@ function TeamDetailView({
   copyJoinCode,
 }) {
   const backToTeams = () => navigate('/teams');
-
   const views = {
     'no-group': <NoGroupSelected />,
     loading: <PageLoader />,
@@ -314,7 +363,7 @@ TeamDetailView.propTypes = {
   members: PropTypes.array.isRequired,
   stats: PropTypes.object,
   selectedGroup: PropTypes.object,
-  activeTab: PropTypes.string.isRequired,
+  activeTab: PropTypes.oneOf(['members', 'info']).isRequired,
   setActiveTab: PropTypes.func.isRequired,
   navigate: PropTypes.func.isRequired,
   deleting: PropTypes.bool.isRequired,
@@ -325,7 +374,6 @@ TeamDetailView.propTypes = {
 
 export default function TeamDetail() {
   const model = useTeamDetailModel();
-
   return <TeamDetailView {...model} />;
 }
 
@@ -340,13 +388,9 @@ function PageLoader() {
 function TeamNotFound({ onBack }) {
   return (
     <div className="page">
-      <div className="empty-state">
-        <div className="empty-state-icon">❌</div>
-        <div className="empty-state-text">Équipe introuvable</div>
-      </div>
-
-      <button className="btn btn-secondary" onClick={onBack}>
-        ← Retour aux équipes
+      <EmptyState icon="❌" text="Équipe introuvable" />
+      <button type="button" className="btn btn-secondary" onClick={onBack}>
+        Retour aux équipes
       </button>
     </div>
   );
@@ -356,70 +400,58 @@ TeamNotFound.propTypes = {
   onBack: PropTypes.func.isRequired,
 };
 
-function TeamHeader({ team, onBack }) {
+function TeamHero({ team, summary, onBack }) {
   return (
-    <div className="page-header slide-up">
-      <button
-        onClick={onBack}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: 'var(--tg-theme-link-color)',
-          cursor: 'pointer',
-          fontSize: 14,
-          padding: '4px 0',
-          marginBottom: 8,
-        }}
-      >
+    <section className="team-detail-hero slide-up">
+      <button type="button" className="team-back-button" onClick={onBack}>
         ← Retour
       </button>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div className="avatar" style={{ fontSize: 28 }}>
-          {(team.name || '?')[0].toUpperCase()}
-        </div>
-
-        <div>
-          <h1 className="page-title">{team.name}</h1>
-          <div className="page-subtitle">{team.description || 'Pas de description'}</div>
+      <div className="team-detail-hero-main">
+        <div className="team-detail-avatar">{getInitials(team.name || 'Équipe')}</div>
+        <div className="team-detail-copy">
+          <div className="dashboard-eyebrow">{summary.groupName}</div>
+          <h1>{team.name}</h1>
+          <p>{team.description || 'Pas de description'}</p>
         </div>
       </div>
-    </div>
+      <div className="team-detail-meta-row">
+        <span>{summary.memberCount}/{summary.capacity} membres</span>
+        <span>{summary.adminCount} admin{summary.adminCount > 1 ? 's' : ''}</span>
+      </div>
+    </section>
   );
 }
 
-TeamHeader.propTypes = {
+TeamHero.propTypes = {
   team: PropTypes.object.isRequired,
+  summary: PropTypes.object.isRequired,
   onBack: PropTypes.func.isRequired,
 };
 
-function TeamStats({ memberCount, totalScore, activitiesCount, groupName }) {
+function TeamStatStrip({ summary }) {
   return (
-    <div className="stats-grid slide-up-delay-1">
-      <StatCard value={memberCount} label="Membres" />
-      <StatCard value={totalScore} label={`Score dans ${groupName}`} />
-      <StatCard value={activitiesCount} label="Activités" />
-    </div>
+    <section className="team-stat-strip slide-up-delay-1" aria-label="Statistiques de l'équipe">
+      <TeamStat value={summary.memberCount} label="Membres" />
+      <TeamStat value={summary.totalScore} label="Points" />
+      <TeamStat value={summary.activitiesCount} label="Activités" />
+    </section>
   );
 }
 
-TeamStats.propTypes = {
-  memberCount: PropTypes.number.isRequired,
-  totalScore: PropTypes.number.isRequired,
-  activitiesCount: PropTypes.number.isRequired,
-  groupName: PropTypes.string.isRequired,
+TeamStatStrip.propTypes = {
+  summary: PropTypes.object.isRequired,
 };
 
-function StatCard({ value, label }) {
+function TeamStat({ value, label }) {
   return (
-    <div className="stat-card">
-      <div className="stat-value">{value}</div>
-      <div className="stat-label">{label}</div>
+    <div className="team-stat-card">
+      <div className="team-stat-value">{value}</div>
+      <div className="team-stat-label">{label}</div>
     </div>
   );
 }
 
-StatCard.propTypes = {
+TeamStat.propTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   label: PropTypes.string.isRequired,
 };
@@ -428,31 +460,15 @@ function JoinCodeCard({ joinCode, onCopy }) {
   if (!joinCode) return null;
 
   return (
-    <div className="card card-glow slide-up-delay-1" style={{ textAlign: 'center', marginBottom: 16 }}>
-      <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', marginBottom: 6 }}>
-        Code d&apos;invitation
+    <section className="team-code-panel slide-up-delay-1">
+      <div>
+        <div className="dashboard-eyebrow">Invitation</div>
+        <div className="team-code-value">{joinCode}</div>
       </div>
-
-      <div
-        style={{
-          fontSize: 24,
-          fontWeight: 800,
-          letterSpacing: 4,
-          fontFamily: 'monospace',
-          color: 'var(--tg-theme-accent-text-color)',
-        }}
-      >
-        {joinCode}
-      </div>
-
-      <button
-        className="btn btn-secondary"
-        style={{ marginTop: 10, padding: '8px 16px', fontSize: 13 }}
-        onClick={onCopy}
-      >
-        📋 Copier le code
+      <button type="button" className="btn btn-secondary" onClick={onCopy}>
+        Copier
       </button>
-    </div>
+    </section>
   );
 }
 
@@ -461,162 +477,69 @@ JoinCodeCard.propTypes = {
   onCopy: PropTypes.func.isRequired,
 };
 
-function DeleteTeamButton({ deleting, onDelete }) {
+function TeamTabs({ activeTab, memberCount, onTabChange }) {
   return (
-    <div className="slide-up-delay-1" style={{ marginBottom: 16 }}>
+    <div className="team-detail-tabs slide-up-delay-1" aria-label="Sections équipe">
       <button
-        className="btn btn-secondary"
-        style={{ width: '100%', color: '#e74c3c' }}
-        onClick={onDelete}
-        disabled={deleting}
+        type="button"
+        className={activeTab === 'members' ? 'active' : ''}
+        aria-pressed={activeTab === 'members'}
+        onClick={() => onTabChange('members')}
       >
-        {deleting ? '⏳ Suppression...' : "🗑 Supprimer l'équipe"}
+        Membres <span>{memberCount}</span>
+      </button>
+      <button
+        type="button"
+        className={activeTab === 'info' ? 'active' : ''}
+        aria-pressed={activeTab === 'info'}
+        onClick={() => onTabChange('info')}
+      >
+        Info
       </button>
     </div>
   );
 }
 
-DeleteTeamButton.propTypes = {
-  deleting: PropTypes.bool.isRequired,
-  onDelete: PropTypes.func.isRequired,
-};
-
-function TeamTabs({ activeTab, memberCount, onTabChange }) {
-  return (
-    <div className="chips-row slide-up-delay-1">
-      <TabButton
-        active={activeTab === 'members'}
-        onClick={() => onTabChange('members')}
-      >
-        👥 Membres ({memberCount})
-      </TabButton>
-
-      <TabButton
-        active={activeTab === 'info'}
-        onClick={() => onTabChange('info')}
-      >
-        📋 Info
-      </TabButton>
-    </div>
-  );
-}
-
 TeamTabs.propTypes = {
-  activeTab: PropTypes.string.isRequired,
+  activeTab: PropTypes.oneOf(['members', 'info']).isRequired,
   memberCount: PropTypes.number.isRequired,
   onTabChange: PropTypes.func.isRequired,
 };
 
-function TabButton({ active, onClick, children }) {
-  return (
-    <button className={`chip ${active ? 'active' : ''}`} onClick={onClick}>
-      {children}
-    </button>
-  );
-}
-
-TabButton.propTypes = {
-  active: PropTypes.bool.isRequired,
-  onClick: PropTypes.func.isRequired,
-  children: PropTypes.node.isRequired,
-};
-
-function TeamTabContent({ activeTab, members, team, memberCount }) {
+function TeamTabContent({ activeTab, members, team, summary, deleting, onDelete }) {
   return (
     <div className="slide-up-delay-2">
       {activeTab === 'members' ? (
         <TeamMembersTab members={members} team={team} />
       ) : (
-        <TeamInfoTab team={team} memberCount={memberCount} />
+        <TeamInfoTab team={team} summary={summary} deleting={deleting} onDelete={onDelete} />
       )}
     </div>
   );
 }
 
 TeamTabContent.propTypes = {
-  activeTab: PropTypes.string.isRequired,
+  activeTab: PropTypes.oneOf(['members', 'info']).isRequired,
   members: PropTypes.array.isRequired,
   team: PropTypes.object.isRequired,
-  memberCount: PropTypes.number.isRequired,
-};
-
-function getMemberCount(team, members) {
-  return team.members?.length || members.length || 0;
-}
-
-function getTotalScore(team, stats) {
-  return stats?.totalScore || team.stats?.totalScore || 0;
-}
-
-function MembersFallback({ members }) {
-  const list = members || [];
-
-  if (list.length === 0) {
-    return <EmptyMembersState />;
-  }
-
-  return list.map((member) => (
-    <FallbackMemberItem key={member.userId || member.username} member={member} />
-  ));
-}
-
-MembersFallback.propTypes = {
-  members: PropTypes.arrayOf(
-    PropTypes.shape({
-      userId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-      username: PropTypes.string,
-      isAdmin: PropTypes.bool,
-    })
-  ),
-};
-
-function EmptyMembersState() {
-  return (
-    <div className="empty-state">
-      <div className="empty-state-icon">👥</div>
-      <div className="empty-state-text">Aucun membre</div>
-    </div>
-  );
-}
-
-function FallbackMemberItem({ member }) {
-  const username = member.username || 'Membre';
-
-  return (
-    <div className="list-item">
-      <MemberAvatar initial={(username[0] || '?').toUpperCase()} />
-
-      <div className="list-item-content">
-        <div className="list-item-title">
-          {username}
-          <AdminBadge isAdmin={member.isAdmin} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-FallbackMemberItem.propTypes = {
-  member: PropTypes.shape({
-    username: PropTypes.string,
-    isAdmin: PropTypes.bool,
-  }).isRequired,
+  summary: PropTypes.object.isRequired,
+  deleting: PropTypes.bool.isRequired,
+  onDelete: PropTypes.func.isRequired,
 };
 
 function TeamMembersTab({ members, team }) {
-  if (members.length === 0) {
-    return <MembersFallback members={team.members} />;
+  const list = members.length ? members : team.members || [];
+
+  if (list.length === 0) {
+    return <EmptyState icon="👥" text="Aucun membre dans cette équipe." />;
   }
 
   return (
-    <div>
-      {members.map((member, index) => (
-        <TeamMemberItem
-          key={getMemberKey(member, index)}
-          member={member}
-        />
+    <section className="team-members-list" aria-label="Membres de l'équipe">
+      {list.map((member, index) => (
+        <TeamMemberCard key={getMemberKey(member, index)} member={member} />
       ))}
-    </div>
+    </section>
   );
 }
 
@@ -625,163 +548,71 @@ TeamMembersTab.propTypes = {
   team: PropTypes.object.isRequired,
 };
 
-function TeamMemberItem({ member }) {
-  const user = getMemberUser(member);
+function TeamMemberCard({ member }) {
   const name = getMemberName(member);
-  const initial = getInitial(name);
-  const joinedAt = formatShortDate(member.joinedAt);
-  const score = user.stats?.totalScore || 0;
+  const score = getMemberScore(member);
 
   return (
-    <div className="list-item">
-      <MemberAvatar initial={initial} />
-
-      <div className="list-item-content">
-        <div className="list-item-title">
+    <article className="team-member-card">
+      <div className="team-member-avatar">{getInitials(name)}</div>
+      <div className="team-member-body">
+        <h2>
           {name}
-          <AdminBadge isAdmin={member.isAdmin} />
-        </div>
-
-        <div className="list-item-subtitle">
-          Rejoint le {joinedAt}
-        </div>
+          {member.isAdmin && <span>Admin</span>}
+        </h2>
+        <p>Rejoint le {formatShortDate(member.joinedAt)}</p>
       </div>
-
-      <div className="list-item-value" style={{ fontSize: 13 }}>
-        {score} pts
+      <div className="team-member-score">
+        <strong>{score}</strong>
+        <span>pts</span>
       </div>
-    </div>
+    </article>
   );
 }
 
-TeamMemberItem.propTypes = {
+TeamMemberCard.propTypes = {
   member: PropTypes.object.isRequired,
 };
 
-function MemberAvatar({ initial }) {
-  return (
-    <div className="avatar" style={{ width: 40, height: 40, fontSize: 16 }}>
-      {initial}
-    </div>
-  );
-}
-
-MemberAvatar.propTypes = {
-  initial: PropTypes.string.isRequired,
-};
-
-function AdminBadge({ isAdmin }) {
-  if (!isAdmin) return null;
+function TeamInfoTab({ team, summary, deleting, onDelete }) {
+  const fields = [
+    { label: 'Nom', value: team.name },
+    { label: 'Description', value: team.description || '—' },
+    { label: 'Créée le', value: formatLongDate(team.createdAt) },
+    { label: 'Capacité', value: `${summary.memberCount}/${summary.capacity} membres` },
+    { label: 'Créée par', value: getCreatorName(team.createdBy) },
+  ];
 
   return (
-    <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--tg-theme-accent-text-color)' }}>
-      👑 Admin
-    </span>
-  );
-}
-
-AdminBadge.propTypes = {
-  isAdmin: PropTypes.bool,
-};
-
-function getMemberUser(member) {
-  return member.userId || member;
-}
-
-function getMemberName(member) {
-  const user = getMemberUser(member);
-  const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-
-  return user.username || fullName || 'Membre';
-}
-
-function getInitial(name) {
-  return (name[0] || '?').toUpperCase();
-}
-
-function getMemberKey(member, index) {
-  const user = getMemberUser(member);
-
-  return user._id || user.userId || user.username || member.username || index;
-}
-
-function formatShortDate(date) {
-  if (!date) return '—';
-
-  return new Date(date).toLocaleDateString('fr-FR');
-}
-
-function TeamInfoTab({ team, memberCount }) {
-  const fields = getTeamInfoFields(team, memberCount);
-
-  return (
-    <div className="card">
-      {fields.map((field) => (
-        <InfoField key={field.label} label={field.label} value={field.value} />
+    <section className="team-info-panel">
+      {fields.map(field => (
+        <div className="activity-info-row" key={field.label}>
+          <div>{field.label}</div>
+          <strong>{field.value}</strong>
+        </div>
       ))}
-    </div>
+
+      <div className="team-danger-zone">
+        <div>
+          <h2>Zone sensible</h2>
+          <p>La suppression retire l'équipe du groupe.</p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-secondary team-danger-button"
+          onClick={onDelete}
+          disabled={deleting}
+        >
+          {deleting ? 'Suppression...' : "Supprimer l'équipe"}
+        </button>
+      </div>
+    </section>
   );
 }
 
 TeamInfoTab.propTypes = {
   team: PropTypes.object.isRequired,
-  memberCount: PropTypes.number.isRequired,
+  summary: PropTypes.object.isRequired,
+  deleting: PropTypes.bool.isRequired,
+  onDelete: PropTypes.func.isRequired,
 };
-
-function getTeamInfoFields(team, memberCount) {
-  return [
-    {
-      label: 'Nom',
-      value: team.name,
-    },
-    team.description && {
-      label: 'Description',
-      value: team.description,
-    },
-    {
-      label: 'Créée le',
-      value: formatLongDate(team.createdAt),
-    },
-    {
-      label: 'Capacité',
-      value: `${memberCount}/${team.settings?.maxMembers || 10} membres`,
-    },
-    team.createdBy && {
-      label: 'Créée par',
-      value: getCreatorName(team.createdBy),
-    },
-  ].filter(Boolean);
-}
-
-function InfoField({ label, value }) {
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 13, color: 'var(--tg-theme-hint-color)', marginBottom: 4 }}>
-        {label}
-      </div>
-
-      <div style={{ fontWeight: 600 }}>
-        {value}
-      </div>
-    </div>
-  );
-}
-
-InfoField.propTypes = {
-  label: PropTypes.string.isRequired,
-  value: PropTypes.node.isRequired,
-};
-
-function formatLongDate(date) {
-  if (!date) return '—';
-
-  return new Date(date).toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-function getCreatorName(createdBy) {
-  return createdBy.username || createdBy.firstName || '—';
-}
