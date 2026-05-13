@@ -1,14 +1,20 @@
-/**
- * Manual test file for chatIdValidator middleware
- * Run with: node src/api/middleware/chatIdValidator.test.js
- * 
- * This file provides basic verification that the middleware functions correctly.
- * For comprehensive testing, integrate with a proper testing framework.
- */
+import assert from 'node:assert/strict';
+import test, { after } from 'node:test';
+import {
+  createValidateChatAccess,
+  normalizeChatId,
+  optionalChatId,
+  requireChatId,
+} from './chatIdValidator.js';
+import logger from '../../utils/logger.js';
 
-import { requireChatId, validateChatAccess } from './chatIdValidator.js';
+const previousLoggerSilent = logger.silent;
+logger.silent = true;
 
-// Mock request and response objects
+after(() => {
+  logger.silent = previousLoggerSilent;
+});
+
 const createMockReq = (overrides = {}) => ({
   query: {},
   body: {},
@@ -16,120 +22,204 @@ const createMockReq = (overrides = {}) => ({
   user: null,
   path: '/test',
   method: 'GET',
-  ...overrides
+  ...overrides,
 });
 
 const createMockRes = () => {
   const res = {
     statusCode: null,
     jsonData: null,
-    status: function(code) {
+    status(code) {
       this.statusCode = code;
       return this;
     },
-    json: function(data) {
+    json(data) {
       this.jsonData = data;
       return this;
-    }
+    },
   };
   return res;
 };
 
 const createMockNext = () => {
-  let called = false;
-  return () => { called = true; return called; };
+  const next = () => {
+    next.called = true;
+  };
+  next.called = false;
+  return next;
 };
 
-// Test 1: requireChatId - should reject request without chatId
-console.log('Test 1: requireChatId rejects request without chatId');
-const req1 = createMockReq();
-const res1 = createMockRes();
-const next1 = createMockNext();
+test('normalizeChatId accepts Telegram chat IDs', () => {
+  assert.deepEqual(normalizeChatId('123456'), { chatId: '123456', reason: null });
+  assert.deepEqual(normalizeChatId('-100123456'), { chatId: '-100123456', reason: null });
+  assert.deepEqual(normalizeChatId(123456), { chatId: '123456', reason: null });
+  assert.deepEqual(normalizeChatId('  -100123456  '), { chatId: '-100123456', reason: null });
+});
 
-requireChatId(req1, res1, next1);
+test('normalizeChatId rejects missing and invalid values', () => {
+  assert.deepEqual(normalizeChatId(undefined), { chatId: null, reason: 'missing' });
+  assert.deepEqual(normalizeChatId(null), { chatId: null, reason: 'missing' });
+  assert.deepEqual(normalizeChatId(''), { chatId: null, reason: 'missing' });
+  assert.deepEqual(normalizeChatId('abc'), { chatId: null, reason: 'invalid' });
+  assert.deepEqual(normalizeChatId('12-34'), { chatId: null, reason: 'invalid' });
+  assert.deepEqual(normalizeChatId(['123']), { chatId: null, reason: 'invalid' });
+  assert.deepEqual(normalizeChatId({ id: '123' }), { chatId: null, reason: 'invalid' });
+});
 
-if (res1.statusCode === 400 && res1.jsonData.error === 'chatId is required') {
-  console.log('✅ PASS: Request without chatId rejected with 400');
-} else {
-  console.log('❌ FAIL: Expected 400 status with error message');
-  console.log('Got:', res1.statusCode, res1.jsonData);
-}
+test('requireChatId reads chatId from supported request locations', () => {
+  const cases = [
+    { overrides: { query: { chatId: '123456' } }, expected: '123456' },
+    { overrides: { body: { chatId: '-123456' } }, expected: '-123456' },
+    { overrides: { body: { metadata: { chatId: '345678' } } }, expected: '345678' },
+    { overrides: { params: { chatId: '901234' } }, expected: '901234' },
+  ];
 
-// Test 2: requireChatId - should accept request with chatId in query
-console.log('\nTest 2: requireChatId accepts request with chatId in query');
-const req2 = createMockReq({ query: { chatId: '123456' } });
-const res2 = createMockRes();
-const next2 = createMockNext();
+  for (const { overrides, expected } of cases) {
+    const req = createMockReq(overrides);
+    const res = createMockRes();
+    const next = createMockNext();
 
-requireChatId(req2, res2, next2);
+    requireChatId(req, res, next);
 
-if (req2.chatId === '123456' && !res2.statusCode) {
-  console.log('✅ PASS: Request with chatId in query accepted');
-} else {
-  console.log('❌ FAIL: Expected chatId to be set and no error response');
-  console.log('Got chatId:', req2.chatId, 'status:', res2.statusCode);
-}
+    assert.equal(next.called, true);
+    assert.equal(res.statusCode, null);
+    assert.equal(req.chatId, expected);
+  }
+});
 
-// Test 3: requireChatId - should accept request with chatId in body
-console.log('\nTest 3: requireChatId accepts request with chatId in body');
-const req3 = createMockReq({ body: { chatId: '789012' } });
-const res3 = createMockRes();
-const next3 = createMockNext();
+test('requireChatId rejects missing chatId', () => {
+  const req = createMockReq();
+  const res = createMockRes();
+  const next = createMockNext();
 
-requireChatId(req3, res3, next3);
+  requireChatId(req, res, next);
 
-if (req3.chatId === '789012' && !res3.statusCode) {
-  console.log('✅ PASS: Request with chatId in body accepted');
-} else {
-  console.log('❌ FAIL: Expected chatId to be set and no error response');
-  console.log('Got chatId:', req3.chatId, 'status:', res3.statusCode);
-}
+  assert.equal(next.called, false);
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.jsonData.error, 'chatId is required');
+});
 
-// Test 4: requireChatId - should accept request with chatId in body.metadata
-console.log('\nTest 4: requireChatId accepts request with chatId in body.metadata');
-const req4 = createMockReq({ body: { metadata: { chatId: '345678' } } });
-const res4 = createMockRes();
-const next4 = createMockNext();
+test('requireChatId rejects invalid chatId', () => {
+  const req = createMockReq({ query: { chatId: 'not-a-chat' } });
+  const res = createMockRes();
+  const next = createMockNext();
 
-requireChatId(req4, res4, next4);
+  requireChatId(req, res, next);
 
-if (req4.chatId === '345678' && !res4.statusCode) {
-  console.log('✅ PASS: Request with chatId in body.metadata accepted');
-} else {
-  console.log('❌ FAIL: Expected chatId to be set and no error response');
-  console.log('Got chatId:', req4.chatId, 'status:', res4.statusCode);
-}
+  assert.equal(next.called, false);
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.jsonData.error, 'Invalid chatId');
+});
 
-// Test 5: requireChatId - should accept request with chatId in params
-console.log('\nTest 5: requireChatId accepts request with chatId in params');
-const req5 = createMockReq({ params: { chatId: '901234' } });
-const res5 = createMockRes();
-const next5 = createMockNext();
+test('optionalChatId continues without chatId when absent', () => {
+  const req = createMockReq();
+  const res = createMockRes();
+  const next = createMockNext();
 
-requireChatId(req5, res5, next5);
+  optionalChatId(req, res, next);
 
-if (req5.chatId === '901234' && !res5.statusCode) {
-  console.log('✅ PASS: Request with chatId in params accepted');
-} else {
-  console.log('❌ FAIL: Expected chatId to be set and no error response');
-  console.log('Got chatId:', req5.chatId, 'status:', res5.statusCode);
-}
+  assert.equal(next.called, true);
+  assert.equal(res.statusCode, null);
+  assert.equal(req.chatId, undefined);
+});
 
-// Test 6: validateChatAccess - should reject request without user
-console.log('\nTest 6: validateChatAccess rejects request without authenticated user');
-const req6 = createMockReq({ chatId: '123456' });
-const res6 = createMockRes();
-const next6 = createMockNext();
+test('optionalChatId rejects an invalid provided chatId', () => {
+  const req = createMockReq({ body: { metadata: { chatId: { value: '123' } } } });
+  const res = createMockRes();
+  const next = createMockNext();
 
-await validateChatAccess(req6, res6, next6);
+  optionalChatId(req, res, next);
 
-if (res6.statusCode === 401 && res6.jsonData.error === 'Authentication required') {
-  console.log('✅ PASS: Request without user rejected with 401');
-} else {
-  console.log('❌ FAIL: Expected 401 status with authentication error');
-  console.log('Got:', res6.statusCode, res6.jsonData);
-}
+  assert.equal(next.called, false);
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.jsonData.error, 'Invalid chatId');
+});
 
-console.log('\n=== Manual Tests Complete ===');
-console.log('Note: validateChatAccess with valid user requires database connection');
-console.log('Run integration tests with proper test database for full coverage');
+test('validateChatAccess rejects unauthenticated requests before database lookup', async () => {
+  const findOneCalls = [];
+  const validateChatAccess = createValidateChatAccess({
+    findOne: async (query) => {
+      findOneCalls.push(query);
+      return null;
+    },
+  });
+  const req = createMockReq({ chatId: '123456' });
+  const res = createMockRes();
+  const next = createMockNext();
+
+  await validateChatAccess(req, res, next);
+
+  assert.equal(next.called, false);
+  assert.equal(res.statusCode, 401);
+  assert.equal(res.jsonData.error, 'Authentication required');
+  assert.deepEqual(findOneCalls, []);
+});
+
+test('validateChatAccess attaches group when user has access', async () => {
+  const group = { chatId: '-100123456', title: 'Team chat' };
+  let capturedQuery;
+  const validateChatAccess = createValidateChatAccess({
+    findOne: async (query) => {
+      capturedQuery = query;
+      return group;
+    },
+  });
+  const req = createMockReq({
+    chatId: '-100123456',
+    user: { _id: 'user-1', telegram: { id: 123456 } },
+  });
+  const res = createMockRes();
+  const next = createMockNext();
+
+  await validateChatAccess(req, res, next);
+
+  assert.equal(next.called, true);
+  assert.equal(res.statusCode, null);
+  assert.equal(req.group, group);
+  assert.deepEqual(capturedQuery, {
+    chatId: '-100123456',
+    isActive: true,
+    $or: [
+      { 'members.userId': 'user-1' },
+      { 'members.telegramId': '123456' },
+    ],
+  });
+});
+
+test('validateChatAccess rejects users without group access', async () => {
+  const validateChatAccess = createValidateChatAccess({
+    findOne: async () => null,
+  });
+  const req = createMockReq({
+    chatId: '-100123456',
+    user: { _id: 'user-1' },
+  });
+  const res = createMockRes();
+  const next = createMockNext();
+
+  await validateChatAccess(req, res, next);
+
+  assert.equal(next.called, false);
+  assert.equal(res.statusCode, 403);
+  assert.equal(res.jsonData.error, 'Access denied');
+});
+
+test('validateChatAccess returns 500 on database errors', async () => {
+  const validateChatAccess = createValidateChatAccess({
+    findOne: async () => {
+      throw new Error('database unavailable');
+    },
+  });
+  const req = createMockReq({
+    chatId: '-100123456',
+    user: { _id: 'user-1' },
+  });
+  const res = createMockRes();
+  const next = createMockNext();
+
+  await validateChatAccess(req, res, next);
+
+  assert.equal(next.called, false);
+  assert.equal(res.statusCode, 500);
+  assert.equal(res.jsonData.error, 'Internal server error');
+});

@@ -13,7 +13,7 @@
     "dev:bot": "nodemon src/app.js",
 
     "validate:config": "node scripts/validate-config.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test src/api/middleware/chatIdValidator.test.js"
   },
   "dependencies": {
     "axios": "^1.10.0",

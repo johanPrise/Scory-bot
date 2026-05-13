@@ -22,12 +22,14 @@ const confirmAction = (message) =>
     }
   });
 
-export function useActivityDetail({ id, navigate, enabled }) {
+export function useActivityDetail({ id, navigate, enabled, selectedGroupId }) {
   const toast = useToast();
 
   const [activity, setActivity] = useState(null);
   const [scores, setScores] = useState([]);
   const [loading, setLoading] = useState(Boolean(enabled));
+  const [error, setError] = useState(null);
+  const [scoresError, setScoresError] = useState(null);
   const [activeTab, setActiveTab] = useState('info');
   const [showSubForm, setShowSubForm] = useState(false);
   const [subForm, setSubForm] = useState(EMPTY_SUB_FORM);
@@ -35,24 +37,57 @@ export function useActivityDetail({ id, navigate, enabled }) {
   const [deleting, setDeleting] = useState(false);
 
   const loadActivity = useCallback(async () => {
-    if (!id) return;
+    if (!id || !selectedGroupId) {
+      setActivity(null);
+      setScores([]);
+      setError(null);
+      setScoresError(null);
+      return;
+    }
+
     setLoading(true);
+    setActivity(null);
+    setScores([]);
+    setError(null);
+    setScoresError(null);
+
     try {
       const [actRes, scoresRes] = await Promise.allSettled([
         api.getActivity(id),
         api.getScores({ activityId: id, limit: 20 }),
       ]);
-      if (actRes.status === 'fulfilled') setActivity(actRes.value.activity || actRes.value);
-      if (scoresRes.status === 'fulfilled') setScores(scoresRes.value.scores || []);
+
+      if (actRes.status === 'rejected') {
+        setError(actRes.reason);
+        console.error('Erreur chargement activité:', actRes.reason);
+        return;
+      }
+
+      setActivity(actRes.value.activity || actRes.value);
+
+      if (scoresRes.status === 'fulfilled') {
+        setScores(scoresRes.value.scores || []);
+      } else {
+        setScoresError(scoresRes.reason);
+        console.warn('Erreur chargement scores:', scoresRes.reason);
+      }
     } catch (err) {
+      setError(err);
       console.error('Erreur chargement activité:', err);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, selectedGroupId]);
 
   useEffect(() => {
-    if (!enabled) { setLoading(false); return; }
+    if (!enabled) {
+      setLoading(false);
+      setActivity(null);
+      setScores([]);
+      setError(null);
+      setScoresError(null);
+      return;
+    }
     loadActivity();
   }, [enabled, loadActivity]);
 
@@ -134,7 +169,7 @@ export function useActivityDetail({ id, navigate, enabled }) {
   }, [toast, loadActivity]);
 
   return {
-    activity, scores, loading,
+    activity, scores, loading, error, scoresError,
     activeTab, setActiveTab,
     showSubForm, subForm, submittingSub, deleting,
     openSubForm, closeSubForm, updateSubForm,

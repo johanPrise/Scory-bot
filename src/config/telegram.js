@@ -44,7 +44,7 @@ export const TELEGRAM_CONFIG = {
     healthEndpoint: '/health', // Endpoint de vérification de santé
     maxConnections: 100, // Nombre maximum de connexions simultanées
     dropPendingUpdates: false, // Ignorer les mises à jour en attente au démarrage
-    secretToken: process.env.WEBHOOK_SECRET_TOKEN, // Pour la validation des requêtes
+    secretToken: process.env.TELEGRAM_WEBHOOK_SECRET, // Pour la validation des requêtes
     ipv6: true, // Activer IPv6
     tlsOptions: {
       // Options TLS supplémentaires

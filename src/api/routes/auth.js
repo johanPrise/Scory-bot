@@ -2,61 +2,13 @@ import mongoose from 'mongoose';
 
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import crypto from 'node:crypto';
 import User from '../models/User.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { validateTelegramInitData } from '../middleware/authenticate.js';
 import logger from '../../utils/logger.js';
 
 const router = express.Router();
-
-/**
- * Valide le hash des données Telegram
- */
-function validateTelegramHash(params, botToken, hash) {
-  const webAppSecret = process.env.TELEGRAM_WEBAPP_SECRET || 'WebAppData';
-  const secretKey = crypto.createHmac('sha256', webAppSecret).update(botToken).digest();
-  const computedHash = crypto.createHmac('sha256', secretKey).update(params).digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(computedHash, 'hex'), Buffer.from(hash, 'hex'));
-}
-
-/**
- * Construit la chaîne de vérification à partir des paramètres
- */
-function buildDataCheckString(params) {
-  const dataCheckArr = [];
-  for (const [key, value] of params.entries()) {
-    dataCheckArr.push(`${key}=${value}`);
-  }
-  dataCheckArr.sort((a, b) => a.localeCompare(b));
-  return dataCheckArr.join('\n');
-}
-
-/**
- * Valide les données initData de Telegram WebApp
- * @see https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
- */
-function validateTelegramInitData(initData, botToken) {
-  try {
-    const params = new URLSearchParams(initData);
-    const hash = params.get('hash');
-    if (!hash) return null;
-
-    params.delete('hash');
-    const dataCheckString = buildDataCheckString(params);
-
-    if (!validateTelegramHash(dataCheckString, botToken, hash)) return null;
-
-    // Extraire les données utilisateur
-    const userString = params.get('user');
-    if (!userString) return null;
-
-    return JSON.parse(userString);
-  } catch (err) {
-    if (err instanceof SyntaxError) return null;
-    throw err;
-  }
-}
 
 /**
  * POST /api/auth/telegram-login

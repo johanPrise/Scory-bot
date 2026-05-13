@@ -1,32 +1,69 @@
 import ChatGroup from '../models/ChatGroup.js';
 import logger from '../../utils/logger.js';
 
+const CHAT_ID_PATTERN = /^-?\d+$/;
+
+export const extractChatId = (req) =>
+  req.query?.chatId ??
+  req.body?.chatId ??
+  req.body?.metadata?.chatId ??
+  req.params?.chatId;
+
+export const normalizeChatId = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return { chatId: null, reason: 'missing' };
+  }
+
+  if (Array.isArray(value) || typeof value === 'object') {
+    return { chatId: null, reason: 'invalid' };
+  }
+
+  const chatId = String(value).trim();
+  if (!CHAT_ID_PATTERN.test(chatId)) {
+    return { chatId: null, reason: 'invalid' };
+  }
+
+  return { chatId, reason: null };
+};
+
+const rejectMissingChatId = (req, res) => {
+  logger.warn('Requête rejetée: chatId manquant', {
+    path: req.path,
+    method: req.method,
+    userId: req.user?._id
+  });
+
+  return res.status(400).json({
+    error: 'chatId is required',
+    message: 'All operations must be scoped to a specific Telegram group. Please provide a chatId parameter.'
+  });
+};
+
+const rejectInvalidChatId = (req, res) => {
+  logger.warn('Requête rejetée: chatId invalide', {
+    path: req.path,
+    method: req.method,
+    userId: req.user?._id
+  });
+
+  return res.status(400).json({
+    error: 'Invalid chatId',
+    message: 'chatId must be a Telegram chat identifier containing only digits and an optional leading minus sign.'
+  });
+};
+
 /**
  * Middleware pour exiger la présence d'un chatId dans les requêtes
  * Rejette les requêtes sans chatId avec une erreur 400
  */
 export const requireChatId = (req, res, next) => {
-  // Extraire le chatId depuis différentes sources possibles
-  const chatId = req.query.chatId || 
-                 req.body.chatId || 
-                 req.body.metadata?.chatId ||
-                 req.params.chatId;
-  
-  if (!chatId) {
-    logger.warn('Requête rejetée: chatId manquant', {
-      path: req.path,
-      method: req.method,
-      userId: req.user?._id
-    });
-    
-    return res.status(400).json({
-      error: 'chatId is required',
-      message: 'All operations must be scoped to a specific Telegram group. Please provide a chatId parameter.'
-    });
-  }
+  const { chatId, reason } = normalizeChatId(extractChatId(req));
+
+  if (reason === 'missing') return rejectMissingChatId(req, res);
+  if (reason === 'invalid') return rejectInvalidChatId(req, res);
   
   // Attacher le chatId à la requête pour utilisation ultérieure
-  req.chatId = chatId.toString();
+  req.chatId = chatId;
   next();
 };
 
@@ -34,7 +71,7 @@ export const requireChatId = (req, res, next) => {
  * Middleware pour valider que l'utilisateur a accès au groupe spécifié
  * Vérifie que l'utilisateur est membre du groupe
  */
-export const validateChatAccess = async (req, res, next) => {
+export const createValidateChatAccess = (ChatGroupModel = ChatGroup) => async (req, res, next) => {
   try {
     const { chatId } = req;
     const userId = req.user?._id;
@@ -58,7 +95,7 @@ export const validateChatAccess = async (req, res, next) => {
     }
 
     // Vérifier que le groupe existe et que l'utilisateur en est membre
-    const group = await ChatGroup.findOne({
+    const group = await ChatGroupModel.findOne({
       chatId,
       isActive: true,
       $or: memberCriteria
@@ -90,19 +127,17 @@ export const validateChatAccess = async (req, res, next) => {
   }
 };
 
+export const validateChatAccess = createValidateChatAccess();
+
 /**
  * Middleware optionnel pour les routes qui acceptent chatId mais ne l'exigent pas
  * Attache le chatId s'il est présent, sinon continue sans erreur
  */
 export const optionalChatId = (req, res, next) => {
-  const chatId = req.query.chatId || 
-                 req.body.chatId || 
-                 req.body.metadata?.chatId ||
-                 req.params.chatId;
-  
-  if (chatId) {
-    req.chatId = chatId.toString();
-  }
+  const { chatId, reason } = normalizeChatId(extractChatId(req));
+
+  if (reason === 'invalid') return rejectInvalidChatId(req, res);
+  if (chatId) req.chatId = chatId;
   
   next();
 };

@@ -11,54 +11,76 @@ dotenv.config();
 /**
  * Point d'entrée principal : API + Bot Telegram
  */
-async function main() {
-  try {
-    logger.info('🚀 Démarrage de Scory-bot (API + Bot)...');
+function isProduction() {
+  return process.env.NODE_ENV === 'production';
+}
 
-    // Vérifier les variables d'environnement
-    const required = ['MONGO_URL', 'JWT_SECRET', 'TELEGRAM_BOT_TOKEN'];
-    const missing = required.filter(v => !process.env[v]);
-    if (missing.length > 0) {
-      throw new Error(`Variables manquantes: ${missing.join(', ')}`);
-    }
+function getWebhookUrl() {
+  return `${process.env.TELEGRAM_WEBHOOK_URL}/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
+}
 
-    // 1. Démarrer l'API (connecte aussi MongoDB)
-    const port = process.env.API_PORT || 3001;
-    await startApiServer(port);
+function getWebhookOptions() {
+  return {
+    allowed_updates: TELEGRAM_CONFIG.POLLING_OPTIONS.params.allowed_updates,
+    secret_token: process.env.TELEGRAM_WEBHOOK_SECRET,
+  };
+}
 
-    // 2. Configurer les commandes du bot
-    await setupCommands();
-    logger.info('✅ Commandes du bot configurées');
+function validateEnvironment() {
+  const required = ['MONGO_URL', 'JWT_SECRET', 'TELEGRAM_BOT_TOKEN'];
 
-    // 3. Configurer le webhook en production ou le polling en dev
-    if (process.env.NODE_ENV === 'production' && process.env.TELEGRAM_WEBHOOK_URL) {
-      // En production : configurer le webhook
-      const webhookUrl = `${process.env.TELEGRAM_WEBHOOK_URL}/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
-      await bot.setWebHook(webhookUrl);
-      logger.info(`✅ Webhook Telegram configuré : ${process.env.TELEGRAM_WEBHOOK_URL}/webhook/***`);
-    } else {
-      // En dev : s'assurer qu'on ne casse pas le webhook de production
-      // node-telegram-bot-api supprime le webhook automatiquement au démarrage du polling,
-      // ce qui empêche la production de recevoir les updates Telegram.
-      logger.warn('⚠️ Mode développement (polling) — le webhook de production sera désactivé tant que ce serveur tourne.');
-      logger.warn('⚠️ Arrêtez ce serveur local pour que la production reprenne la main.');
-      logger.info('✅ Bot en mode polling (développement)');
-    }
-
-    // 4. Enregistrer les commandes dans le menu Telegram
-    try {
-      await bot.setMyCommands(TELEGRAM_CONFIG.COMMANDS);
-      logger.info('✅ Menu des commandes Telegram mis à jour');
-    } catch (err) {
-      logger.warn('⚠️ Impossible de mettre à jour le menu Telegram:', err.message);
-    }
-
-    logger.info('✅ Scory-bot démarré — API + Bot prêts !');
-
-  } catch (error) {
-    logger.error('❌ Erreur au démarrage:', error);
-    process.exit(1);
+  if (isProduction()) {
+    required.push('TELEGRAM_WEBHOOK_URL', 'TELEGRAM_WEBHOOK_SECRET');
   }
+
+  const missing = required.filter(v => !process.env[v]);
+  if (missing.length > 0) {
+    throw new Error(`Variables manquantes: ${missing.join(', ')}`);
+  }
+}
+
+async function startServer() {
+  await startApiServer();
+}
+
+async function configureCommands() {
+  await setupCommands();
+  logger.info('✅ Commandes du bot configurées');
+}
+
+async function configureProductionWebhook() {
+  await bot.setWebHook(getWebhookUrl(), getWebhookOptions());
+  logger.info(`✅ Webhook Telegram configuré : ${process.env.TELEGRAM_WEBHOOK_URL}/webhook/***`);
+}
+
+function logDevelopmentPollingMode() {
+  // node-telegram-bot-api supprime le webhook automatiquement au démarrage du polling.
+  logger.warn('⚠️ Mode développement (polling) — le webhook de production sera désactivé tant que ce serveur tourne.');
+  logger.warn('⚠️ Arrêtez ce serveur local pour que la production reprenne la main.');
+  logger.info('✅ Bot en mode polling (développement)');
+}
+
+async function configureTelegramUpdates() {
+  if (isProduction()) {
+    await configureProductionWebhook();
+    return;
+  }
+
+  logDevelopmentPollingMode();
+}
+
+async function registerTelegramMenu() {
+  try {
+    await bot.setMyCommands(TELEGRAM_CONFIG.COMMANDS);
+    logger.info('✅ Menu des commandes Telegram mis à jour');
+  } catch (err) {
+    logger.warn('⚠️ Impossible de mettre à jour le menu Telegram:', err.message);
+  }
+}
+
+function handleStartupError(error) {
+  logger.error('❌ Erreur au démarrage:', error);
+  process.exit(1);
 }
 
 // Gestion des erreurs globales
@@ -80,7 +102,12 @@ async function restoreWebhookOnShutdown() {
   if (process.env.NODE_ENV !== 'production' && process.env.TELEGRAM_WEBHOOK_URL) {
     try {
       const webhookUrl = `${process.env.TELEGRAM_WEBHOOK_URL}/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
-      await bot.setWebHook(webhookUrl);
+      await bot.setWebHook(webhookUrl, {
+        allowed_updates: TELEGRAM_CONFIG.POLLING_OPTIONS.params.allowed_updates,
+        ...(process.env.TELEGRAM_WEBHOOK_SECRET && {
+          secret_token: process.env.TELEGRAM_WEBHOOK_SECRET,
+        }),
+      });
       logger.info(`🔄 Webhook de production restauré : ${process.env.TELEGRAM_WEBHOOK_URL}/webhook/***`);
     } catch (err) {
       logger.error('❌ Impossible de restaurer le webhook:', err.message);
@@ -104,4 +131,14 @@ process.once('SIGTERM', async () => {
   process.exit(0);
 });
 
-main();
+try {
+  logger.info('🚀 Démarrage de Scory-bot (API + Bot)...');
+  validateEnvironment();
+  await startServer();
+  await configureCommands();
+  await configureTelegramUpdates();
+  await registerTelegramMenu();
+  logger.info('✅ Scory-bot démarré — API + Bot prêts !');
+} catch (error) {
+  handleStartupError(error);
+}

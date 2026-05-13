@@ -2,6 +2,9 @@
  * Utilitaires pour la création de commandes bot compatibles avec les groupes
  */
 
+const BOT_MENTION_PATTERN = /^\/\w+@(\w+)/;
+const GROUP_CHAT_TYPES = new Set(['group', 'supergroup']);
+
 /**
  * Crée une regex qui accepte toutes les variantes de commandes
  * @param {string} command - La commande (ex: "help", "start")
@@ -14,7 +17,7 @@ export function createBotCommand(command, params = '') {
   // /command@bot_name
   // /command params
   // /command@bot_name params
-  return new RegExp(`^\\/${command}(?:@(\\w+))?${params}$`);
+  return new RegExp(String.raw`^\/${command}(?:@(\w+))?${params}$`);
 }
 
 /**
@@ -23,7 +26,7 @@ export function createBotCommand(command, params = '') {
  * @returns {string|null} Le nom du bot ou null si pas de mention
  */
 export function extractBotName(text) {
-  const match = text.match(/^\/\w+@(\w+)/);
+  const match = BOT_MENTION_PATTERN.exec(text);
   return match ? match[1] : null;
 }
 
@@ -36,7 +39,66 @@ export function extractBotName(text) {
 export function isCommandForBot(text, botName) {
   const mentionedBot = extractBotName(text);
   // Accepter si pas de mention ou si c'est pour ce bot
-  return !mentionedBot || mentionedBot === botName;
+  return !mentionedBot || mentionedBot.toLowerCase() === botName.toLowerCase();
+}
+
+function adjustCommandMatch(match) {
+  // Original: [fullMatch, botMention, param1, param2, ...]
+  // Ajusté:   [fullMatch, param1, param2, ...]
+  return match ? [match[0], ...match.slice(2)] : match;
+}
+
+function getCommandName(text) {
+  return text.split(/[\s@]/)[0] || '/commande';
+}
+
+function getChatContext(msg) {
+  const chatType = msg.chat.type;
+
+  return {
+    chatId: msg.chat.id,
+    isGroupChat: GROUP_CHAT_TYPES.has(chatType),
+    isPrivateChat: chatType === 'private',
+    text: msg.text || '',
+  };
+}
+
+function getScopeRestrictionMessage({ scope, isGroupChat, isPrivateChat }) {
+  if (scope === 'private' && isGroupChat) {
+    return '💬 Cette commande est disponible uniquement en message privé avec le bot.';
+  }
+
+  if (scope === 'group' && isPrivateChat) {
+    return '👥 Cette commande est disponible uniquement dans les groupes.';
+  }
+
+  return null;
+}
+
+function isExplicitlyForAnotherBot(text, botUsername) {
+  const mentionedBot = extractBotName(text);
+  return mentionedBot && mentionedBot.toLowerCase() !== botUsername.toLowerCase();
+}
+
+async function executeCommandHandler({ handler, msg, match, text, chatId, detailedError }) {
+  try {
+    return await handler(msg, match);
+  } catch (error) {
+    const { bot } = await import('../../config/bot.js');
+    const logger = (await import('../../utils/logger.js')).default;
+    const cmdName = getCommandName(text);
+    logger.error(`Erreur dans ${cmdName}:`, { message: error.message, stack: error.stack });
+
+    if (!detailedError) {
+      return bot.sendMessage(chatId, '❌ Une erreur est survenue. Veuillez réessayer.');
+    }
+
+    return bot.sendMessage(
+      chatId,
+      `❌ Une erreur est survenue lors de l'exécution de ${cmdName}. Veuillez réessayer.\n\n_Détail: ${error.message}_`,
+      { parse_mode: 'Markdown' }
+    );
+  }
 }
 
 /**
@@ -51,74 +113,26 @@ export function wrapCommandHandler(handler, botUsername, options = {}) {
   const { scope = 'both' } = options;
   
   return async (msg, match) => {
-    const chatType = msg.chat.type;
-    const text = msg.text || '';
-    const chatId = msg.chat.id;
-    const isPrivateChat = chatType === 'private';
-    const isGroupChat = ['group', 'supergroup'].includes(chatType);
-    
-    // Ajuster le match pour retirer le groupe de capture du bot mention
-    // Original:  [fullMatch, botMention, param1, param2, ...]
-    // Ajusté:    [fullMatch, param1, param2, ...]
-    const adjustedMatch = match ? [match[0], ...match.slice(2)] : match;
-    
-    // Vérifier la portée de la commande
-    if (scope === 'private' && isGroupChat) {
+    const context = getChatContext(msg);
+    const adjustedMatch = adjustCommandMatch(match);
+    const scopeRestrictionMessage = getScopeRestrictionMessage({ scope, ...context });
+
+    if (scopeRestrictionMessage) {
       const { bot } = await import('../../config/bot.js');
-      return bot.sendMessage(chatId, '💬 Cette commande est disponible uniquement en message privé avec le bot.');
+      return bot.sendMessage(context.chatId, scopeRestrictionMessage);
     }
-    if (scope === 'group' && isPrivateChat) {
-      const { bot } = await import('../../config/bot.js');
-      return bot.sendMessage(chatId, '👥 Cette commande est disponible uniquement dans les groupes.');
+
+    if (context.isGroupChat && isExplicitlyForAnotherBot(context.text, botUsername)) {
+      return;
     }
-    
-    // Dans les chats privés: accepter toutes les commandes
-    if (isPrivateChat) {
-      try {
-        return await handler(msg, adjustedMatch);
-      } catch (error) {
-        const { bot } = await import('../../config/bot.js');
-        const logger = (await import('../../utils/logger.js')).default;
-        const cmdName = text.split(/[\s@]/)[0] || '/commande';
-        logger.error(`Erreur dans ${cmdName}:`, { message: error.message, stack: error.stack });
-        return bot.sendMessage(chatId, `❌ Une erreur est survenue lors de l'exécution de ${cmdName}. Veuillez réessayer.\n\n_Détail: ${error.message}_`, { parse_mode: 'Markdown' });
-      }
-    }
-    
-    // Dans les groupes: accepter SEULEMENT les commandes avec @bot_name
-    if (isGroupChat) {
-      const mentionedBot = extractBotName(text);
-      
-      // Si pas de mention du bot dans un groupe, ignorer
-      if (!mentionedBot) {
-        return; // Ne pas réagir
-      }
-      
-      // Si la mention n'est pas pour ce bot, ignorer
-      if (mentionedBot !== botUsername) {
-        return; // Ne pas réagir
-      }
-      
-      // La commande est pour ce bot, traiter
-      try {
-        return await handler(msg, adjustedMatch);
-      } catch (error) {
-        const { bot } = await import('../../config/bot.js');
-        const logger = (await import('../../utils/logger.js')).default;
-        const cmdName = text.split(/[\s@]/)[0] || '/commande';
-        logger.error(`Erreur dans ${cmdName}:`, { message: error.message, stack: error.stack });
-        return bot.sendMessage(chatId, `❌ Une erreur est survenue lors de l'exécution de ${cmdName}. Veuillez réessayer.\n\n_Détail: ${error.message}_`, { parse_mode: 'Markdown' });
-      }
-    }
-    
-    // Pour les autres types de chat (channel, etc.), traiter normalement
-    try {
-      return await handler(msg, adjustedMatch);
-    } catch (error) {
-      const { bot } = await import('../../config/bot.js');
-      const logger = (await import('../../utils/logger.js')).default;
-      logger.error(`Erreur dans commande:`, { message: error.message, stack: error.stack });
-      return bot.sendMessage(chatId, `❌ Une erreur est survenue. Veuillez réessayer.`);
-    }
+
+    return executeCommandHandler({
+      handler,
+      msg,
+      match: adjustedMatch,
+      text: context.text,
+      chatId: context.chatId,
+      detailedError: context.isPrivateChat || context.isGroupChat,
+    });
   };
 }

@@ -2,13 +2,22 @@ import crypto from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
+const DEFAULT_TELEGRAM_INIT_DATA_MAX_AGE_SECONDS = 24 * 60 * 60;
+
 const extractBearerToken = (authorizationHeader) => {
   if (!authorizationHeader || typeof authorizationHeader !== 'string') return null;
 
   const [scheme, token] = authorizationHeader.split(' ');
-  if (scheme !== 'Bearer' || !token) return null;
+  if (scheme?.toLowerCase() !== 'bearer' || !token) return null;
 
   return token;
+};
+
+const getTelegramInitDataMaxAgeSeconds = () => {
+  const configuredMaxAge = Number.parseInt(process.env.TELEGRAM_INIT_DATA_MAX_AGE_SECONDS, 10);
+  return Number.isFinite(configuredMaxAge) && configuredMaxAge > 0
+    ? configuredMaxAge
+    : DEFAULT_TELEGRAM_INIT_DATA_MAX_AGE_SECONDS;
 };
 
 const buildDataCheckString = (params) => {
@@ -32,7 +41,15 @@ const validateTelegramHash = (dataCheckString, botToken, hash) => {
   return crypto.timingSafeEqual(computedBuffer, receivedBuffer);
 };
 
-const validateTelegramInitData = (initData, botToken) => {
+const isTelegramAuthDateFresh = (params) => {
+  const authDate = Number.parseInt(params.get('auth_date'), 10);
+  if (!Number.isFinite(authDate)) return false;
+
+  const ageSeconds = Math.floor(Date.now() / 1000) - authDate;
+  return ageSeconds >= 0 && ageSeconds <= getTelegramInitDataMaxAgeSeconds();
+};
+
+export const validateTelegramInitData = (initData, botToken) => {
   try {
     const params = new URLSearchParams(initData);
     const hash = params.get('hash');
@@ -43,6 +60,8 @@ const validateTelegramInitData = (initData, botToken) => {
     if (!validateTelegramHash(buildDataCheckString(params), botToken, hash)) {
       return null;
     }
+
+    if (!isTelegramAuthDateFresh(params)) return null;
 
     const userString = params.get('user');
     if (!userString) return null;

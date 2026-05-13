@@ -20,12 +20,18 @@ export default function ActivityDetail() {
     id,
     navigate,
     enabled: Boolean(id && selectedGroupId),
+    selectedGroupId,
   });
 
   if (!selectedGroupId) return <NoGroupSelected />;
   if (activityDetail.loading) return <PageLoader />;
   if (!activityDetail.activity) {
-    return <ActivityNotFound onBack={() => navigate(ACTIVITIES_ROUTE)} />;
+    return (
+      <ActivityNotFound
+        error={activityDetail.error}
+        onBack={() => navigate(ACTIVITIES_ROUTE)}
+      />
+    );
   }
 
   const subActivities = activityDetail.activity.subActivities || [];
@@ -54,6 +60,7 @@ export default function ActivityDetail() {
         activeTab={activityDetail.activeTab}
         activity={activityDetail.activity}
         scores={activityDetail.scores}
+        scoresError={activityDetail.scoresError}
         subActivities={subActivities}
         showSubForm={activityDetail.showSubForm}
         subForm={activityDetail.subForm}
@@ -77,10 +84,10 @@ function PageLoader() {
   );
 }
 
-function ActivityNotFound({ onBack }) {
+function ActivityNotFound({ error, onBack }) {
   return (
     <div className="page">
-      <EmptyState icon="❌" text="Activité introuvable" />
+      <EmptyState icon="❌" text={error?.message || 'Activité introuvable'} />
       <button className="btn btn-secondary" onClick={onBack}>
         ← Retour aux activités
       </button>
@@ -89,6 +96,7 @@ function ActivityNotFound({ onBack }) {
 }
 
 ActivityNotFound.propTypes = {
+  error: PropTypes.object,
   onBack: PropTypes.func.isRequired,
 };
 
@@ -189,6 +197,7 @@ function ActivityTabContent({
   activeTab,
   activity,
   scores,
+  scoresError,
   subActivities,
   showSubForm,
   subForm,
@@ -220,6 +229,7 @@ function ActivityTabContent({
     scores: (
       <ScoresTab
         scores={scores}
+        scoresError={scoresError}
         handleDeleteScore={handleDeleteScore}
       />
     ),
@@ -236,6 +246,7 @@ ActivityTabContent.propTypes = {
   activeTab: PropTypes.string.isRequired,
   activity: PropTypes.object.isRequired,
   scores: PropTypes.array.isRequired,
+  scoresError: PropTypes.object,
   subActivities: PropTypes.array.isRequired,
   showSubForm: PropTypes.bool.isRequired,
   subForm: PropTypes.object.isRequired,

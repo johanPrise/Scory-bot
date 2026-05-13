@@ -26,6 +26,8 @@ import timersRouter from './routes/timers.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
 
+const getServerPort = () => process.env.API_PORT || process.env.PORT || 3001;
+
 /**
  * Crée et configure l'application Express API
  */
@@ -160,7 +162,7 @@ export const createApiApp = () => {
 /**
  * Démarre le serveur API
  */
-export const startApiServer = async (port = process.env.API_PORT || 3001) => {
+export const startApiServer = async (port = getServerPort()) => {
   try {
     // Connexion à la base de données
     logger.info('Connexion à la base de données...');

@@ -103,7 +103,7 @@ const parseCommand = (text) => {
 
 const shouldHandleCommandInChat = ({ msg, mentionedBot, botUsername }) => {
   if (!GROUP_CHAT_TYPES.has(msg.chat.type)) return true;
-  return mentionedBot === botUsername;
+  return !mentionedBot || mentionedBot.toLowerCase() === botUsername.toLowerCase();
 };
 
 const reportUnknownCommand = ({ msg, commandName }) => {

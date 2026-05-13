@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as api from '../api';
+import { useProfileData } from '../hooks/useProfileData';
 import {
   LoadingSpinner,
   EmptyState,
@@ -129,10 +129,6 @@ function triggerTelegramImpact() {
   globalThis.Telegram?.WebApp?.HapticFeedback?.impactOccurred('light');
 }
 
-function getUserFromProfileResponse(response) {
-  return response.user || response;
-}
-
 function getInitials(firstName, lastName) {
   const firstInitial = firstName?.[0] || '';
   const lastInitial = lastName?.[0] || '';
@@ -182,11 +178,14 @@ function getDisplayProfile(profile, tgUser) {
   };
 }
 
-function getStats(profile) {
+function getStats(profile = {}) {
+  const { stats = {}, teams = [] } = profile || {};
+  const { totalScore = 0, completedActivities = 0 } = stats || {};
+
   return {
-    points: profile?.stats?.totalScore || 0,
-    activities: profile?.stats?.completedActivities || 0,
-    teams: profile?.teams?.length || 0,
+    points: totalScore,
+    activities: completedActivities,
+    teams: teams.length,
   };
 }
 
@@ -463,49 +462,17 @@ export default function Profile() {
 
   const tgUser = useMemo(() => getTelegramUser(), []);
 
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [recentScores, setRecentScores] = useState([]);
-  const [showEdit, setShowEdit] = useState(false);
-  const [editData, setEditData] = useState({ firstName: '', lastName: '' });
-  const [saving, setSaving] = useState(false);
-
-  const loadProfile = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const [profileResult, scoresResult] = await Promise.allSettled([
-        api.getUserProfile(),
-        api.getPersonalScores({ limit: 10 }),
-      ]);
-
-      if (profileResult.status === 'fulfilled') {
-        const user = getUserFromProfileResponse(profileResult.value);
-
-        setProfile(user);
-        setEditData({
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-        });
-      }
-
-      if (scoresResult.status === 'fulfilled') {
-        setRecentScores(scoresResult.value.scores || []);
-      }
-    } catch (error) {
-      console.error('Erreur chargement profil:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!selectedGroupId) {
-      return;
-    }
-
-    loadProfile();
-  }, [selectedGroupId, loadProfile]);
+  const {
+    profile,
+    loading,
+    recentScores,
+    showEdit,
+    setShowEdit,
+    editData,
+    saving,
+    handleEditChange,
+    handleSaveProfile,
+  } = useProfileData(selectedGroupId, toast, triggerTelegramNotification);
 
   const displayProfile = useMemo(() => {
     return getDisplayProfile(profile, tgUser);
@@ -517,40 +484,18 @@ export default function Profile() {
 
   const groupName = selectedGroup?.title || TEXT.defaultGroupName;
 
-  const handleEditChange = useCallback((field, value) => {
-    setEditData(currentData => ({
-      ...currentData,
-      [field]: value,
-    }));
-  }, []);
-
   const openEditForm = useCallback(() => {
     triggerTelegramImpact();
     setShowEdit(true);
-  }, []);
+  }, [setShowEdit]);
 
   const closeEditForm = useCallback(() => {
     setShowEdit(false);
-  }, []);
+  }, [setShowEdit]);
 
-  const handleSaveProfile = useCallback(async () => {
-    setSaving(true);
-
-    try {
-      await api.updateProfile(editData);
-
-      triggerTelegramNotification('success');
-      toast.success(TEXT.profileUpdated);
-      setShowEdit(false);
-
-      await loadProfile();
-    } catch (error) {
-      triggerTelegramNotification('error');
-      toast.error(error.message || TEXT.profileUpdateError);
-    } finally {
-      setSaving(false);
-    }
-  }, [editData, loadProfile, toast]);
+  const saveProfileHandler = useCallback(() => {
+    handleSaveProfile(TEXT.profileUpdated);
+  }, [handleSaveProfile]);
 
   if (!selectedGroupId) {
     return <NoGroupSelected />;
@@ -571,7 +516,7 @@ export default function Profile() {
         editData={editData}
         saving={saving}
         onChange={handleEditChange}
-        onSave={handleSaveProfile}
+        onSave={saveProfileHandler}
         onCancel={closeEditForm}
         onOpen={openEditForm}
       />

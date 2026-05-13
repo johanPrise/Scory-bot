@@ -22,7 +22,8 @@ const sanitizeChatId = (value) => {
 };
 
 // ===== Sources de chatId =====
-const getChatIdFromSession = () => sessionStorage.getItem('scory_chatId');
+const getChatIdFromStorage = () =>
+  sanitizeChatId(sessionStorage.getItem('scory_chatId') || localStorage.getItem('scory_selectedGroup'));
 
 const getChatIdFromTelegram = () => {
   const id = globalThis.Telegram?.WebApp?.initDataUnsafe?.chat?.id;
@@ -46,8 +47,11 @@ const getChatIdFromStartParam = () => {
  * Récupère le chatId du contexte Telegram et le stocke en sessionStorage
  */
 export const getChatId = () => {
-  const stored = getChatIdFromSession();
-  if (stored) return stored;
+  const stored = getChatIdFromStorage();
+  if (stored) {
+    sessionStorage.setItem('scory_chatId', stored);
+    return stored;
+  }
 
   const id = getChatIdFromTelegram()
     ?? getChatIdFromUrl()
@@ -100,6 +104,11 @@ const buildQuery = (params) => {
   const query = new URLSearchParams(params ?? undefined).toString();
   return query ? `?${query}` : '';
 };
+
+const withChatId = (params, context = undefined) => ({
+  ...(params),
+  chatId: requireChatId(context),
+});
 
 // ===== AUTH =====
 export const getMe = () => apiRequest('/auth/me');
@@ -156,15 +165,22 @@ export const addScore = (data) => {
 };
 
 export const getPendingScores = (params) =>
-  apiRequest('/scores/pending' + buildQuery(params));
+  apiRequest('/scores/pending' + buildQuery(withChatId(params, 'accéder aux scores en attente')));
 
 export const approveScore = (id, data) =>
-  apiRequest(`/scores/${id}/approve`, { method: 'PUT', ...(data && { body: JSON.stringify(data) }) });
+  apiRequest(`/scores/${id}/approve${buildQuery(withChatId({}, 'approuver un score'))}`, {
+    method: 'PUT',
+    ...(data && { body: JSON.stringify(data) }),
+  });
 
 export const rejectScore = (id, data) =>
-  apiRequest(`/scores/${id}/reject`, { method: 'PUT', body: JSON.stringify(data) });
+  apiRequest(`/scores/${id}/reject${buildQuery(withChatId({}, 'rejeter un score'))}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
 
-export const deleteScore = (id) => apiRequest(`/scores/${id}`, { method: 'DELETE' });
+export const deleteScore = (id) =>
+  apiRequest(`/scores/${id}${buildQuery(withChatId({}, 'supprimer un score'))}`, { method: 'DELETE' });
 
 // ===== TEAMS =====
 export const getTeams = (params = {}) => {
@@ -193,9 +209,13 @@ export const getTeamStats = (id) => {
 };
 
 export const joinTeam = (joinCode) =>
-  apiRequest('/teams/join', { method: 'POST', body: JSON.stringify({ joinCode }) });
+  apiRequest('/teams/join', {
+    method: 'POST',
+    body: JSON.stringify(withChatId({ joinCode }, 'rejoindre une équipe')),
+  });
 
-export const deleteTeam = (id) => apiRequest(`/teams/${id}`, { method: 'DELETE' });
+export const deleteTeam = (id) =>
+  apiRequest(`/teams/${id}${buildQuery(withChatId({}, 'supprimer une équipe'))}`, { method: 'DELETE' });
 
 // ===== DASHBOARD =====
 export const getDashboard = (params = {}) => {
@@ -210,12 +230,19 @@ export const getActivityHistory = (id, params = {}) => {
 };
 
 export const addSubActivity = (activityId, data) =>
-  apiRequest(`/activities/${activityId}/subactivities`, { method: 'POST', body: JSON.stringify(data) });
+  apiRequest(`/activities/${activityId}/subactivities`, {
+    method: 'POST',
+    body: JSON.stringify(withChatId(data, 'ajouter une sous-activité')),
+  });
 
-export const deleteActivity = (id) => apiRequest(`/activities/${id}`, { method: 'DELETE' });
+export const deleteActivity = (id) =>
+  apiRequest(`/activities/${id}${buildQuery(withChatId({}, 'supprimer une activité'))}`, { method: 'DELETE' });
 
 export const deleteSubActivity = (activityId, subId) =>
-  apiRequest(`/activities/${activityId}/subactivities/${subId}`, { method: 'DELETE' });
+  apiRequest(
+    `/activities/${activityId}/subactivities/${subId}${buildQuery(withChatId({}, 'supprimer une sous-activité'))}`,
+    { method: 'DELETE' }
+  );
 
 // ===== USER =====
 export const getUserProfile = () => apiRequest('/auth/me');

@@ -185,6 +185,21 @@ body {
   color: var(--tg-theme-accent-text-color);
 }
 
+.score-delete-button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+  padding: 4px;
+}
+
+.score-delete-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
 /* ===== RANKING ITEMS ===== */
 .rank-badge {
   width: 32px;
