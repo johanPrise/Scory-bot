@@ -81,13 +81,22 @@ const chatGroupSchema = new mongoose.Schema({
 chatGroupSchema.index({ 'members.userId': 1 });
 chatGroupSchema.index({ 'members.telegramId': 1 });
 
+const normalizeMemberRole = (role, fallback = 'member') => {
+  if (role === undefined || role === null) return fallback;
+  if (role === 'creator') return 'creator';
+  if (role === 'administrator' || role === 'admin') return 'admin';
+  return 'member';
+};
+
 /**
  * Méthode statique : enregistrer ou mettre à jour un groupe et y ajouter un membre
  * Appelée automatiquement par les commandes du bot
  */
 chatGroupSchema.statics.upsertGroup = async function(chatInfo, userInfo) {
   const { chatId, title, type } = chatInfo;
-  const { mongoUserId, telegramId } = userInfo;
+  const { mongoUserId, telegramId, role } = userInfo;
+  const memberRole = normalizeMemberRole(role);
+  const telegramIdString = telegramId.toString();
 
   let group = await this.findOne({ chatId: chatId.toString() });
 
@@ -98,16 +107,23 @@ chatGroupSchema.statics.upsertGroup = async function(chatInfo, userInfo) {
     }
 
     // Ajouter ou mettre à jour le membre
-    const memberIdx = group.members.findIndex(
-      m => m.userId.toString() === mongoUserId.toString()
-    );
+    const memberIdx = group.members.findIndex(m => {
+      const matchesUserId = m.userId?.toString() === mongoUserId.toString();
+      const matchesTelegramId = m.telegramId && m.telegramId.toString() === telegramIdString;
+      return matchesUserId || matchesTelegramId;
+    });
 
     if (memberIdx >= 0) {
+      const existingRole = group.members[memberIdx].role || 'member';
+      group.members[memberIdx].userId = mongoUserId;
+      group.members[memberIdx].telegramId = telegramIdString;
+      group.members[memberIdx].role = normalizeMemberRole(role, existingRole);
       group.members[memberIdx].lastSeen = new Date();
     } else {
       group.members.push({
         userId: mongoUserId,
-        telegramId: telegramId.toString(),
+        telegramId: telegramIdString,
+        role: memberRole,
         firstSeen: new Date(),
         lastSeen: new Date()
       });
@@ -122,7 +138,8 @@ chatGroupSchema.statics.upsertGroup = async function(chatInfo, userInfo) {
       type: type || 'group',
       members: [{
         userId: mongoUserId,
-        telegramId: telegramId.toString(),
+        telegramId: telegramIdString,
+        role: memberRole,
         firstSeen: new Date(),
         lastSeen: new Date()
       }]

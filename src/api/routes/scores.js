@@ -6,6 +6,7 @@ import Team from '../models/Team.js';
 import { asyncHandler, createError } from '../middleware/errorHandler.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requireChatId, validateChatAccess } from '../middleware/chatIdValidator.js';
+import { bot } from '../../config/bot.js';
 import logger from '../../utils/logger.js';
 import { notifyUserScoreStatus, notifyTeamMembersNewScore } from '../utils/notifications.js';
 import { resourceInChatFilter, scoreInChatFilter, scoresForChatFilter } from '../utils/chatScope.js';
@@ -115,6 +116,82 @@ function isAdminRole(userRole) {
   return ['admin', 'superadmin'].includes(userRole);
 }
 
+function normalizeTelegramChatRole(status) {
+  if (!status) return null;
+  if (status === 'creator') return 'creator';
+  if (status === 'administrator' || status === 'admin') return 'admin';
+  return 'member';
+}
+
+function isGroupModeratorRole(role) {
+  return role === 'admin' || role === 'creator';
+}
+
+function findCurrentGroupMember(group, user) {
+  if (!group?.members || !user?._id) return null;
+
+  const userId = user._id.toString();
+  const telegramId = user.telegram?.id ? String(user.telegram.id) : null;
+
+  return group.members.find(member => {
+    const matchesUserId = member.userId?.toString() === userId;
+    const matchesTelegramId = telegramId && member.telegramId?.toString() === telegramId;
+    return matchesUserId || matchesTelegramId;
+  });
+}
+
+async function resolveLiveChatRole(chatId, telegramId) {
+  if (!telegramId) return null;
+
+  try {
+    const member = await bot.getChatMember(chatId, telegramId);
+    return normalizeTelegramChatRole(member?.status);
+  } catch (error) {
+    logger.warn('Impossible de vérifier le rôle Telegram du membre:', {
+      chatId,
+      telegramId,
+      error: error.message
+    });
+    return null;
+  }
+}
+
+async function persistCurrentGroupRole(req, role) {
+  const member = findCurrentGroupMember(req.group, req.user);
+  if (!member || member.role === role) return;
+
+  member.role = role;
+  member.userId = req.userId;
+  if (req.user.telegram?.id) member.telegramId = String(req.user.telegram.id);
+  member.lastSeen = new Date();
+
+  try {
+    await req.group.save();
+  } catch (error) {
+    logger.warn('Impossible de synchroniser le rôle du groupe:', {
+      chatId: req.chatId,
+      userId: req.userId,
+      role,
+      error: error.message
+    });
+  }
+}
+
+async function getCurrentChatRole(req) {
+  const liveRole = await resolveLiveChatRole(req.chatId, req.user.telegram?.id);
+  if (liveRole) {
+    await persistCurrentGroupRole(req, liveRole);
+    return liveRole;
+  }
+
+  return findCurrentGroupMember(req.group, req.user)?.role || 'member';
+}
+
+async function canModerateCurrentChat(req) {
+  if (isAdminRole(req.user.role)) return true;
+  return isGroupModeratorRole(await getCurrentChatRole(req));
+}
+
 async function validateActivityExists(activityId, chatId) {
   const activity = await Activity.findOne(resourceInChatFilter(activityId, chatId));
   if (!activity) {
@@ -208,12 +285,14 @@ async function updateStatistics({ userId, teamId, value, activityId, chatId }) {
   await updateTeamScoreIfExists(teamId, value, chatId);
 }
 
-async function canApproveScore(score, userId, userRole, chatId) {
-  return isAdminRole(userRole) || (score.team && await checkTeamAccess(userId, score.team, chatId));
+async function canApproveScore(score, req) {
+  return await canModerateCurrentChat(req) ||
+    (score.team && await checkTeamAccess(req.userId, score.team, req.chatId));
 }
 
-async function canRejectScore(score, userId, userRole, chatId) {
-  return isAdminRole(userRole) || (score.team && await checkTeamAccess(userId, score.team, chatId));
+async function canRejectScore(score, req) {
+  return await canModerateCurrentChat(req) ||
+    (score.team && await checkTeamAccess(req.userId, score.team, req.chatId));
 }
 
 function validateScoreApprovalStatus(score) {
@@ -398,7 +477,7 @@ router.get('/pending', asyncHandler(async (req, res) => {
   } = req.query;
 
   // Vérifier les permissions
-  const canViewPending = ['admin', 'superadmin'].includes(req.user.role);
+  const canViewPending = await canModerateCurrentChat(req);
   if (!canViewPending) {
     throw createError(403, 'Permissions insuffisantes pour voir les scores en attente');
   }
@@ -1131,7 +1210,7 @@ router.put('/:id/approve', asyncHandler(async (req, res) => {
     throw createError(404, 'Score non trouvé');
   }
 
-  const hasApprovalPermission = await canApproveScore(score, req.userId, req.user.role, req.chatId);
+  const hasApprovalPermission = await canApproveScore(score, req);
   if (!hasApprovalPermission) {
     throw createError(403, 'Permissions insuffisantes pour approuver ce score');
   }
@@ -1176,7 +1255,7 @@ router.put('/:id/reject', asyncHandler(async (req, res) => {
     throw createError(404, 'Score non trouvé');
   }
 
-  const hasRejectionPermission = await canRejectScore(score, req.userId, req.user.role, req.chatId);
+  const hasRejectionPermission = await canRejectScore(score, req);
   if (!hasRejectionPermission) {
     throw createError(403, 'Permissions insuffisantes pour rejeter ce score');
   }

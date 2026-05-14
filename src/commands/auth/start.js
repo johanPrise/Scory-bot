@@ -4,9 +4,9 @@
  */
 import { bot } from '../../config/bot.js';
 import User from '../../api/models/User.js';
-import ChatGroup from '../../api/models/ChatGroup.js';
 import logger from '../../utils/logger.js';
 import { createInlineKeyboard, createWebAppButton } from '../../utils/inlineButtons.js';
+import { trackGroup } from '../utils/helpers.js';
 
 const WEB_APP_BASE = process.env.WEB_APP_URL || process.env.WEBAPP_URL || 'http://localhost:3000';
 
@@ -48,10 +48,7 @@ const start = async (msg, match) => {
     // Tracker le groupe Telegram si c'est un groupe
     if (msg.chat.type !== 'private') {
       try {
-        await ChatGroup.upsertGroup(
-          { chatId: chatId, title: msg.chat.title || `Groupe ${chatId}`, type: msg.chat.type },
-          { mongoUserId: user._id, telegramId: from.id }
-        );
+        await trackGroup(msg, user._id);
       } catch (trackErr) {
         logger.error('Erreur tracking groupe dans /start:', trackErr.message);
       }

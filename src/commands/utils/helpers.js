@@ -33,6 +33,23 @@ export const resolveUserId = async (telegramId) => {
   return user ? user._id : null;
 };
 
+const resolveTelegramGroupRole = async (chatId, telegramId) => {
+  try {
+    const member = await bot.getChatMember(chatId, telegramId);
+    if (member?.status === 'creator') return 'creator';
+    if (member?.status === 'administrator') return 'admin';
+    return 'member';
+  } catch (error) {
+    logger.warn('Impossible de récupérer le rôle Telegram du membre:', {
+      chatId,
+      telegramId,
+      error: error.message
+    });
+  }
+
+  return null;
+};
+
 /**
  * Gère les erreurs dans les commandes du bot
  * @param {number|Object} chatIdOrMsg - L'ID du chat ou l'objet message
@@ -111,10 +128,11 @@ export const trackGroup = async (msg, mongoUserId = null) => {
     if (chat.type === 'private') return null;
 
     const resolvedId = mongoUserId ?? await resolveOrCreateUser(from, chat.id);
+    const role = await resolveTelegramGroupRole(chat.id, from.id);
 
     return await ChatGroup.upsertGroup(
       { chatId: chat.id, title: chat.title || `Groupe ${chat.id}`, type: chat.type },
-      { mongoUserId: resolvedId, telegramId: from.id }
+      { mongoUserId: resolvedId, telegramId: from.id, role }
     );
   } catch (error) {
     logger.error('Erreur lors du tracking du groupe:', {
