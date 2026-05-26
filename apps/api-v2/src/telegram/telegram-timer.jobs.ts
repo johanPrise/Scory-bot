@@ -10,5 +10,5 @@ export const TELEGRAM_TIMER_JOB_NAMES = {
 } as const;
 
 export function telegramTimerJobId(timerId: string) {
-  return `${TELEGRAM_TIMER_JOB_NAMES.expired}:${timerId}`;
+  return `telegram-timer-expired-${timerId}`;
 }

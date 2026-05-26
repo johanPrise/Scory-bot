@@ -750,11 +750,13 @@ export class TelegramUpdateService {
 
   private async startTimer(message: TelegramMessagePayload, args: string) {
     const { user, group } = await this.ensureContext(message);
-    const [name, durationRaw] = args.trim().split(/\s+/);
+    const parts = args.trim().split(/\s+/).filter(Boolean);
+    const durationRaw = parts.pop();
+    const name = parts.join(' ');
     const durationMin = Number.parseInt(durationRaw || '', 10);
 
     if (!name || !Number.isFinite(durationMin) || durationMin <= 0) {
-      await this.telegram.sendMessage(message.chat.id, 'Format: /starttimer nom durée_minutes');
+      await this.telegram.sendMessage(message.chat.id, 'Format: /starttimer nom du timer durée_minutes');
       return;
     }
 
