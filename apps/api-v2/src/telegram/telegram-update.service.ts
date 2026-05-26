@@ -775,7 +775,7 @@ export class TelegramUpdateService {
 
     await this.timerScheduler.scheduleTimer({
       timerId: timer.id,
-      chatId: message.chat.id,
+      chatId: group.chatId,
       endsAt: timer.endsAt,
     });
 

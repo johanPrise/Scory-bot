@@ -5,7 +5,7 @@ The legacy v1 Express/Mongo runtime has been removed from the repository. Produc
 - API: `apps/api-v2`
 - Frontend: `web`
 - Database: PostgreSQL
-- Cache/queue: Redis
+- Cache/queue: Redis + BullMQ
 
 ## API service
 
@@ -33,6 +33,8 @@ WEB_APP_URL=https://scory-bot.vercel.app
 ALLOWED_ORIGINS=https://scory-bot.vercel.app
 SLOW_REQUEST_MS=500
 ```
+
+`REDIS_URL` must be a Redis protocol URL, for example `rediss://...`. Do not use an Upstash REST URL for BullMQ workers.
 
 `MONGO_URL` is needed only for one-off migration scripts:
 

@@ -37,6 +37,8 @@ export class TelegramTimerSchedulerService implements OnApplicationBootstrap {
   }
 
   async scheduleTimer(input: { timerId: string; chatId: string | number; endsAt: Date }) {
+    await this.cancelTimer(input.timerId);
+
     await this.telegramQueue.add(
       JOB_NAMES.telegramTimerExpired,
       {
