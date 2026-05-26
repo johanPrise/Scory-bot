@@ -13,6 +13,7 @@ import { RankingsService } from '../rankings/rankings.service';
 import { ScoresService } from '../scores/scores.service';
 import { env } from '../runtime-env';
 import { TelegramClientService } from './telegram-client.service';
+import { TelegramTimerSchedulerService } from './telegram-timer-scheduler.service';
 import {
   TelegramChatPayload,
   TelegramCommandResult,
@@ -70,6 +71,7 @@ export class TelegramUpdateService {
     private readonly telegram: TelegramClientService,
     private readonly rankings: RankingsService,
     private readonly scores: ScoresService,
+    private readonly timerScheduler: TelegramTimerSchedulerService,
   ) {}
 
   async handleUpdate(update: TelegramUpdatePayload, options: { dryRun?: boolean } = {}): Promise<TelegramCommandResult> {
@@ -769,6 +771,12 @@ export class TelegramUpdateService {
       },
     });
 
+    await this.timerScheduler.scheduleTimer({
+      timerId: timer.id,
+      chatId: message.chat.id,
+      endsAt: timer.endsAt,
+    });
+
     await this.telegram.sendMessage(
       message.chat.id,
       `⏱ Timer lancé: <b>${escapeHtml(timer.name)}</b>\nDurée: ${durationMin} min`,
@@ -802,6 +810,7 @@ export class TelegramUpdateService {
       where: { id: timer.id },
       data: { status: TimerStatus.stopped, stoppedAt: new Date() },
     });
+    await this.timerScheduler.cancelTimer(timer.id);
     const elapsedMin = Math.max(0, Math.round((stopped.stoppedAt!.getTime() - stopped.startedAt.getTime()) / 60_000));
 
     await this.telegram.sendMessage(

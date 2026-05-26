@@ -24,6 +24,8 @@ export class TelegramCommandRegistry {
     { command: 'deleteactivity', description: 'Supprimer une activite', status: 'implemented' },
     { command: 'deleteteam', description: 'Supprimer une equipe', status: 'implemented' },
     { command: 'deletescore', description: 'Supprimer un score', status: 'implemented' },
+    { command: 'starttimer', description: 'Demarrer un timer', status: 'implemented' },
+    { command: 'stoptimer', description: 'Arreter un timer', status: 'implemented' },
     { command: 'app', description: 'Ouvrir la WebApp', status: 'implemented' },
   ];
 }

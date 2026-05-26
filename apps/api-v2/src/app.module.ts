@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { QueueModule } from './common/queue/queue.module';
 import { RedisModule } from './common/redis/redis.module';
 import { SlowRequestInterceptor } from './common/observability/slow-request.interceptor';
 import { AuthModule } from './auth/auth.module';
@@ -19,6 +20,7 @@ import { HealthModule } from './health/health.module';
   imports: [
     PrismaModule,
     RedisModule,
+    QueueModule,
     HealthModule,
     AuthModule,
     ProjectionsModule,
