@@ -135,7 +135,7 @@ export const createApiApp = () => {
   });
 
   // Route 404 spécifique pour les endpoints API non trouvés
-  app.use('/api/*', (req, res) => {
+  app.use('/api', (req, res) => {
     res.status(404).json({
       error: 'Endpoint non trouvé',
       path: req.originalUrl,
@@ -148,7 +148,7 @@ export const createApiApp = () => {
   const indexHtml = path.resolve(staticPath, 'index.html');
   app.use(express.static(staticPath));
 
-  app.get('*', (req, res) => {
+  app.get(/.*/, (req, res) => {
     res.sendFile(indexHtml);
   });
   // =================================================
