@@ -265,7 +265,12 @@ export class TelegramUpdateService {
       return;
     }
 
-    const botUsername = env.TELEGRAM_BOT_USERNAME || 'ScoryBot';
+    const botUsername = await this.telegram.getBotUsername();
+    if (!botUsername) {
+      await this.telegram.sendMessage(message.chat.id, '❌ Bot Telegram non configuré pour ouvrir Scory en privé.');
+      return;
+    }
+
     await this.telegram.sendMessage(message.chat.id, '🎯 <b>Scory App</b>\n\nOuvre Scory en privé avec le bot.', {
       parse_mode: 'HTML',
       reply_markup: {

@@ -7,6 +7,7 @@ import { TelegramSendMessageOptions } from './telegram.types';
 export class TelegramClientService {
   readonly sentMessages: Array<{ method: 'sendMessage'; chatId: string; text: string }> = [];
   private readonly dryRunStorage = new AsyncLocalStorage<boolean>();
+  private botUsername: string | null = env.TELEGRAM_BOT_USERNAME?.replace(/^@/, '') || null;
 
   get dryRun() {
     const requestDryRun = this.dryRunStorage.getStore();
@@ -42,6 +43,21 @@ export class TelegramClientService {
     }
 
     return response.json();
+  }
+
+  async getBotUsername() {
+    if (this.botUsername) return this.botUsername;
+    if (!env.TELEGRAM_BOT_TOKEN) return null;
+
+    const response = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getMe`);
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`Telegram getMe failed: ${response.status} ${body}`);
+    }
+
+    const body = await response.json() as { ok?: boolean; result?: { username?: string } };
+    this.botUsername = body.result?.username?.replace(/^@/, '') || null;
+    return this.botUsername;
   }
 
   drainSentMessages() {
