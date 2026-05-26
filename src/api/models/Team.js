@@ -87,6 +87,8 @@ teamSchema.index({ name: 1, chatId: 1 }, { unique: true });
 
 // Index pour les recherches fréquentes
 teamSchema.index({ chatId: 1, 'members.userId': 1 });
+teamSchema.index({ chatId: 1, createdAt: -1 });
+teamSchema.index({ chatId: 1, 'stats.totalScore': -1, createdAt: 1 });
 
 // Méthode pour ajouter un membre à l'équipe
 teamSchema.methods.addMember = function(userId, username, isAdmin = false) {

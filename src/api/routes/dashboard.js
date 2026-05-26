@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Team from '../models/Team.js';
 import { Activity } from '../models/activity.js';
@@ -52,7 +53,7 @@ router.get('/', asyncHandler(async (req, res) => {
   const chatIdActivityFilter = chatId ? { chatId } : {};
 
   // Statistiques personnelles
-  const user = await User.findById(userId).populate('teams.team', 'name');
+  const user = await User.findById(userId).populate('teams.team', 'name').lean();
   const [userScores, userActivities, userRanking, recentScores] = await Promise.all([
     Score.countDocuments({ user: userId, status: 'approved', ...dateFilter, ...chatIdScoreFilter }),
     Activity.countDocuments({ createdBy: userId, ...dateFilter, ...chatIdActivityFilter }),
@@ -77,7 +78,6 @@ router.get('/', asyncHandler(async (req, res) => {
   // Compter les équipes dans ce groupe
   let teamsCount = user.teams?.length || 0;
   if (chatId) {
-    const Team = (await import('../models/Team.js')).default;
     teamsCount = await Team.countDocuments({ chatId, 'members.userId': userId });
   }
 
@@ -120,49 +120,59 @@ function buildRankingMatchFilter(startDate, chatId) {
 }
 
 /**
- * Calculer la position de l'utilisateur dans le classement
- */
-function calculateUserPosition(users, userId) {
-  const userIndex = users.findIndex(u => u.userId.toString() === userId.toString());
-
-  return {
-    position: userIndex >= 0 ? userIndex + 1 : null,
-    total: users.length,
-    score: userIndex >= 0 ? users[userIndex].score : 0
-  };
-}
-
-/**
  * Fonction utilitaire pour obtenir le classement d'un utilisateur (dashboard)
  */
 async function getUserRankingForDashboard(userId, period = 'month', chatId = null) {
   const startDate = getStartDateFromPeriod(period);
   const match = buildRankingMatchFilter(startDate, chatId);
+  const userIdString = String(userId);
+  const userObjectId = mongoose.Types.ObjectId.isValid(userIdString)
+    ? new mongoose.Types.ObjectId(userIdString)
+    : userId;
 
-  const pipeline = [
+  const groupedScoresPipeline = [
     { $match: match },
     {
       $group: {
         _id: '$user',
         totalNormalizedScore: { $sum: '$normalizedScore' }
       }
-    },
-    { $sort: { totalNormalizedScore: -1 } },
-    {
-      $group: {
-        _id: null,
-        users: { $push: { userId: '$_id', score: '$totalNormalizedScore' } }
-      }
     }
   ];
 
-  const result = await Score.aggregate(pipeline);
-  
-  if (!result.length) {
-    return { position: null, total: 0 };
+  const [summary] = await Score.aggregate([
+    ...groupedScoresPipeline,
+    {
+      $facet: {
+        currentUser: [
+          { $match: { _id: userObjectId } },
+          { $limit: 1 }
+        ],
+        totalUsers: [
+          { $count: 'total' }
+        ]
+      }
+    }
+  ]);
+
+  const total = summary?.totalUsers?.[0]?.total || 0;
+  const userScore = summary?.currentUser?.[0]?.totalNormalizedScore;
+
+  if (userScore === undefined) {
+    return { position: null, total, score: 0 };
   }
 
-  return calculateUserPosition(result[0].users, userId);
+  const [higherRanked] = await Score.aggregate([
+    ...groupedScoresPipeline,
+    { $match: { totalNormalizedScore: { $gt: userScore } } },
+    { $count: 'total' }
+  ]);
+
+  return {
+    position: (higherRanked?.total || 0) + 1,
+    total,
+    score: userScore
+  };
 }
 
 /**
@@ -279,7 +289,7 @@ router.get('/recent-activity', asyncHandler(async (req, res) => {
   const userId = req.userId;
   const userRole = req.user.role;
 
-  let activities = [];
+  let activities;
 
   if (['admin', 'superadmin'].includes(userRole)) {
     // Activité globale pour les admins

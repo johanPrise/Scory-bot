@@ -1,0 +1,384 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChatType {
+  private
+  group
+  supergroup
+  channel
+}
+
+enum GlobalRole {
+  user
+  admin
+  superadmin
+}
+
+enum GroupRole {
+  member
+  admin
+  creator
+}
+
+enum ActivityType {
+  game
+  sport
+  education
+  creative
+  other
+}
+
+enum ScoreContext {
+  individual
+  team
+  group
+}
+
+enum ScoreStatus {
+  pending
+  approved
+  rejected
+  disputed
+  deleted
+}
+
+enum RankingScope {
+  individual
+  team
+}
+
+enum RankingPeriod {
+  day
+  week
+  month
+  year
+  all
+}
+
+enum ScoreEventType {
+  created
+  approved
+  rejected
+  deleted
+  updated
+}
+
+enum TimerStatus {
+  running
+  stopped
+  expired
+}
+
+model User {
+  id             String   @id @default(uuid())
+  mongoId        String?  @unique
+  telegramId     String?  @unique
+  telegramUser   String?
+  username       String?  @unique
+  firstName      String?
+  lastName       String?
+  role           GlobalRole @default(user)
+  status         String   @default("active")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  groups         GroupMember[]
+  createdActivities Activity[] @relation("ActivityCreator")
+  createdTeams   Team[]
+  awardedScores  Score[] @relation("ScoreAwardedBy")
+  reviewedScores Score[] @relation("ScoreReviewedBy")
+  userScores     Score[] @relation("ScoreUser")
+  teamMemberships TeamMember[]
+  userGroupStats UserGroupStats[]
+  scoreEvents    ScoreEvent[]
+  timers          Timer[]
+  feedbacks       Feedback[]
+
+  @@index([telegramId])
+  @@index([status])
+}
+
+model TelegramGroup {
+  id          String   @id @default(uuid())
+  mongoId     String?  @unique
+  chatId      String   @unique
+  title       String
+  type        ChatType @default(group)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     GroupMember[]
+  activities  Activity[]
+  teams       Team[]
+  scores      Score[]
+  groupStats  GroupStats?
+  rankings    RankingSnapshot[]
+  timers      Timer[]
+  feedbacks   Feedback[]
+
+  @@index([isActive, updatedAt])
+}
+
+model GroupMember {
+  id        String    @id @default(uuid())
+  groupId   String
+  userId    String
+  role      GroupRole @default(member)
+  firstSeen DateTime  @default(now())
+  lastSeen  DateTime  @default(now())
+
+  group     TelegramGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId, lastSeen])
+}
+
+model Activity {
+  id            String       @id @default(uuid())
+  mongoId       String?      @unique
+  groupId       String
+  name          String
+  description   String?
+  type          ActivityType @default(other)
+  createdById   String
+  teamId        String?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  group         TelegramGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy     User          @relation("ActivityCreator", fields: [createdById], references: [id])
+  team          Team?         @relation(fields: [teamId], references: [id])
+  subActivities SubActivity[]
+  scores        Score[]
+  stats         ActivityStats?
+  timers        Timer[]
+
+  @@unique([groupId, name])
+  @@index([groupId, isActive, createdAt])
+}
+
+model SubActivity {
+  id          String   @id @default(uuid())
+  mongoId     String?  @unique
+  activityId  String
+  name        String
+  description String?
+  maxScore    Int      @default(100)
+  createdAt   DateTime @default(now())
+
+  activity    Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  scores      Score[]
+
+  @@unique([activityId, name])
+}
+
+model Team {
+  id          String   @id @default(uuid())
+  mongoId     String?  @unique
+  groupId     String
+  name        String
+  description String?
+  joinCode    String?  @unique
+  maxMembers  Int      @default(10)
+  isPrivate   Boolean  @default(false)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  group       TelegramGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy   User          @relation(fields: [createdById], references: [id])
+  members     TeamMember[]
+  activities  Activity[]
+  scores      Score[]
+  stats       TeamGroupStats?
+
+  @@unique([groupId, name])
+  @@index([groupId, createdAt])
+}
+
+model TeamMember {
+  id       String  @id @default(uuid())
+  teamId   String
+  userId   String
+  isAdmin  Boolean @default(false)
+  joinedAt DateTime @default(now())
+
+  team     Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user     User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+model Score {
+  id              String       @id @default(uuid())
+  mongoId         String?      @unique
+  groupId         String
+  userId          String?
+  teamId          String?
+  activityId      String
+  subActivityId   String?
+  value           Int
+  maxPossible     Int
+  normalizedScore Int
+  context         ScoreContext
+  status          ScoreStatus  @default(approved)
+  awardedById     String
+  reviewedById    String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  comments        String?
+  evidence        String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  group           TelegramGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user            User?         @relation("ScoreUser", fields: [userId], references: [id])
+  team            Team?         @relation(fields: [teamId], references: [id])
+  activity        Activity      @relation(fields: [activityId], references: [id])
+  subActivity     SubActivity?  @relation(fields: [subActivityId], references: [id])
+  awardedBy       User          @relation("ScoreAwardedBy", fields: [awardedById], references: [id])
+  reviewedBy      User?         @relation("ScoreReviewedBy", fields: [reviewedById], references: [id])
+  events          ScoreEvent[]
+
+  @@unique([groupId, userId, activityId, subActivityId])
+  @@unique([groupId, teamId, activityId, subActivityId])
+  @@index([groupId, status, context, createdAt])
+  @@index([groupId, status, context, userId, createdAt])
+  @@index([groupId, status, context, teamId, createdAt])
+  @@index([groupId, status, activityId, createdAt])
+}
+
+model ScoreEvent {
+  id        String         @id @default(uuid())
+  scoreId   String
+  actorId   String?
+  type      ScoreEventType
+  payload   Json?
+  createdAt DateTime       @default(now())
+
+  score     Score @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+  actor     User? @relation(fields: [actorId], references: [id])
+
+  @@index([scoreId, createdAt])
+}
+
+model GroupStats {
+  groupId         String   @id
+  totalScores     Int      @default(0)
+  totalActivities Int      @default(0)
+  totalTeams      Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  group           TelegramGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model UserGroupStats {
+  id              String   @id @default(uuid())
+  groupId          String
+  userId           String
+  totalScore       Int      @default(0)
+  normalizedTotal  Int      @default(0)
+  scoreCount       Int      @default(0)
+  rank             Int?
+  lastScoreAt      DateTime?
+  updatedAt        DateTime @updatedAt
+
+  user             User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId, rank])
+  @@index([groupId, normalizedTotal])
+}
+
+model TeamGroupStats {
+  teamId           String   @id
+  groupId          String
+  totalScore       Int      @default(0)
+  normalizedTotal  Int      @default(0)
+  scoreCount       Int      @default(0)
+  rank             Int?
+  lastScoreAt      DateTime?
+  updatedAt        DateTime @updatedAt
+
+  team             Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, rank])
+  @@index([groupId, normalizedTotal])
+}
+
+model ActivityStats {
+  activityId       String   @id
+  groupId          String
+  totalSubmissions Int      @default(0)
+  totalParticipants Int     @default(0)
+  averageScore     Float    @default(0)
+  lastSubmissionAt DateTime?
+  updatedAt        DateTime @updatedAt
+
+  activity         Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, totalSubmissions])
+}
+
+model RankingSnapshot {
+  id          String        @id @default(uuid())
+  groupId     String
+  scope       RankingScope
+  period      RankingPeriod
+  activityId  String        @default("")
+  payload     Json
+  generatedAt DateTime      @default(now())
+  expiresAt   DateTime?
+
+  group       TelegramGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, scope, period, activityId])
+  @@index([groupId, scope, period])
+}
+
+model Timer {
+  id          String      @id @default(uuid())
+  groupId     String
+  name        String
+  activityId  String?
+  durationMin Int
+  startedAt   DateTime    @default(now())
+  endsAt      DateTime
+  stoppedAt   DateTime?
+  status      TimerStatus @default(running)
+  createdById String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  group       TelegramGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  activity    Activity?     @relation(fields: [activityId], references: [id])
+  createdBy   User         @relation(fields: [createdById], references: [id])
+
+  @@index([groupId, status, endsAt])
+  @@index([createdById, status])
+}
+
+model Feedback {
+  id          String   @id @default(uuid())
+  groupId     String
+  userId      String
+  category    String?
+  message     String
+  createdAt   DateTime @default(now())
+
+  group       TelegramGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@index([userId, createdAt])
+}

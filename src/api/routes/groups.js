@@ -21,34 +21,45 @@ router.get('/', asyncHandler(async (req, res) => {
   const telegramId = req.user?.telegram?.id || null;
 
   const groups = await ChatGroup.getUserGroups(userId, telegramId);
+  const chatIds = groups.map(group => group.chatId);
+
+  const [activityCounts, teamCounts, scoreCounts] = await Promise.all([
+    Activity.aggregate([
+      { $match: { chatId: { $in: chatIds } } },
+      { $group: { _id: '$chatId', total: { $sum: 1 } } }
+    ]),
+    Team.aggregate([
+      { $match: { chatId: { $in: chatIds } } },
+      { $group: { _id: '$chatId', total: { $sum: 1 } } }
+    ]),
+    Score.aggregate([
+      { $match: { 'metadata.chatId': { $in: chatIds }, status: 'approved' } },
+      { $group: { _id: '$metadata.chatId', total: { $sum: 1 } } }
+    ])
+  ]);
+
+  const countByChatId = (counts) =>
+    new Map(counts.map(({ _id, total }) => [String(_id), total]));
+
+  const activitiesByChat = countByChatId(activityCounts);
+  const teamsByChat = countByChatId(teamCounts);
+  const scoresByChat = countByChatId(scoreCounts);
 
   // Enrichir avec des compteurs par groupe
-  const enrichedGroups = await Promise.all(
-    groups.map(async (group) => {
-      const chatId = group.chatId;
-
-      const [activitiesCount, teamsCount, scoresCount] = await Promise.all([
-        Activity.countDocuments({ chatId }),
-        Team.countDocuments({ chatId }),
-        Score.countDocuments({ 'metadata.chatId': chatId, status: 'approved' })
-      ]);
-
-      return {
-        id: group._id,
-        chatId: group.chatId,
-        title: group.title,
-        type: group.type,
-        stats: {
-          activities: activitiesCount,
-          teams: teamsCount,
-          scores: scoresCount
-        },
-        memberRole: group.members?.[0]?.role || 'member',
-        lastSeen: group.members?.[0]?.lastSeen,
-        updatedAt: group.updatedAt
-      };
-    })
-  );
+  const enrichedGroups = groups.map((group) => ({
+    id: group._id,
+    chatId: group.chatId,
+    title: group.title,
+    type: group.type,
+    stats: {
+      activities: activitiesByChat.get(group.chatId) || 0,
+      teams: teamsByChat.get(group.chatId) || 0,
+      scores: scoresByChat.get(group.chatId) || 0
+    },
+    memberRole: group.members?.[0]?.role || 'member',
+    lastSeen: group.members?.[0]?.lastSeen,
+    updatedAt: group.updatedAt
+  }));
 
   res.json({
     groups: enrichedGroups,

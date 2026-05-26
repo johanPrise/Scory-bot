@@ -562,7 +562,7 @@ router.get('/personal', asyncHandler(async (req, res) => {
 
   // Calculer les statistiques personnelles
   const stats = await Score.aggregate([
-    { $match: { user: req.userId, status: 'approved' } },
+    { $match: { user: req.userId, status: 'approved', 'metadata.chatId': req.chatId } },
     {
       $group: {
         _id: null,
@@ -929,12 +929,12 @@ function buildActivityExportFields(score, fieldsSet) {
   if (!fieldsSet.has('activity')) return {};
 
   const fields = {
-    'Activité': score.activity?.name || 'Activité inconnue',
-    'Catégorie': score.activity?.category || 'N/A',
+    'Activite': score.activity?.name || 'Activite inconnue',
+    'Categorie': score.activity?.category || 'N/A',
   };
 
   if (score.subActivity) {
-    fields['Sous-activité'] = score.subActivity;
+    fields['Sous-activite'] = score.subActivity;
   }
 
   return fields;
@@ -946,7 +946,7 @@ function buildPointsExportFields(score, fieldsSet) {
   return {
     'Points': score.value,
     'Points max': score.maxPossible,
-    'Score normalisé': score.normalizedScore,
+    'Score normalise': score.normalizedScore,
   };
 }
 
@@ -954,7 +954,7 @@ function buildTeamExportFields(score, fieldsSet) {
   if (!fieldsSet.has('team')) return {};
 
   return {
-    'Équipe': score.team?.name || (score.context === 'individual' ? 'Personnel' : 'N/A'),
+    'Equipe': score.team?.name || (score.context === 'individual' ? 'Personnel' : 'N/A'),
   };
 }
 
@@ -962,7 +962,7 @@ function buildDateExportFields(score, fieldsSet) {
   if (!fieldsSet.has('date')) return {};
 
   return {
-    'Date de création': score.createdAt.toLocaleDateString('fr-FR'),
+    'Date de creation': score.createdAt.toLocaleDateString('fr-FR'),
     'Heure': score.createdAt.toLocaleTimeString('fr-FR'),
   };
 }
@@ -987,7 +987,7 @@ function buildDescriptionExportFields(score, fieldsSet) {
 
   return {
     'Commentaires': score.metadata?.comments || '',
-    'Attribué par': score.awardedBy
+    'Attribue par': score.awardedBy
       ? (score.awardedBy.username || `${score.awardedBy.firstName} ${score.awardedBy.lastName}`.trim())
       : 'N/A',
   };
@@ -1029,7 +1029,7 @@ function generateCSV(data, separator = ',') {
   if (data.length === 0) return '';
   
   const headers = Object.keys(data[0]);
-  const csvContent = [
+  return [
     headers.join(separator),
     ...data.map(row => 
       headers.map(header => {
@@ -1039,8 +1039,6 @@ function generateCSV(data, separator = ',') {
       }).join(separator)
     )
   ].join('\n');
-  
-  return csvContent;
 }
 
 function formatCsvValue(value, separator) {

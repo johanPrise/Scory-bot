@@ -156,6 +156,8 @@ const activitySchema = new mongoose.Schema({
 
 // Index unique pour éviter les doublons de nom dans le même groupe
 activitySchema.index({ name: 1, chatId: 1 }, { unique: true });
+activitySchema.index({ chatId: 1, createdAt: -1 });
+activitySchema.index({ chatId: 1, 'settings.isActive': 1, createdAt: -1 });
 
 // Ajouter le plugin de pagination
 activitySchema.plugin(mongoosePaginate);

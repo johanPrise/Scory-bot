@@ -106,6 +106,10 @@ const scoreSchema = new mongoose.Schema({
 scoreSchema.index({ 'metadata.chatId': 1, user: 1, activity: 1, subActivity: 1 }, { unique: true });
 scoreSchema.index({ 'metadata.chatId': 1, team: 1, activity: 1, subActivity: 1 }, { unique: true, sparse: true });
 scoreSchema.index({ 'metadata.chatId': 1, createdAt: -1 });
+scoreSchema.index({ 'metadata.chatId': 1, status: 1, context: 1, createdAt: -1 });
+scoreSchema.index({ 'metadata.chatId': 1, status: 1, context: 1, user: 1, createdAt: -1 });
+scoreSchema.index({ 'metadata.chatId': 1, status: 1, context: 1, team: 1, createdAt: -1 });
+scoreSchema.index({ 'metadata.chatId': 1, status: 1, activity: 1, createdAt: -1 });
 
 // Middleware pour calculer le score normalisé avant la sauvegarde
 scoreSchema.pre('save', function(next) {

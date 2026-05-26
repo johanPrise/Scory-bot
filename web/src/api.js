@@ -3,12 +3,22 @@
  */
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_V2_BASE = import.meta.env.VITE_API_V2_URL || 'http://localhost:3101/api';
+const API_V2_ENABLED = import.meta.env.VITE_API_V2_ENABLED === 'true';
+const API_V2_CHAT_IDS_RAW = import.meta.env.VITE_API_V2_CHAT_IDS || '';
+const DEV_USER_ID = import.meta.env.VITE_SCORY_DEV_USER_ID;
 const ALLOWED_ORIGIN = new URL(API_BASE).origin;
+const ALLOWED_V2_ORIGIN = new URL(API_V2_BASE).origin;
+const DEFAULT_GET_CACHE_TTL = 15_000;
+const DEFAULT_REQUEST_TIMEOUT = 20_000;
+
+const responseCache = new Map();
+const inFlightRequests = new Map();
 
 // Valide que l'URL construite reste sur l'origine autorisée (CWE-918)
-const buildUrl = (endpoint) => {
-  const url = new URL(`${API_BASE}${endpoint}`);
-  if (url.origin !== ALLOWED_ORIGIN) {
+const buildUrl = (endpoint, base = API_BASE, allowedOrigin = ALLOWED_ORIGIN) => {
+  const url = new URL(`${base}${endpoint}`);
+  if (url.origin !== allowedOrigin) {
     throw new Error(`Origine non autorisée: ${url.origin}`);
   }
   return url.toString();
@@ -20,6 +30,11 @@ const sanitizeChatId = (value) => {
   const clean = String(value).replaceAll(/[^0-9-]/g, '');
   return clean || null;
 };
+
+const API_V2_CHAT_IDS = API_V2_CHAT_IDS_RAW
+  .split(',')
+  .map(value => sanitizeChatId(value.trim()))
+  .filter(Boolean);
 
 // ===== Sources de chatId =====
 const getChatIdFromStorage = () =>
@@ -68,6 +83,7 @@ const getAuthHeaders = () => {
   const headers = { 'Content-Type': 'application/json' };
   const token = localStorage.getItem('scory_token');
   if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (DEV_USER_ID) headers['X-Scory-User-Id'] = DEV_USER_ID;
   if (globalThis.Telegram?.WebApp?.initData) {
     headers['X-Telegram-Init-Data'] = globalThis.Telegram.WebApp.initData;
   }
@@ -78,19 +94,66 @@ const getAuthHeaders = () => {
  * Requête API générique
  */
 const apiRequest = async (endpoint, options = {}) => {
-  const url = buildUrl(endpoint);
-  const response = await fetch(url, {
-    ...options,
-    headers: { ...getAuthHeaders(), ...options.headers },
-  });
+  const method = (options.method || 'GET').toUpperCase();
+  const {
+    base = API_BASE,
+    allowedOrigin = ALLOWED_ORIGIN,
+    cache = method === 'GET',
+    cacheTtl = DEFAULT_GET_CACHE_TTL,
+    timeoutMs = DEFAULT_REQUEST_TIMEOUT,
+    ...fetchOptions
+  } = options;
+  const url = buildUrl(endpoint, base, allowedOrigin);
+  const requestKey = `${method}:${url}`;
 
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ message: 'Erreur réseau' }));
-    throw new Error(err.error?.message || err.message || `Erreur ${response.status}`);
+  if (cache) {
+    const cached = responseCache.get(requestKey);
+    if (cached && Date.now() - cached.createdAt < cacheTtl) return cached.data;
+
+    const inFlight = inFlightRequests.get(requestKey);
+    if (inFlight) return inFlight;
   }
 
-  return response.json();
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  const request = fetch(url, {
+    ...fetchOptions,
+    signal: fetchOptions.signal || controller.signal,
+    headers: { ...getAuthHeaders(), ...fetchOptions.headers },
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ message: 'Erreur réseau' }));
+        throw new Error(err.error?.message || err.message || `Erreur ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (cache) responseCache.set(requestKey, { data, createdAt: Date.now() });
+      if (method !== 'GET') responseCache.clear();
+      return data;
+    })
+    .catch((error) => {
+      if (error.name === 'AbortError') {
+        throw new Error('La requête a expiré. Réessayez dans quelques instants.');
+      }
+      throw error;
+    })
+    .finally(() => {
+      globalThis.clearTimeout(timeout);
+      inFlightRequests.delete(requestKey);
+    });
+
+  if (cache) inFlightRequests.set(requestKey, request);
+  return request;
 };
+
+const apiV2Request = (endpoint, options = {}) =>
+  apiRequest(endpoint, { ...options, base: API_V2_BASE, allowedOrigin: ALLOWED_V2_ORIGIN });
+
+const omitParams = (params, names) => Object.fromEntries(
+  Object.entries(params).filter(([name]) => !names.includes(name))
+);
 
 // ===== Helpers =====
 const requireChatId = (context) => {
@@ -110,6 +173,56 @@ const withChatId = (params, context = undefined) => ({
   chatId: requireChatId(context),
 });
 
+const isApiV2EnabledForChat = (chatId = getChatId()) => {
+  const forced = localStorage.getItem('scory_api_v2');
+  if (forced === 'true') return true;
+  if (forced === 'false') return false;
+  if (!API_V2_ENABLED) return false;
+  return API_V2_CHAT_IDS.length === 0 || API_V2_CHAT_IDS.includes(sanitizeChatId(chatId));
+};
+
+const normalizeV2Score = score => ({
+  ...score,
+  _id: score.id,
+  activity: score.activity,
+  user: score.user,
+  team: score.team,
+});
+
+const normalizeV2Ranking = (item, scope = 'individual') => ({
+  ...item,
+  userId: scope === 'team' ? undefined : item.id,
+  teamId: scope === 'team' ? item.id : undefined,
+  username: scope === 'team' ? undefined : item.name,
+  name: item.name,
+  averageScore: item.scoreCount ? item.normalizedTotal / item.scoreCount : 0,
+});
+
+const normalizeV2Activity = activity => ({
+  ...activity,
+  _id: activity.id,
+  settings: { isActive: activity.isActive },
+  subActivities: activity.subActivities || [],
+});
+
+const normalizeV2Team = team => ({
+  ...team,
+  _id: team.id,
+  stats: {
+    ...team.stats,
+    memberCount: team.memberCount || 0,
+    totalScore: team.stats?.totalScore || 0,
+    activitiesCount: team.stats?.activitiesCount || 0,
+  },
+  members: team.members || [],
+  activities: team.activities || [],
+});
+
+const getMobileHomeV2 = async () => {
+  const chatId = requireChatId('accéder au dashboard');
+  return apiV2Request(`/mobile/home${buildQuery({ chatId })}`);
+};
+
 // ===== AUTH =====
 export const getMe = () => apiRequest('/auth/me');
 
@@ -126,8 +239,19 @@ export const loginWithTelegram = async () => {
 
 // ===== ACTIVITIES =====
 export const getActivities = (params = {}) => {
-  params.chatId = requireChatId('accéder aux activités');
-  return apiRequest(`/activities${buildQuery(params)}`);
+  const chatId = requireChatId('accéder aux activités');
+  const query = { ...params, chatId };
+
+  if (isApiV2EnabledForChat(chatId)) {
+    const v2Params = omitParams(query, ['limit', 'includeSubActivities']);
+    return apiV2Request(`/mobile/activities${buildQuery(v2Params)}`)
+      .then(data => ({
+        ...data,
+        activities: (data.activities || []).map(normalizeV2Activity),
+      }));
+  }
+
+  return apiRequest(`/activities${buildQuery(query)}`);
 };
 
 export const createActivity = (data) => {
@@ -147,13 +271,42 @@ export const getScores = (params = {}) => {
 };
 
 export const getRankings = (params = {}) => {
-  params.chatId = requireChatId('accéder aux classements');
-  return apiRequest(`/scores/rankings${buildQuery(params)}`);
+  const chatId = requireChatId('accéder aux classements');
+  const query = { ...params, chatId };
+
+  if (isApiV2EnabledForChat(chatId)) {
+    const v2Params = omitParams(query, ['limit']);
+    return apiV2Request(`/mobile/rankings${buildQuery(v2Params)}`)
+      .then(data => ({
+        rankings: (data.items || []).map(item => normalizeV2Ranking(item, params.scope)),
+        metadata: {
+          scope: params.scope || 'individual',
+          period: params.period || 'month',
+          activityId: params.activityId,
+          total: data.items?.length || 0,
+          generatedAt: data.generatedAt,
+          stale: data.stale,
+        },
+      }));
+  }
+
+  return apiRequest(`/scores/rankings${buildQuery(query)}`);
 };
 
 export const getPersonalScores = (params = {}) => {
-  params.chatId = requireChatId('accéder à vos scores');
-  return apiRequest(`/scores/personal${buildQuery(params)}`);
+  const chatId = requireChatId('accéder à vos scores');
+
+  if (isApiV2EnabledForChat(chatId)) {
+    return getMobileHomeV2().then(data => ({
+      scores: (data.recentScores || []).map(normalizeV2Score).slice(0, Number(params.limit || 5)),
+      personalStats: {
+        totalPoints: data.userStats?.totalScore || 0,
+        totalScores: data.userStats?.scoreCount || 0,
+      },
+    }));
+  }
+
+  return apiRequest(`/scores/personal${buildQuery({ ...params, chatId })}`);
 };
 
 export const addScore = (data) => {
@@ -184,8 +337,19 @@ export const deleteScore = (id) =>
 
 // ===== TEAMS =====
 export const getTeams = (params = {}) => {
-  params.chatId = requireChatId('accéder aux équipes');
-  return apiRequest(`/teams${buildQuery(params)}`);
+  const chatId = requireChatId('accéder aux équipes');
+  const query = { ...params, chatId };
+
+  if (isApiV2EnabledForChat(chatId)) {
+    const v2Params = omitParams(query, ['limit']);
+    return apiV2Request(`/mobile/teams${buildQuery(v2Params)}`)
+      .then(data => ({
+        ...data,
+        teams: (data.teams || []).map(normalizeV2Team),
+      }));
+  }
+
+  return apiRequest(`/teams${buildQuery(query)}`);
 };
 
 export const createTeam = (data) => {
@@ -219,8 +383,26 @@ export const deleteTeam = (id) =>
 
 // ===== DASHBOARD =====
 export const getDashboard = (params = {}) => {
-  params.chatId = requireChatId('accéder au dashboard');
-  return apiRequest(`/dashboard${buildQuery(params)}`);
+  const chatId = requireChatId('accéder au dashboard');
+
+  if (isApiV2EnabledForChat(chatId)) {
+    return getMobileHomeV2().then(data => ({
+      stats: {
+        personal: {
+          totalScore: data.userStats?.totalScore || 0,
+          scores: data.userStats?.scoreCount || 0,
+          ranking: data.userStats?.rank ? { position: data.userStats.rank } : null,
+        },
+        group: data.stats,
+      },
+      recentScores: (data.recentScores || []).map(normalizeV2Score),
+      topRanking: (data.topRanking || []).map(item => normalizeV2Ranking(item, 'individual')),
+      group: data.group,
+      rankingGeneratedAt: data.rankingGeneratedAt,
+    }));
+  }
+
+  return apiRequest(`/dashboard${buildQuery({ ...params, chatId })}`);
 };
 
 // ===== ACTIVITIES (extended) =====

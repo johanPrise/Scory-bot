@@ -80,6 +80,8 @@ const chatGroupSchema = new mongoose.Schema({
 // Index pour recherche par membre
 chatGroupSchema.index({ 'members.userId': 1 });
 chatGroupSchema.index({ 'members.telegramId': 1 });
+chatGroupSchema.index({ isActive: 1, 'members.userId': 1, updatedAt: -1 });
+chatGroupSchema.index({ isActive: 1, 'members.telegramId': 1, updatedAt: -1 });
 
 const normalizeMemberRole = (role, fallback = 'member') => {
   if (role === undefined || role === null) return fallback;

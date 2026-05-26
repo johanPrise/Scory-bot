@@ -11,18 +11,24 @@
     "dev": "nodemon src/app.js",
     "dev:api": "nodemon api-server.js",
     "dev:bot": "nodemon src/app.js",
-
     "validate:config": "node scripts/validate-config.js",
-    "test": "node --test src/api/middleware/chatIdValidator.test.js"
+    "test": "node --test src/api/middleware/chatIdValidator.test.js",
+    "v2:dev": "pnpm --dir apps/api-v2 dev",
+    "v2:build": "pnpm --dir apps/api-v2 build",
+    "v2:prisma:generate": "pnpm --dir apps/api-v2 prisma:generate",
+    "v2:migration:dry-run": "pnpm --dir apps/api-v2 migration:dry-run",
+    "v2:compare": "pnpm --dir apps/api-v2 compare:v1-v2",
+    "v2:smoke:mobile": "pnpm --dir apps/api-v2 smoke:mobile",
+    "v2:smoke:telegram": "pnpm --dir apps/api-v2 smoke:telegram"
   },
   "dependencies": {
-    "axios": "^1.10.0",
+    "axios": "^1.16.1",
     "bcryptjs": "^2.4.3",
-    "body-parser": "^1.19.0",
+    "body-parser": "^2.2.2",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.5",
-    "express": "^4.17.1",
+    "express": "^5.2.1",
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -36,6 +42,6 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "nodemon": "^3.1.14"
   }
 }
