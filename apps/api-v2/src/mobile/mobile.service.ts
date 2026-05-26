@@ -112,7 +112,10 @@ export class MobileService {
       orderBy: { createdAt: 'desc' },
       take: PAGE_SIZE + 1,
       ...(cursor && { cursor: { id: cursor }, skip: 1 }),
-      include: { stats: true },
+      include: {
+        stats: true,
+        subActivities: { orderBy: { createdAt: 'asc' } },
+      },
     });
 
     const hasMore = rows.length > PAGE_SIZE;
@@ -127,6 +130,14 @@ export class MobileService {
         isActive: activity.isActive,
         createdAt: activity.createdAt,
         updatedAt: activity.updatedAt,
+        subActivities: activity.subActivities.map(subActivity => ({
+          id: subActivity.id,
+          _id: subActivity.id,
+          name: subActivity.name,
+          description: subActivity.description,
+          maxScore: subActivity.maxScore,
+          createdAt: subActivity.createdAt,
+        })),
         stats: activity.stats
           ? {
               totalSubmissions: activity.stats.totalSubmissions,
@@ -152,7 +163,23 @@ export class MobileService {
       orderBy: { createdAt: 'desc' },
       take: PAGE_SIZE + 1,
       ...(cursor && { cursor: { id: cursor }, skip: 1 }),
-      include: { stats: true, _count: { select: { members: true } } },
+      include: {
+        stats: true,
+        _count: { select: { members: true } },
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                telegramUser: true,
+                username: true,
+                firstName: true,
+                lastName: true,
+              },
+            },
+          },
+        },
+      },
     });
     const hasMore = rows.length > PAGE_SIZE;
     const teams = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
@@ -167,6 +194,20 @@ export class MobileService {
         isPrivate: team.isPrivate,
         createdAt: team.createdAt,
         updatedAt: team.updatedAt,
+        members: team.members.map(member => ({
+          id: member.id,
+          _id: member.id,
+          userId: {
+            id: member.user.id,
+            _id: member.user.id,
+            username: member.user.telegramUser || member.user.username,
+            firstName: member.user.firstName,
+            lastName: member.user.lastName,
+            avatar: null,
+          },
+          isAdmin: member.isAdmin,
+          joinedAt: member.joinedAt,
+        })),
         stats: team.stats
           ? {
               totalScore: team.stats.totalScore,

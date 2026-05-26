@@ -10,6 +10,7 @@ import { ProjectionsModule } from './projections/projections.module';
 import { RankingsModule } from './rankings/rankings.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { MigrationModule } from './migration/migration.module';
+import { GroupsModule } from './groups/groups.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { MigrationModule } from './migration/migration.module';
     RankingsModule,
     ScoresModule,
     MobileModule,
+    GroupsModule,
     TelegramModule,
     MigrationModule,
   ],

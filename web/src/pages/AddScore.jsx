@@ -22,6 +22,7 @@ const DEFAULT_MAX_POSSIBLE = '100';
 const initialForm = activityId => ({
   activityId,
   subActivity: '',
+  subActivityId: '',
   value: '',
   maxPossible: DEFAULT_MAX_POSSIBLE,
   context: 'individual',
@@ -93,6 +94,7 @@ function buildScorePayload(form) {
   };
 
   if (form.subActivity) payload.subActivity = form.subActivity;
+  if (form.subActivityId) payload.subActivityId = form.subActivityId;
   if (form.context === 'team') payload.teamId = form.teamId;
   if (form.context === 'individual') payload.userId = form.userId;
 
@@ -196,6 +198,7 @@ function useScoreForm(preselectedActivity) {
       ...currentForm,
       activityId: activity._id,
       subActivity: '',
+      subActivityId: '',
       maxPossible: DEFAULT_MAX_POSSIBLE,
     }));
   }, []);
@@ -205,6 +208,7 @@ function useScoreForm(preselectedActivity) {
     setForm(currentForm => ({
       ...currentForm,
       subActivity: subActivity?.name || '',
+      subActivityId: subActivity?._id || subActivity?.id || '',
       maxPossible: String(subActivity?.maxScore || DEFAULT_MAX_POSSIBLE),
     }));
   }, []);
@@ -347,7 +351,7 @@ function ActivityStep({ activities, selectedActivityId, selectedSubActivity, onA
           </button>
           {subActivities.map(subActivity => (
             <button
-              key={subActivity.name}
+              key={subActivity._id || subActivity.id || subActivity.name}
               type="button"
               className={selectedSubActivity === subActivity.name ? 'active' : ''}
               onClick={() => onSubActivityChange(subActivity)}

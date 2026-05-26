@@ -18,6 +18,58 @@ export class ScoresService {
     private readonly rankings: RankingsService,
   ) {}
 
+  async listScores(input: {
+    actorId: string;
+    chatId: string;
+    activityId?: string;
+    userId?: string;
+    teamId?: string;
+    context?: 'individual' | 'team';
+    status?: 'approved' | 'pending' | 'rejected' | 'deleted';
+    limit?: number;
+  }) {
+    const group = await this.findActorGroupByChatId(input.chatId, input.actorId);
+    const limit = Math.min(Math.max(Number(input.limit) || 20, 1), 100);
+    const scores = await this.prisma.score.findMany({
+      where: {
+        groupId: group.id,
+        status: input.status ? input.status as ScoreStatus : ScoreStatus.approved,
+        ...(input.activityId && { activityId: input.activityId }),
+        ...(input.userId && { userId: input.userId }),
+        ...(input.teamId && { teamId: input.teamId }),
+        ...(input.context && { context: input.context as ScoreContext }),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        activity: { select: { id: true, name: true, description: true } },
+        user: { select: { id: true, firstName: true, lastName: true, telegramUser: true, username: true } },
+        team: { select: { id: true, name: true, description: true } },
+        awardedBy: { select: { id: true, firstName: true, lastName: true, telegramUser: true, username: true } },
+      },
+    });
+
+    return {
+      scores: scores.map(score => ({
+        ...score,
+        _id: score.id,
+        user: score.user ? { ...score.user, _id: score.user.id, username: score.user.telegramUser || score.user.username } : null,
+        team: score.team ? { ...score.team, _id: score.team.id } : null,
+        activity: score.activity ? { ...score.activity, _id: score.activity.id } : null,
+        awardedBy: score.awardedBy
+          ? { ...score.awardedBy, _id: score.awardedBy.id, username: score.awardedBy.telegramUser || score.awardedBy.username }
+          : null,
+      })),
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        totalScores: scores.length,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    };
+  }
+
   async createScore(input: {
     actorId: string;
     chatId: string;

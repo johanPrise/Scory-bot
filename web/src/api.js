@@ -2,9 +2,14 @@
  * Client API pour communiquer avec le backend Scory
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-const API_V2_BASE = import.meta.env.VITE_API_V2_URL || 'http://localhost:3101/api';
-const API_V2_ENABLED = import.meta.env.VITE_API_V2_ENABLED === 'true';
+const normalizeApiBase = value => {
+  const base = value.replace(/\/+$/, '');
+  return base.endsWith('/api') ? base : `${base}/api`;
+};
+
+const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+const API_V2_BASE = normalizeApiBase(import.meta.env.VITE_API_V2_URL || 'http://localhost:3101/api');
+const API_V2_ENABLED = import.meta.env.VITE_API_V2_ENABLED !== 'false' && Boolean(import.meta.env.VITE_API_V2_URL);
 const API_V2_CHAT_IDS_RAW = import.meta.env.VITE_API_V2_CHAT_IDS || '';
 const DEV_USER_ID = import.meta.env.VITE_SCORY_DEV_USER_ID;
 const ALLOWED_ORIGIN = new URL(API_BASE).origin;
@@ -202,7 +207,10 @@ const normalizeV2Activity = activity => ({
   ...activity,
   _id: activity.id,
   settings: { isActive: activity.isActive },
-  subActivities: activity.subActivities || [],
+  subActivities: (activity.subActivities || []).map(subActivity => ({
+    ...subActivity,
+    _id: subActivity.id || subActivity._id,
+  })),
 });
 
 const normalizeV2Team = team => ({
@@ -224,12 +232,16 @@ const getMobileHomeV2 = async () => {
 };
 
 // ===== AUTH =====
-export const getMe = () => apiRequest('/auth/me');
+export const getMe = () => {
+  if (API_V2_ENABLED) return apiV2Request('/auth/me');
+  return apiRequest('/auth/me');
+};
 
 export const loginWithTelegram = async () => {
   const initData = globalThis.Telegram?.WebApp?.initData;
   if (!initData) throw new Error('Pas de données Telegram disponibles');
-  const result = await apiRequest('/auth/telegram-login', {
+  const request = API_V2_ENABLED ? apiV2Request : apiRequest;
+  const result = await request('/auth/telegram-login', {
     method: 'POST',
     body: JSON.stringify({ initData }),
   });
@@ -261,13 +273,28 @@ export const createActivity = (data) => {
 
 export const getActivity = (id) => {
   const chatId = requireChatId();
+  if (isApiV2EnabledForChat(chatId)) {
+    return apiV2Request(`/mobile/activities${buildQuery({ chatId })}`)
+      .then(data => {
+        const activity = (data.activities || []).map(normalizeV2Activity).find(item => item._id === id || item.id === id);
+        if (!activity) throw new Error('Activité introuvable');
+        return { activity };
+      });
+  }
   return apiRequest(`/activities/${id}${buildQuery({ chatId })}`);
 };
 
 // ===== SCORES =====
 export const getScores = (params = {}) => {
-  params.chatId = requireChatId('accéder aux scores');
-  return apiRequest(`/scores${buildQuery(params)}`);
+  const query = { ...params, chatId: requireChatId('accéder aux scores') };
+  if (isApiV2EnabledForChat(query.chatId)) {
+    return apiV2Request(`/scores${buildQuery(query)}`)
+      .then(data => ({
+        ...data,
+        scores: (data.scores || []).map(normalizeV2Score),
+      }));
+  }
+  return apiRequest(`/scores${buildQuery(query)}`);
 };
 
 export const getRankings = (params = {}) => {
@@ -311,26 +338,52 @@ export const getPersonalScores = (params = {}) => {
 
 export const addScore = (data) => {
   const chatId = requireChatId('ajouter un score');
+  if (isApiV2EnabledForChat(chatId)) {
+    const scoreData = { ...data };
+    delete scoreData.subActivity;
+    return apiV2Request('/scores', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...scoreData,
+        chatId,
+        ...(data.subActivityId && { subActivityId: data.subActivityId }),
+      }),
+    });
+  }
+
   return apiRequest('/scores', {
     method: 'POST',
     body: JSON.stringify({ ...data, metadata: { ...(data.metadata), chatId } }),
   });
 };
 
-export const getPendingScores = (params) =>
-  apiRequest('/scores/pending' + buildQuery(withChatId(params, 'accéder aux scores en attente')));
+export const getPendingScores = (params = {}) => {
+  const query = withChatId({ ...params, status: 'pending' }, 'accéder aux scores en attente');
+  if (isApiV2EnabledForChat(query.chatId)) return apiV2Request(`/scores${buildQuery(query)}`);
+  return apiRequest('/scores/pending' + buildQuery(withChatId(params, 'accéder aux scores en attente')));
+};
 
 export const approveScore = (id, data) =>
-  apiRequest(`/scores/${id}/approve${buildQuery(withChatId({}, 'approuver un score'))}`, {
-    method: 'PUT',
-    ...(data && { body: JSON.stringify(data) }),
-  });
+  isApiV2EnabledForChat()
+    ? apiV2Request(`/scores/${id}/approve`, {
+      method: 'PUT',
+      ...(data && { body: JSON.stringify(data) }),
+    })
+    : apiRequest(`/scores/${id}/approve${buildQuery(withChatId({}, 'approuver un score'))}`, {
+      method: 'PUT',
+      ...(data && { body: JSON.stringify(data) }),
+    });
 
 export const rejectScore = (id, data) =>
-  apiRequest(`/scores/${id}/reject${buildQuery(withChatId({}, 'rejeter un score'))}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
+  isApiV2EnabledForChat()
+    ? apiV2Request(`/scores/${id}/reject`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+    : apiRequest(`/scores/${id}/reject${buildQuery(withChatId({}, 'rejeter un score'))}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
 
 export const deleteScore = (id) =>
   apiRequest(`/scores/${id}${buildQuery(withChatId({}, 'supprimer un score'))}`, { method: 'DELETE' });
@@ -359,16 +412,30 @@ export const createTeam = (data) => {
 
 export const getTeam = (id) => {
   const chatId = requireChatId();
+  if (isApiV2EnabledForChat(chatId)) {
+    return apiV2Request(`/mobile/teams${buildQuery({ chatId })}`)
+      .then(data => {
+        const team = (data.teams || []).map(normalizeV2Team).find(item => item._id === id || item.id === id);
+        if (!team) throw new Error('Équipe introuvable');
+        return { team };
+      });
+  }
   return apiRequest(`/teams/${id}${buildQuery({ chatId })}`);
 };
 
 export const getTeamMembers = (id) => {
   const chatId = requireChatId();
+  if (isApiV2EnabledForChat(chatId)) {
+    return getTeam(id).then(data => ({ members: data.team?.members || [] }));
+  }
   return apiRequest(`/teams/${id}/members${buildQuery({ chatId })}`);
 };
 
 export const getTeamStats = (id) => {
   const chatId = requireChatId();
+  if (isApiV2EnabledForChat(chatId)) {
+    return getTeam(id).then(data => ({ stats: data.team?.stats || {} }));
+  }
   return apiRequest(`/teams/${id}/stats${buildQuery({ chatId })}`);
 };
 
@@ -427,10 +494,17 @@ export const deleteSubActivity = (activityId, subId) =>
   );
 
 // ===== USER =====
-export const getUserProfile = () => apiRequest('/auth/me');
+export const getUserProfile = () => getMe();
 export const updateProfile = (data) =>
   apiRequest('/auth/profile', { method: 'PUT', body: JSON.stringify(data) });
 
 // ===== GROUPS =====
-export const getMyGroups = () => apiRequest('/groups');
-export const getGroup = (chatId) => apiRequest(`/groups/${chatId}`);
+export const getMyGroups = () => {
+  if (API_V2_ENABLED) return apiV2Request('/groups');
+  return apiRequest('/groups');
+};
+
+export const getGroup = (chatId) => {
+  if (isApiV2EnabledForChat(chatId)) return apiV2Request(`/groups/${encodeURIComponent(chatId)}`);
+  return apiRequest(`/groups/${chatId}`);
+};

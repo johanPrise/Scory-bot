@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard, AuthenticatedUser } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ScoresService } from './scores.service';
@@ -19,6 +19,29 @@ type CreateScoreBody = {
 @Controller('api/scores')
 export class ScoresController {
   constructor(private readonly scores: ScoresService) {}
+
+  @Get()
+  list(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('chatId') chatId: string,
+    @Query('activityId') activityId?: string,
+    @Query('userId') userId?: string,
+    @Query('teamId') teamId?: string,
+    @Query('context') context?: 'individual' | 'team',
+    @Query('status') status?: 'approved' | 'pending' | 'rejected' | 'deleted',
+    @Query('limit') limit?: string,
+  ) {
+    return this.scores.listScores({
+      actorId: user.id,
+      chatId,
+      activityId,
+      userId,
+      teamId,
+      context,
+      status,
+      limit: limit ? Number(limit) : undefined,
+    });
+  }
 
   @Post()
   create(@CurrentUser() user: AuthenticatedUser, @Body() body: CreateScoreBody) {
