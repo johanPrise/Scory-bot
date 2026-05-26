@@ -13,11 +13,13 @@ import { MigrationModule } from './migration/migration.module';
 import { GroupsModule } from './groups/groups.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { TeamsModule } from './teams/teams.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
     PrismaModule,
     RedisModule,
+    HealthModule,
     AuthModule,
     ProjectionsModule,
     RankingsModule,

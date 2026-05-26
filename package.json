@@ -1,47 +1,23 @@
 {
   "name": "scory-bot",
-  "version": "1.0.0",
-  "description": "Scory Bot Application",
-  "main": "api-server.js",
+  "version": "2.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
-    "start": "node src/app.js",
-    "start:api": "node api-server.js",
-    "start:bot": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "dev:api": "nodemon api-server.js",
-    "dev:bot": "nodemon src/app.js",
-    "validate:config": "node scripts/validate-config.js",
-    "test": "node --test src/api/middleware/chatIdValidator.test.js",
     "v2:dev": "pnpm --dir apps/api-v2 dev",
+    "v2:start": "pnpm --dir apps/api-v2 start",
     "v2:build": "pnpm --dir apps/api-v2 build",
+    "v2:typecheck": "pnpm --dir apps/api-v2 exec tsc --noEmit --pretty false",
     "v2:prisma:generate": "pnpm --dir apps/api-v2 prisma:generate",
     "v2:migration:dry-run": "pnpm --dir apps/api-v2 migration:dry-run",
+    "v2:migration:run": "pnpm --dir apps/api-v2 migration:run",
     "v2:compare": "pnpm --dir apps/api-v2 compare:v1-v2",
     "v2:smoke:mobile": "pnpm --dir apps/api-v2 smoke:mobile",
-    "v2:smoke:telegram": "pnpm --dir apps/api-v2 smoke:telegram"
-  },
-  "dependencies": {
-    "axios": "^1.16.1",
-    "bcryptjs": "^2.4.3",
-    "body-parser": "^2.2.2",
-    "cors": "^2.8.5",
-    "date-fns": "^4.1.0",
-    "dotenv": "^16.4.5",
-    "express": "^5.2.1",
-    "express-rate-limit": "^7.1.5",
-    "helmet": "^7.1.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.9.0",
-    "mongoose": "^8.7.0",
-    "mongoose-paginate-v2": "^1.7.4",
-    "node-telegram-bot-api": "^0.66.0",
-    "quickchart-js": "^3.1.3",
-    "socket.io": "^4.8.1",
-    "socks-proxy-agent": "^8.0.2",
-    "winston": "^3.17.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
+    "v2:smoke:telegram": "pnpm --dir apps/api-v2 smoke:telegram",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build",
+    "web:lint": "npm --prefix web run lint",
+    "build": "pnpm v2:build && npm --prefix web run build",
+    "test": "pnpm v2:typecheck && npm --prefix web run lint"
   }
 }
