@@ -64,6 +64,7 @@ async function main() {
     `/addtoteam @${username} team_${userId}`,
     '/teamranking',
     '/history',
+    '/report 7d',
     '/export scores',
     '/feedback smoke Backend v2 OK',
     `/starttimer timer_${userId} 5`,

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
 import {
   ActivityType,
   ChatType,
@@ -8,11 +9,14 @@ import {
   RankingScope,
   TimerStatus,
 } from '@prisma/client';
+import type { Queue } from 'bullmq';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { JOB_NAMES, QUEUE_NAMES } from '../common/queue/queue.constants';
 import { RankingsService } from '../rankings/rankings.service';
 import { ScoresService } from '../scores/scores.service';
 import { env } from '../runtime-env';
 import { TelegramClientService } from './telegram-client.service';
+import { TelegramReportPeriod, TelegramReportScope } from './telegram-report.jobs';
 import { TelegramTimerSchedulerService } from './telegram-timer-scheduler.service';
 import {
   TelegramChatPayload,
@@ -72,6 +76,7 @@ export class TelegramUpdateService {
     private readonly rankings: RankingsService,
     private readonly scores: ScoresService,
     private readonly timerScheduler: TelegramTimerSchedulerService,
+    @InjectQueue(QUEUE_NAMES.telegramJobs) private readonly telegramQueue: Queue,
   ) {}
 
   async handleUpdate(update: TelegramUpdatePayload, options: { dryRun?: boolean } = {}): Promise<TelegramCommandResult> {
@@ -130,6 +135,7 @@ export class TelegramUpdateService {
       subranking: this.subRanking.bind(this),
       aranking: this.ranking.bind(this),
       shistory: this.history.bind(this),
+      report: this.report.bind(this),
       export: this.exportData.bind(this),
       feedback: this.feedback.bind(this),
       starttimer: this.startTimer.bind(this),
@@ -244,9 +250,13 @@ export class TelegramUpdateService {
         '/score @user activité points [commentaire] - Ajouter un score',
         '/ranking [activité] - Voir le classement',
         '/stats [activité] - Voir les stats',
+        '/report [7d|30d|all] - Rapport lisible du groupe',
+        '/export [scores|activities|teams] [7d|30d|all] - Ancienne commande, génère un rapport lisible',
         '/createteam nom [description] - Créer une équipe',
         '/addtoteam @user équipe - Ajouter un membre',
         '/teamranking - Classement des équipes',
+        '/starttimer nom durée_minutes - Lancer un timer',
+        '/stoptimer [nom] - Arrêter un timer',
       ].join('\n'),
       { parse_mode: 'HTML' },
     );
@@ -699,30 +709,96 @@ export class TelegramUpdateService {
     await this.telegram.sendMessage(message.chat.id, '🗑 Score supprimé.');
   }
 
-  private async exportData(message: TelegramMessagePayload, args: string) {
+  private async report(message: TelegramMessagePayload, args: string) {
     const { group } = await this.ensureContext(message);
-    const scope = args.trim() || 'scores';
+    const period = this.parseReportPeriod(args.trim());
 
-    if (scope !== 'scores' && scope !== 'activities' && scope !== 'teams') {
-      await this.telegram.sendMessage(message.chat.id, 'Format: /export [scores|activities|teams]');
+    if (!period) {
+      await this.telegram.sendMessage(message.chat.id, 'Format: /report [7d|30d|all]');
       return;
     }
 
-    let csv: string;
-    if (scope === 'activities') {
-      csv = await this.exportActivities(group.id);
-    } else if (scope === 'teams') {
-      csv = await this.exportTeams(group.id);
-    } else {
-      csv = await this.exportScores(group.id);
-    }
-    const text = csv.length > 3600
-      ? `${csv.slice(0, 3600)}\n... export tronqué, utilise la WebApp pour le fichier complet.`
-      : csv;
-
-    await this.telegram.sendMessage(message.chat.id, `📦 Export ${scope}\n\n<pre>${escapeHtml(text)}</pre>`, {
-      parse_mode: 'HTML',
+    await this.queueReport({
+      groupId: group.id,
+      chatId: group.chatId,
+      period,
+      scope: 'summary',
     });
+
+    await this.telegram.sendMessage(message.chat.id, `📊 Rapport ${period} en préparation...`);
+  }
+
+  private async exportData(message: TelegramMessagePayload, args: string) {
+    const { group } = await this.ensureContext(message);
+    const { scope, period } = this.parseExportRequest(args.trim());
+
+    if (!scope || !period) {
+      await this.telegram.sendMessage(message.chat.id, 'Format: /export [scores|activities|teams] [7d|30d|all]');
+      return;
+    }
+
+    await this.queueReport({
+      groupId: group.id,
+      chatId: group.chatId,
+      period,
+      scope,
+    });
+
+    await this.telegram.sendMessage(
+      message.chat.id,
+      `📦 Export CSV remplacé par un rapport lisible.\nRapport ${scope} ${period} en préparation...`,
+    );
+  }
+
+  private async queueReport(input: {
+    groupId: string;
+    chatId: string;
+    period: TelegramReportPeriod;
+    scope: TelegramReportScope;
+  }) {
+    if (this.telegram.dryRun) return;
+
+    await this.telegramQueue.add(
+      JOB_NAMES.telegramReportRequested,
+      input,
+      {
+        removeOnComplete: true,
+        removeOnFail: 100,
+      },
+    );
+  }
+
+  private parseReportPeriod(value: string): TelegramReportPeriod | null {
+    const period = value.trim().toLowerCase() || '7d';
+    if (period === '7d' || period === '30d' || period === 'all') return period;
+    return null;
+  }
+
+  private parseExportRequest(value: string): {
+    scope: TelegramReportScope | null;
+    period: TelegramReportPeriod | null;
+  } {
+    const parts = value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const defaultScope: TelegramReportScope = 'summary';
+    const defaultPeriod: TelegramReportPeriod = '7d';
+    let scope: TelegramReportScope = defaultScope;
+    let period: TelegramReportPeriod = defaultPeriod;
+
+    for (const part of parts) {
+      if (part === 'scores' || part === 'activities' || part === 'teams') {
+        scope = part;
+        continue;
+      }
+      const parsedPeriod = this.parseReportPeriod(part);
+      if (parsedPeriod) {
+        period = parsedPeriod;
+        continue;
+      }
+
+      return { scope: null, period: null };
+    }
+
+    return { scope, period };
   }
 
   private async feedback(message: TelegramMessagePayload, args: string) {
@@ -773,11 +849,13 @@ export class TelegramUpdateService {
       },
     });
 
-    await this.timerScheduler.scheduleTimer({
-      timerId: timer.id,
-      chatId: group.chatId,
-      endsAt: timer.endsAt,
-    });
+    if (!this.telegram.dryRun) {
+      await this.timerScheduler.scheduleTimer({
+        timerId: timer.id,
+        chatId: group.chatId,
+        endsAt: timer.endsAt,
+      });
+    }
 
     await this.telegram.sendMessage(
       message.chat.id,
@@ -854,70 +932,6 @@ export class TelegramUpdateService {
       },
       select: { id: true, telegramUser: true, username: true, firstName: true, lastName: true },
     });
-  }
-
-  private async exportScores(groupId: string) {
-    const rows = await this.prisma.score.findMany({
-      where: { groupId },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      include: {
-        activity: { select: { name: true } },
-        user: { select: { telegramUser: true, username: true, firstName: true, lastName: true } },
-        team: { select: { name: true } },
-      },
-    });
-    return [
-      ['date', 'activity', 'target', 'value', 'status'].map(this.csvCell).join(','),
-      ...rows.map(row => [
-        row.createdAt.toISOString(),
-        row.activity.name,
-        row.user ? displayName(row.user) : row.team?.name || '',
-        row.value,
-        row.status,
-      ].map(this.csvCell).join(',')),
-    ].join('\n');
-  }
-
-  private async exportActivities(groupId: string) {
-    const rows = await this.prisma.activity.findMany({
-      where: { groupId },
-      orderBy: { createdAt: 'desc' },
-      take: 80,
-      include: { stats: true },
-    });
-    return [
-      ['date', 'name', 'type', 'active', 'scores'].map(this.csvCell).join(','),
-      ...rows.map(row => [
-        row.createdAt.toISOString(),
-        row.name,
-        row.type,
-        row.isActive,
-        row.stats?.totalSubmissions || 0,
-      ].map(this.csvCell).join(',')),
-    ].join('\n');
-  }
-
-  private async exportTeams(groupId: string) {
-    const rows = await this.prisma.team.findMany({
-      where: { groupId },
-      orderBy: { createdAt: 'desc' },
-      take: 80,
-      include: { stats: true, _count: { select: { members: true } } },
-    });
-    return [
-      ['date', 'name', 'members', 'score'].map(this.csvCell).join(','),
-      ...rows.map(row => [
-        row.createdAt.toISOString(),
-        row.name,
-        row._count.members,
-        row.stats?.totalScore || 0,
-      ].map(this.csvCell).join(',')),
-    ].join('\n');
-  }
-
-  private csvCell(value: unknown) {
-    return `"${stringifyValue(value).replaceAll('"', '""')}"`;
   }
 
   private async canManageResource(message: TelegramMessagePayload, groupId: string, ownerId: string | null | undefined) {

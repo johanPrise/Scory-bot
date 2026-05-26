@@ -6,9 +6,16 @@ import { QUEUE_NAMES } from '../common/queue/queue.constants';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { TelegramClientService } from './telegram-client.service';
 import {
+  TELEGRAM_REPORT_JOB_NAMES,
+  TelegramReportRequestedJob,
+} from './telegram-report.jobs';
+import { TelegramReportService } from './telegram-report.service';
+import {
   TELEGRAM_TIMER_JOB_NAMES,
   TelegramTimerExpiredJob,
 } from './telegram-timer.jobs';
+
+type TelegramJobData = TelegramTimerExpiredJob | TelegramReportRequestedJob;
 
 function escapeHtml(value: string) {
   return value
@@ -18,21 +25,32 @@ function escapeHtml(value: string) {
 }
 
 @Processor(QUEUE_NAMES.telegramJobs)
-export class TelegramTimerProcessor extends WorkerHost {
-  private readonly logger = new Logger(TelegramTimerProcessor.name);
+export class TelegramJobsProcessor extends WorkerHost {
+  private readonly logger = new Logger(TelegramJobsProcessor.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramClientService,
+    private readonly reports: TelegramReportService,
   ) {
     super();
   }
 
-  async process(job: Job<TelegramTimerExpiredJob>): Promise<void> {
-    if (job.name !== TELEGRAM_TIMER_JOB_NAMES.expired) {
-      throw new Error(`Unsupported telegram job: ${job.name}`);
+  async process(job: Job<TelegramJobData>): Promise<void> {
+    if (job.name === TELEGRAM_TIMER_JOB_NAMES.expired) {
+      await this.processTimerExpired(job as Job<TelegramTimerExpiredJob>);
+      return;
     }
 
+    if (job.name === TELEGRAM_REPORT_JOB_NAMES.requested) {
+      await this.processReportRequested(job as Job<TelegramReportRequestedJob>);
+      return;
+    }
+
+    throw new Error(`Unsupported telegram job: ${job.name}`);
+  }
+
+  private async processTimerExpired(job: Job<TelegramTimerExpiredJob>) {
     const { timerId, chatId } = job.data;
     const timer = await this.prisma.timer.findUnique({
       where: { id: timerId },
@@ -72,5 +90,10 @@ export class TelegramTimerProcessor extends WorkerHost {
       `⏰ Timer terminé: <b>${escapeHtml(timer.name)}</b>\nDurée: ${timer.durationMin} min`,
       { parse_mode: 'HTML' },
     );
+  }
+
+  private async processReportRequested(job: Job<TelegramReportRequestedJob>) {
+    const report = await this.reports.buildReport(job.data);
+    await this.telegram.sendMessage(job.data.chatId, report, { parse_mode: 'HTML' });
   }
 }

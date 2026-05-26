@@ -5,4 +5,5 @@ export const QUEUE_NAMES = {
 
 export const JOB_NAMES = {
   telegramTimerExpired: 'telegram.timer.expired',
+  telegramReportRequested: 'telegram.report.requested',
 } as const;
