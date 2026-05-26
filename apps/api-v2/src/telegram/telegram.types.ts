@@ -40,6 +40,8 @@ export type TelegramSendMessageOptions = {
   reply_markup?: Record<string, unknown>;
 };
 
+export type TelegramEditMessageTextOptions = TelegramSendMessageOptions;
+
 export type TelegramCommandResult = {
   ok: boolean;
   handled: boolean;
@@ -47,7 +49,7 @@ export type TelegramCommandResult = {
   chatId?: string;
   dryRun: boolean;
   messages: Array<{
-    method: 'sendMessage';
+    method: 'sendMessage' | 'editMessageText' | 'answerCallbackQuery';
     chatId: string;
     text: string;
   }>;

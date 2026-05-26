@@ -9,6 +9,7 @@ import {
   TELEGRAM_REPORT_JOB_NAMES,
   TelegramReportRequestedJob,
 } from './telegram-report.jobs';
+import { reportKeyboard } from './telegram-report-keyboard';
 import { TelegramReportService } from './telegram-report.service';
 import {
   TELEGRAM_TIMER_JOB_NAMES,
@@ -94,6 +95,16 @@ export class TelegramJobsProcessor extends WorkerHost {
 
   private async processReportRequested(job: Job<TelegramReportRequestedJob>) {
     const report = await this.reports.buildReport(job.data);
-    await this.telegram.sendMessage(job.data.chatId, report, { parse_mode: 'HTML' });
+    const options = {
+      parse_mode: 'HTML' as const,
+      reply_markup: reportKeyboard(job.data.scope, job.data.period),
+    };
+
+    if (job.data.messageId) {
+      await this.telegram.editMessageText(job.data.chatId, job.data.messageId, report, options);
+      return;
+    }
+
+    await this.telegram.sendMessage(job.data.chatId, report, options);
   }
 }

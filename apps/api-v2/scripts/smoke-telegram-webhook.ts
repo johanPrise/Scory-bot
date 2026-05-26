@@ -17,6 +17,33 @@ type SmokeResponse = {
 };
 
 async function sendCommand(text: string): Promise<SmokeResponse> {
+  return sendUpdate(text, {
+    update_id: Date.now(),
+    message: {
+      message_id: Math.floor(Math.random() * 1_000_000),
+      chat: { id: chatId, type: 'supergroup', title: 'Scory v2 smoke' },
+      from: { id: userId, username, first_name: 'Smoke', last_name: 'Tester' },
+      text,
+    },
+  });
+}
+
+async function sendCallback(data: string): Promise<SmokeResponse> {
+  return sendUpdate(`callback ${data}`, {
+    update_id: Date.now(),
+    callback_query: {
+      id: `callback_${Date.now()}`,
+      from: { id: userId, username, first_name: 'Smoke', last_name: 'Tester' },
+      data,
+      message: {
+        message_id: Math.floor(Math.random() * 1_000_000),
+        chat: { id: chatId, type: 'supergroup', title: 'Scory v2 smoke' },
+      },
+    },
+  });
+}
+
+async function sendUpdate(label: string, update: unknown): Promise<SmokeResponse> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (webhookSecret) {
     headers['x-telegram-bot-api-secret-token'] = webhookSecret;
@@ -28,22 +55,14 @@ async function sendCommand(text: string): Promise<SmokeResponse> {
   const response = await fetch(`${apiUrl}/telegram/webhook`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({
-      update_id: Date.now(),
-      message: {
-        message_id: Math.floor(Math.random() * 1_000_000),
-        chat: { id: chatId, type: 'supergroup', title: 'Scory v2 smoke' },
-        from: { id: userId, username, first_name: 'Smoke', last_name: 'Tester' },
-        text,
-      },
-    }),
+    body: JSON.stringify(update),
   });
   const body = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(`${text} returned ${response.status}: ${JSON.stringify(body)}`);
+    throw new Error(`${label} returned ${response.status}: ${JSON.stringify(body)}`);
   }
   if (!body?.ok || !body.handled) {
-    throw new Error(`${text} was not handled: ${JSON.stringify(body)}`);
+    throw new Error(`${label} was not handled: ${JSON.stringify(body)}`);
   }
   return body;
 }
@@ -65,6 +84,7 @@ async function main() {
     '/teamranking',
     '/history',
     '/report 7d',
+    'callback report:teams:30d',
     '/export scores',
     '/feedback smoke Backend v2 OK',
     `/starttimer timer_${userId} 5`,
@@ -75,7 +95,9 @@ async function main() {
 
   const results = [];
   for (const command of commands) {
-    const result = await sendCommand(command);
+    const result = command.startsWith('callback ')
+      ? await sendCallback(command.replace('callback ', ''))
+      : await sendCommand(command);
     results.push({
       command,
       responseCommand: result.command,

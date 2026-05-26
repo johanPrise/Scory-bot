@@ -17,9 +17,11 @@ import { ScoresService } from '../scores/scores.service';
 import { env } from '../runtime-env';
 import { TelegramClientService } from './telegram-client.service';
 import { TelegramReportPeriod, TelegramReportScope } from './telegram-report.jobs';
+import { parseReportCallbackData } from './telegram-report-keyboard';
 import { TelegramTimerSchedulerService } from './telegram-timer-scheduler.service';
 import {
   TelegramChatPayload,
+  TelegramCallbackQueryPayload,
   TelegramCommandResult,
   TelegramMessagePayload,
   TelegramUpdatePayload,
@@ -89,7 +91,11 @@ export class TelegramUpdateService {
   private async handleUpdateInternal(update: TelegramUpdatePayload): Promise<TelegramCommandResult> {
     this.telegram.drainSentMessages();
 
-    const message = update.message || update.edited_message || update.callback_query?.message;
+    if (update.callback_query) {
+      return this.handleCallbackQuery(update.callback_query);
+    }
+
+    const message = update.message || update.edited_message;
     if (!message?.text || !message.from) {
       return this.result(false, undefined, message?.chat.id);
     }
@@ -110,6 +116,29 @@ export class TelegramUpdateService {
       dryRun: this.telegram.dryRun,
       messages: this.telegram.drainSentMessages(),
     };
+  }
+
+  private async handleCallbackQuery(callbackQuery: TelegramCallbackQueryPayload): Promise<TelegramCommandResult> {
+    const reportRequest = parseReportCallbackData(callbackQuery.data);
+    const message = callbackQuery.message;
+
+    if (!reportRequest || !message) {
+      await this.telegram.answerCallbackQuery(callbackQuery.id, 'Action inconnue');
+      return this.result(false, undefined, message?.chat.id);
+    }
+
+    const user = await this.ensureUser(callbackQuery.from);
+    const group = await this.ensureGroup(message, user.id);
+    await this.telegram.answerCallbackQuery(callbackQuery.id, 'Rapport en préparation');
+    await this.queueReport({
+      groupId: group.id,
+      chatId: group.chatId,
+      messageId: message.message_id,
+      period: reportRequest.period,
+      scope: reportRequest.scope,
+    });
+
+    return this.result(true, 'report', message.chat.id);
   }
 
   private async dispatch(message: TelegramMessagePayload, parsed: ParsedCommand) {
@@ -753,6 +782,7 @@ export class TelegramUpdateService {
   private async queueReport(input: {
     groupId: string;
     chatId: string;
+    messageId?: number;
     period: TelegramReportPeriod;
     scope: TelegramReportScope;
   }) {

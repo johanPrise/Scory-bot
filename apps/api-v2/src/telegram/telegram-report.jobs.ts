@@ -6,6 +6,7 @@ export type TelegramReportScope = 'summary' | 'scores' | 'activities' | 'teams';
 export type TelegramReportRequestedJob = {
   groupId: string;
   chatId: string;
+  messageId?: number;
   period: TelegramReportPeriod;
   scope: TelegramReportScope;
 };
