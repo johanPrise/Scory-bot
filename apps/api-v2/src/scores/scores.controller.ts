@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard, AuthenticatedUser } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ScoresService } from './scores.service';
@@ -15,6 +15,16 @@ type CreateScoreBody = {
   comments?: string;
 };
 
+type ListScoresQuery = {
+  chatId: string;
+  activityId?: string;
+  userId?: string;
+  teamId?: string;
+  context?: 'individual' | 'team';
+  status?: 'approved' | 'pending' | 'rejected' | 'deleted';
+  limit?: string;
+};
+
 @UseGuards(AuthGuard)
 @Controller('api/scores')
 export class ScoresController {
@@ -23,23 +33,17 @@ export class ScoresController {
   @Get()
   list(
     @CurrentUser() user: AuthenticatedUser,
-    @Query('chatId') chatId: string,
-    @Query('activityId') activityId?: string,
-    @Query('userId') userId?: string,
-    @Query('teamId') teamId?: string,
-    @Query('context') context?: 'individual' | 'team',
-    @Query('status') status?: 'approved' | 'pending' | 'rejected' | 'deleted',
-    @Query('limit') limit?: string,
+    @Query() query: ListScoresQuery,
   ) {
     return this.scores.listScores({
       actorId: user.id,
-      chatId,
-      activityId,
-      userId,
-      teamId,
-      context,
-      status,
-      limit: limit ? Number(limit) : undefined,
+      chatId: query.chatId,
+      activityId: query.activityId,
+      userId: query.userId,
+      teamId: query.teamId,
+      context: query.context,
+      status: query.status,
+      limit: query.limit ? Number(query.limit) : undefined,
     });
   }
 
@@ -60,5 +64,10 @@ export class ScoresController {
     @Body() body: { reason: string },
   ) {
     return this.scores.rejectScore({ actorId: user.id, scoreId: id, reason: body.reason });
+  }
+
+  @Delete(':id')
+  delete(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.scores.deleteScore({ actorId: user.id, scoreId: id });
   }
 }

@@ -11,6 +11,8 @@ import { RankingsModule } from './rankings/rankings.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { MigrationModule } from './migration/migration.module';
 import { GroupsModule } from './groups/groups.module';
+import { ActivitiesModule } from './activities/activities.module';
+import { TeamsModule } from './teams/teams.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { GroupsModule } from './groups/groups.module';
     ScoresModule,
     MobileModule,
     GroupsModule,
+    ActivitiesModule,
+    TeamsModule,
     TelegramModule,
     MigrationModule,
   ],

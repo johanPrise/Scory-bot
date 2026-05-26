@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { AuthenticatedUser, AuthGuard } from './auth.guard';
 import { CurrentUser } from './current-user.decorator';
@@ -52,5 +52,32 @@ export class AuthController {
     });
 
     return { user: profile };
+  }
+
+  @UseGuards(AuthGuard)
+  @Put('profile')
+  async updateProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: { firstName?: string; lastName?: string },
+  ) {
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        firstName: body.firstName?.trim() || null,
+        lastName: body.lastName?.trim() || null,
+      },
+      select: {
+        id: true,
+        telegramId: true,
+        telegramUser: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    return { user: updated };
   }
 }

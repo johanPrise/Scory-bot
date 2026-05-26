@@ -7,9 +7,12 @@ const normalizeApiBase = value => {
   return base.endsWith('/api') ? base : `${base}/api`;
 };
 
-const API_BASE = normalizeApiBase(import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
-const API_V2_BASE = normalizeApiBase(import.meta.env.VITE_API_V2_URL || 'http://localhost:3101/api');
-const API_V2_ENABLED = import.meta.env.VITE_API_V2_ENABLED !== 'false' && Boolean(import.meta.env.VITE_API_V2_URL);
+const RAW_API_V2_URL = import.meta.env.VITE_API_V2_URL;
+const API_V2_ENABLED = import.meta.env.VITE_API_V2_ENABLED !== 'false' && Boolean(RAW_API_V2_URL);
+const API_V2_BASE = normalizeApiBase(RAW_API_V2_URL || 'http://localhost:3101/api');
+const API_BASE = normalizeApiBase(
+  API_V2_ENABLED ? RAW_API_V2_URL : import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+);
 const API_V2_CHAT_IDS_RAW = import.meta.env.VITE_API_V2_CHAT_IDS || '';
 const DEV_USER_ID = import.meta.env.VITE_SCORY_DEV_USER_ID;
 const ALLOWED_ORIGIN = new URL(API_BASE).origin;
@@ -268,6 +271,9 @@ export const getActivities = (params = {}) => {
 
 export const createActivity = (data) => {
   const chatId = requireChatId('créer une activité');
+  if (isApiV2EnabledForChat(chatId)) {
+    return apiV2Request('/activities', { method: 'POST', body: JSON.stringify({ ...data, chatId }) });
+  }
   return apiRequest('/activities', { method: 'POST', body: JSON.stringify({ ...data, chatId }) });
 };
 
@@ -386,7 +392,9 @@ export const rejectScore = (id, data) =>
     });
 
 export const deleteScore = (id) =>
-  apiRequest(`/scores/${id}${buildQuery(withChatId({}, 'supprimer un score'))}`, { method: 'DELETE' });
+  isApiV2EnabledForChat()
+    ? apiV2Request(`/scores/${id}`, { method: 'DELETE' })
+    : apiRequest(`/scores/${id}${buildQuery(withChatId({}, 'supprimer un score'))}`, { method: 'DELETE' });
 
 // ===== TEAMS =====
 export const getTeams = (params = {}) => {
@@ -407,6 +415,9 @@ export const getTeams = (params = {}) => {
 
 export const createTeam = (data) => {
   const chatId = requireChatId('créer une équipe');
+  if (isApiV2EnabledForChat(chatId)) {
+    return apiV2Request('/teams', { method: 'POST', body: JSON.stringify({ ...data, chatId }) });
+  }
   return apiRequest('/teams', { method: 'POST', body: JSON.stringify({ ...data, chatId }) });
 };
 
@@ -440,13 +451,23 @@ export const getTeamStats = (id) => {
 };
 
 export const joinTeam = (joinCode) =>
-  apiRequest('/teams/join', {
+  isApiV2EnabledForChat()
+    ? apiV2Request('/teams/join', {
+      method: 'POST',
+      body: JSON.stringify(withChatId({ joinCode }, 'rejoindre une équipe')),
+    })
+    : apiRequest('/teams/join', {
     method: 'POST',
     body: JSON.stringify(withChatId({ joinCode }, 'rejoindre une équipe')),
   });
 
 export const deleteTeam = (id) =>
-  apiRequest(`/teams/${id}${buildQuery(withChatId({}, 'supprimer une équipe'))}`, { method: 'DELETE' });
+  isApiV2EnabledForChat()
+    ? apiV2Request(`/teams/${id}`, {
+      method: 'DELETE',
+      body: JSON.stringify(withChatId({}, 'supprimer une équipe')),
+    })
+    : apiRequest(`/teams/${id}${buildQuery(withChatId({}, 'supprimer une équipe'))}`, { method: 'DELETE' });
 
 // ===== DASHBOARD =====
 export const getDashboard = (params = {}) => {
@@ -479,24 +500,38 @@ export const getActivityHistory = (id, params = {}) => {
 };
 
 export const addSubActivity = (activityId, data) =>
-  apiRequest(`/activities/${activityId}/subactivities`, {
-    method: 'POST',
-    body: JSON.stringify(withChatId(data, 'ajouter une sous-activité')),
-  });
+  isApiV2EnabledForChat()
+    ? apiV2Request(`/activities/${activityId}/subactivities`, {
+      method: 'POST',
+      body: JSON.stringify(withChatId(data, 'ajouter une sous-activité')),
+    })
+    : apiRequest(`/activities/${activityId}/subactivities`, {
+      method: 'POST',
+      body: JSON.stringify(withChatId(data, 'ajouter une sous-activité')),
+    });
 
 export const deleteActivity = (id) =>
-  apiRequest(`/activities/${id}${buildQuery(withChatId({}, 'supprimer une activité'))}`, { method: 'DELETE' });
+  isApiV2EnabledForChat()
+    ? apiV2Request(`/activities/${id}${buildQuery(withChatId({}, 'supprimer une activité'))}`, { method: 'DELETE' })
+    : apiRequest(`/activities/${id}${buildQuery(withChatId({}, 'supprimer une activité'))}`, { method: 'DELETE' });
 
 export const deleteSubActivity = (activityId, subId) =>
-  apiRequest(
-    `/activities/${activityId}/subactivities/${encodeURIComponent(subId)}${buildQuery(withChatId({}, 'supprimer une sous-activité'))}`,
-    { method: 'DELETE' }
-  );
+  isApiV2EnabledForChat()
+    ? apiV2Request(
+      `/activities/${activityId}/subactivities/${encodeURIComponent(subId)}${buildQuery(withChatId({}, 'supprimer une sous-activité'))}`,
+      { method: 'DELETE' }
+    )
+    : apiRequest(
+      `/activities/${activityId}/subactivities/${encodeURIComponent(subId)}${buildQuery(withChatId({}, 'supprimer une sous-activité'))}`,
+      { method: 'DELETE' }
+    );
 
 // ===== USER =====
 export const getUserProfile = () => getMe();
 export const updateProfile = (data) =>
-  apiRequest('/auth/profile', { method: 'PUT', body: JSON.stringify(data) });
+  API_V2_ENABLED
+    ? apiV2Request('/auth/profile', { method: 'PUT', body: JSON.stringify(data) })
+    : apiRequest('/auth/profile', { method: 'PUT', body: JSON.stringify(data) });
 
 // ===== GROUPS =====
 export const getMyGroups = () => {
