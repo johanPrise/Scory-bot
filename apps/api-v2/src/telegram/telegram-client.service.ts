@@ -1,13 +1,21 @@
 import { Injectable } from '@nestjs/common';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { env } from '../runtime-env';
 import { TelegramSendMessageOptions } from './telegram.types';
 
 @Injectable()
 export class TelegramClientService {
   readonly sentMessages: Array<{ method: 'sendMessage'; chatId: string; text: string }> = [];
+  private readonly dryRunStorage = new AsyncLocalStorage<boolean>();
 
   get dryRun() {
+    const requestDryRun = this.dryRunStorage.getStore();
+    if (requestDryRun !== undefined) return requestDryRun;
     return env.TELEGRAM_DRY_RUN || !env.TELEGRAM_BOT_TOKEN;
+  }
+
+  runWithDryRun<T>(callback: () => Promise<T>) {
+    return this.dryRunStorage.run(true, callback);
   }
 
   async sendMessage(chatId: string | number, text: string, options: TelegramSendMessageOptions = {}) {

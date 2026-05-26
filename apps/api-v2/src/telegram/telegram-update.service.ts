@@ -72,7 +72,14 @@ export class TelegramUpdateService {
     private readonly scores: ScoresService,
   ) {}
 
-  async handleUpdate(update: TelegramUpdatePayload): Promise<TelegramCommandResult> {
+  async handleUpdate(update: TelegramUpdatePayload, options: { dryRun?: boolean } = {}): Promise<TelegramCommandResult> {
+    if (options.dryRun) {
+      return this.telegram.runWithDryRun(() => this.handleUpdateInternal(update));
+    }
+    return this.handleUpdateInternal(update);
+  }
+
+  private async handleUpdateInternal(update: TelegramUpdatePayload): Promise<TelegramCommandResult> {
     this.telegram.drainSentMessages();
 
     const message = update.message || update.edited_message || update.callback_query?.message;

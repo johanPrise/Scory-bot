@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 const apiUrl = (process.env.API_URL || 'http://127.0.0.1:3101').replace(/\/$/, '');
+const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+const dryRun = process.env.SMOKE_TELEGRAM_DRY_RUN !== 'false';
 const runId = Date.now();
 const chatId = Number(process.env.SMOKE_TELEGRAM_CHAT_ID || `-100${runId}`);
 const userId = Number(process.env.SMOKE_TELEGRAM_USER_ID || `${runId}`.slice(-9));
@@ -15,9 +17,17 @@ type SmokeResponse = {
 };
 
 async function sendCommand(text: string): Promise<SmokeResponse> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (webhookSecret) {
+    headers['x-telegram-bot-api-secret-token'] = webhookSecret;
+  }
+  if (dryRun) {
+    headers['x-scory-telegram-dry-run'] = '1';
+  }
+
   const response = await fetch(`${apiUrl}/telegram/webhook`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       update_id: Date.now(),
       message: {
