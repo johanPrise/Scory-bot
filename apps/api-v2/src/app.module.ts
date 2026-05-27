@@ -7,6 +7,7 @@ import { SlowRequestInterceptor } from './common/observability/slow-request.inte
 import { AuthModule } from './auth/auth.module';
 import { MobileModule } from './mobile/mobile.module';
 import { ScoresModule } from './scores/scores.module';
+import { StatsModule } from './stats/stats.module';
 import { ProjectionsModule } from './projections/projections.module';
 import { RankingsModule } from './rankings/rankings.module';
 import { TelegramModule } from './telegram/telegram.module';
@@ -24,6 +25,7 @@ import { HealthModule } from './health/health.module';
     HealthModule,
     AuthModule,
     ProjectionsModule,
+    StatsModule,
     RankingsModule,
     ScoresModule,
     MobileModule,

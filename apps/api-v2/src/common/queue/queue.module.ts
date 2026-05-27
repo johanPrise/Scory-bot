@@ -21,6 +21,7 @@ import { createRedisConnectionOptions } from './redis-connection-options';
     }),
     BullModule.registerQueue(
       { name: QUEUE_NAMES.telegramJobs },
+      { name: QUEUE_NAMES.telegramSend },
       { name: QUEUE_NAMES.statsJobs },
     ),
   ],

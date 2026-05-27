@@ -9,6 +9,7 @@ import { Prisma, ScoreContext, ScoreEventType, ScoreStatus } from '@prisma/clien
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ProjectionsService } from '../projections/projections.service';
 import { RankingsService } from '../rankings/rankings.service';
+import { StatsSnapshotService } from '../stats/stats-snapshot.service';
 
 @Injectable()
 export class ScoresService {
@@ -16,6 +17,7 @@ export class ScoresService {
     private readonly prisma: PrismaService,
     private readonly projections: ProjectionsService,
     private readonly rankings: RankingsService,
+    private readonly statsSnapshots: StatsSnapshotService,
   ) {}
 
   async listScores(input: {
@@ -145,7 +147,7 @@ export class ScoresService {
       return created;
     });
 
-    await this.rankings.rebuildGroupSnapshots(score.groupId);
+    await this.afterScoreMutation(score.groupId);
     return { score };
   }
 
@@ -173,7 +175,7 @@ export class ScoresService {
       return deleted;
     });
 
-    await this.rankings.rebuildGroupSnapshots(score.groupId);
+    await this.afterScoreMutation(score.groupId);
     return { score };
   }
 
@@ -200,7 +202,7 @@ export class ScoresService {
       return approved;
     });
 
-    await this.rankings.rebuildGroupSnapshots(score.groupId);
+    await this.afterScoreMutation(score.groupId);
     return { score };
   }
 
@@ -230,8 +232,15 @@ export class ScoresService {
       return rejected;
     });
 
-    await this.rankings.rebuildGroupSnapshots(score.groupId);
+    await this.afterScoreMutation(score.groupId);
     return { score };
+  }
+
+  private async afterScoreMutation(groupId: string) {
+    await Promise.all([
+      this.rankings.rebuildGroupSnapshots(groupId),
+      this.statsSnapshots.enqueueReportRebuild(groupId),
+    ]);
   }
 
   private async findActorGroupByChatId(chatId: string, actorId: string) {

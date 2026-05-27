@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { ScoreContext, ScoreStatus } from '@prisma/client';
-import { PrismaService } from '../common/prisma/prisma.service';
+import { StatsSnapshotPeriod } from '@prisma/client';
+import { StatsSnapshotService } from '../stats/stats-snapshot.service';
 import { TelegramReportPeriod, TelegramReportScope } from './telegram-report.jobs';
 
 function stringifyValue(value: unknown) {
@@ -16,56 +16,42 @@ function escapeHtml(value: unknown) {
     .replaceAll('>', '&gt;');
 }
 
-function displayName(user: { telegramUser?: string | null; username?: string | null; firstName?: string | null; lastName?: string | null }) {
-  return user.telegramUser || user.username || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Joueur';
-}
-
 @Injectable()
 export class TelegramReportService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly snapshots: StatsSnapshotService) {}
 
   async buildReport(input: {
     groupId: string;
     period: TelegramReportPeriod;
     scope: TelegramReportScope;
   }) {
-    const [group, totals, previousCount, topPlayers, topActivities, topTeams, recentScore] = await Promise.all([
-      this.prisma.telegramGroup.findUnique({
-        where: { id: input.groupId },
-        select: { title: true },
-      }),
-      this.getTotals(input.groupId, input.period),
-      this.getPreviousScoreCount(input.groupId, input.period),
-      this.getTopPlayers(input.groupId, input.period),
-      this.getTopActivities(input.groupId, input.period),
-      this.getTopTeams(input.groupId, input.period),
-      this.getRecentScore(input.groupId, input.period),
-    ]);
+    const period = this.toSnapshotPeriod(input.period);
+    const snapshot = await this.snapshots.getFreshReportSnapshot(input.groupId, period)
+      || await this.snapshots.rebuildReportSnapshot(input.groupId, period);
 
-    const periodLabel = this.periodLabel(input.period);
     const lines = [
       `📊 <b>Rapport Scory</b>`,
       '',
-      `Groupe: <b>${escapeHtml(group?.title || 'Groupe')}</b>`,
-      `Période: <b>${periodLabel}</b>`,
+      `Groupe: <b>${escapeHtml(snapshot.group.title)}</b>`,
+      `Période: <b>${this.periodLabel(input.period)}</b>`,
       '',
-      `Scores: <b>${totals.scoreCount}</b>`,
-      `Points: <b>${totals.pointTotal}</b>`,
-      `Activités jouées: <b>${totals.activityCount}</b>`,
-      `Participants: <b>${totals.participantCount}</b>`,
-      this.progressLine(totals.scoreCount, previousCount),
+      `Scores: <b>${snapshot.totals.scoreCount}</b>`,
+      `Points: <b>${snapshot.totals.pointTotal}</b>`,
+      `Activités jouées: <b>${snapshot.totals.activityCount}</b>`,
+      `Participants: <b>${snapshot.totals.participantCount}</b>`,
+      this.progressLine(snapshot.totals.scoreCount, snapshot.previousScoreCount),
       '',
-      ...this.sectionLines('🏆 Top joueurs', topPlayers.map(item => `${item.rank}. <b>${escapeHtml(item.name)}</b> - ${item.points} pts`)),
+      ...this.sectionLines('🏆 Top joueurs', snapshot.topPlayers.map(item => `${item.rank}. <b>${escapeHtml(item.name)}</b> - ${item.points} pts`)),
       '',
-      ...this.sectionLines('🎯 Activités', topActivities.map(item => `${item.rank}. <b>${escapeHtml(item.name)}</b> - ${item.scoreCount} scores`)),
+      ...this.sectionLines('🎯 Activités', snapshot.topActivities.map(item => `${item.rank}. <b>${escapeHtml(item.name)}</b> - ${item.scoreCount} scores`)),
       '',
-      ...this.sectionLines('👥 Équipes', topTeams.map(item => `${item.rank}. <b>${escapeHtml(item.name)}</b> - ${item.points} pts`)),
+      ...this.sectionLines('👥 Équipes', snapshot.topTeams.map(item => `${item.rank}. <b>${escapeHtml(item.name)}</b> - ${item.points} pts`)),
     ];
 
-    if (recentScore) {
+    if (snapshot.recentScore) {
       lines.push(
         '',
-        `Dernier score: <b>${escapeHtml(recentScore.target)}</b>, ${escapeHtml(recentScore.activity)}, +${recentScore.value} pts`,
+        `Dernier score: <b>${escapeHtml(snapshot.recentScore.target)}</b>, ${escapeHtml(snapshot.recentScore.activity)}, +${snapshot.recentScore.value} pts`,
       );
     }
 
@@ -77,147 +63,10 @@ export class TelegramReportService {
     return text.length > 3900 ? `${text.slice(0, 3900)}\n... rapport tronqué.` : text;
   }
 
-  private async getTotals(groupId: string, period: TelegramReportPeriod) {
-    const where = this.scoreWhere(groupId, period);
-    const [scoreCount, pointTotal, activityRows, participantRows] = await Promise.all([
-      this.prisma.score.count({ where }),
-      this.prisma.score.aggregate({ where, _sum: { value: true } }),
-      this.prisma.score.groupBy({ by: ['activityId'], where }),
-      this.prisma.score.groupBy({
-        by: ['userId'],
-        where: { ...where, userId: { not: null } },
-      }),
-    ]);
-
-    return {
-      scoreCount,
-      pointTotal: pointTotal._sum.value || 0,
-      activityCount: activityRows.length,
-      participantCount: participantRows.length,
-    };
-  }
-
-  private async getPreviousScoreCount(groupId: string, period: TelegramReportPeriod) {
-    const range = this.periodRange(period);
-    if (!range?.previousStart) return null;
-
-    return this.prisma.score.count({
-      where: {
-        groupId,
-        status: ScoreStatus.approved,
-        createdAt: {
-          gte: range.previousStart,
-          lt: range.start,
-        },
-      },
-    });
-  }
-
-  private async getTopPlayers(groupId: string, period: TelegramReportPeriod) {
-    const grouped = await this.prisma.score.groupBy({
-      by: ['userId'],
-      where: {
-        ...this.scoreWhere(groupId, period),
-        context: ScoreContext.individual,
-        userId: { not: null },
-      },
-      _sum: { value: true },
-      orderBy: { _sum: { value: 'desc' } },
-      take: 3,
-    });
-    const users = await this.prisma.user.findMany({
-      where: { id: { in: grouped.map(row => row.userId).filter(Boolean) as string[] } },
-      select: { id: true, firstName: true, lastName: true, telegramUser: true, username: true },
-    });
-    const names = new Map(users.map(user => [user.id, displayName(user)]));
-    return grouped.map((row, index) => ({
-      rank: index + 1,
-      name: names.get(row.userId || '') || 'Joueur',
-      points: row._sum.value || 0,
-    }));
-  }
-
-  private async getTopActivities(groupId: string, period: TelegramReportPeriod) {
-    const grouped = await this.prisma.score.groupBy({
-      by: ['activityId'],
-      where: this.scoreWhere(groupId, period),
-      _count: { _all: true },
-      orderBy: { _count: { activityId: 'desc' } },
-      take: 3,
-    });
-    const activities = await this.prisma.activity.findMany({
-      where: { id: { in: grouped.map(row => row.activityId) } },
-      select: { id: true, name: true },
-    });
-    const names = new Map(activities.map(activity => [activity.id, activity.name]));
-    return grouped.map((row, index) => ({
-      rank: index + 1,
-      name: names.get(row.activityId) || 'Activité',
-      scoreCount: row._count._all,
-    }));
-  }
-
-  private async getTopTeams(groupId: string, period: TelegramReportPeriod) {
-    const grouped = await this.prisma.score.groupBy({
-      by: ['teamId'],
-      where: {
-        ...this.scoreWhere(groupId, period),
-        context: ScoreContext.team,
-        teamId: { not: null },
-      },
-      _sum: { value: true },
-      orderBy: { _sum: { value: 'desc' } },
-      take: 3,
-    });
-    const teams = await this.prisma.team.findMany({
-      where: { id: { in: grouped.map(row => row.teamId).filter(Boolean) as string[] } },
-      select: { id: true, name: true },
-    });
-    const names = new Map(teams.map(team => [team.id, team.name]));
-    return grouped.map((row, index) => ({
-      rank: index + 1,
-      name: names.get(row.teamId || '') || 'Équipe',
-      points: row._sum.value || 0,
-    }));
-  }
-
-  private async getRecentScore(groupId: string, period: TelegramReportPeriod) {
-    const score = await this.prisma.score.findFirst({
-      where: this.scoreWhere(groupId, period),
-      orderBy: { createdAt: 'desc' },
-      select: {
-        value: true,
-        activity: { select: { name: true } },
-        user: { select: { firstName: true, lastName: true, telegramUser: true, username: true } },
-        team: { select: { name: true } },
-      },
-    });
-
-    if (!score) return null;
-    return {
-      value: score.value,
-      activity: score.activity.name,
-      target: score.user ? displayName(score.user) : score.team?.name || 'Joueur',
-    };
-  }
-
-  private scoreWhere(groupId: string, period: TelegramReportPeriod) {
-    const range = this.periodRange(period);
-    return {
-      groupId,
-      status: ScoreStatus.approved,
-      ...(range && { createdAt: { gte: range.start } }),
-    };
-  }
-
-  private periodRange(period: TelegramReportPeriod) {
-    if (period === 'all') return null;
-
-    const days = period === '7d' ? 7 : 30;
-    const durationMs = days * 24 * 60 * 60 * 1000;
-    const start = new Date(Date.now() - durationMs);
-    const previousStart = new Date(start.getTime() - durationMs);
-    return { start, previousStart };
+  private toSnapshotPeriod(period: TelegramReportPeriod) {
+    if (period === '7d') return StatsSnapshotPeriod.seven_days;
+    if (period === '30d') return StatsSnapshotPeriod.thirty_days;
+    return StatsSnapshotPeriod.all;
   }
 
   private periodLabel(period: TelegramReportPeriod) {

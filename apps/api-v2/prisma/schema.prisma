@@ -75,6 +75,16 @@ enum TimerStatus {
   expired
 }
 
+enum StatsSnapshotScope {
+  report
+}
+
+enum StatsSnapshotPeriod {
+  seven_days
+  thirty_days
+  all
+}
+
 model User {
   id             String   @id @default(uuid())
   mongoId        String?  @unique
@@ -120,6 +130,7 @@ model TelegramGroup {
   scores      Score[]
   groupStats  GroupStats?
   rankings    RankingSnapshot[]
+  statsSnapshots StatsSnapshot[]
   timers      Timer[]
   feedbacks   Feedback[]
 
@@ -344,6 +355,22 @@ model RankingSnapshot {
 
   @@unique([groupId, scope, period, activityId])
   @@index([groupId, scope, period])
+}
+
+model StatsSnapshot {
+  id          String              @id @default(uuid())
+  groupId     String
+  scope       StatsSnapshotScope
+  period      StatsSnapshotPeriod
+  payload     Json
+  generatedAt DateTime            @default(now())
+  expiresAt   DateTime?
+
+  group       TelegramGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, scope, period])
+  @@index([groupId, scope, period])
+  @@index([expiresAt])
 }
 
 model Timer {

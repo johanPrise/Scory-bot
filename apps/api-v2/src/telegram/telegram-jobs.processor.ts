@@ -4,13 +4,13 @@ import { TimerStatus } from '@prisma/client';
 import type { Job } from 'bullmq';
 import { QUEUE_NAMES } from '../common/queue/queue.constants';
 import { PrismaService } from '../common/prisma/prisma.service';
-import { TelegramClientService } from './telegram-client.service';
 import {
   TELEGRAM_REPORT_JOB_NAMES,
   TelegramReportRequestedJob,
 } from './telegram-report.jobs';
 import { reportKeyboard } from './telegram-report-keyboard';
 import { TelegramReportService } from './telegram-report.service';
+import { TelegramSendQueueService } from './telegram-send-queue.service';
 import {
   TELEGRAM_TIMER_JOB_NAMES,
   TelegramTimerExpiredJob,
@@ -31,8 +31,8 @@ export class TelegramJobsProcessor extends WorkerHost {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly telegram: TelegramClientService,
     private readonly reports: TelegramReportService,
+    private readonly telegramSend: TelegramSendQueueService,
   ) {
     super();
   }
@@ -86,11 +86,11 @@ export class TelegramJobsProcessor extends WorkerHost {
 
     if (updated.count !== 1) return;
 
-    await this.telegram.sendMessage(
+    await this.telegramSend.sendMessage({
       chatId,
-      `⏰ Timer terminé: <b>${escapeHtml(timer.name)}</b>\nDurée: ${timer.durationMin} min`,
-      { parse_mode: 'HTML' },
-    );
+      text: `⏰ Timer terminé: <b>${escapeHtml(timer.name)}</b>\nDurée: ${timer.durationMin} min`,
+      options: { parse_mode: 'HTML' },
+    });
   }
 
   private async processReportRequested(job: Job<TelegramReportRequestedJob>) {
@@ -101,10 +101,19 @@ export class TelegramJobsProcessor extends WorkerHost {
     };
 
     if (job.data.messageId) {
-      await this.telegram.editMessageText(job.data.chatId, job.data.messageId, report, options);
+      await this.telegramSend.editMessageText({
+        chatId: job.data.chatId,
+        messageId: job.data.messageId,
+        text: report,
+        options,
+      });
       return;
     }
 
-    await this.telegram.sendMessage(job.data.chatId, report, options);
+    await this.telegramSend.sendMessage({
+      chatId: job.data.chatId,
+      text: report,
+      options,
+    });
   }
 }
