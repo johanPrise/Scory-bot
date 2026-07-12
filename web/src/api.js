@@ -3,7 +3,8 @@
  */
 
 const normalizeApiBase = value => {
-  const base = value.replace(/\/+$/, '');
+  let base = value;
+  while (base.endsWith('/')) base = base.slice(0, -1);
   return base.endsWith('/api') ? base : `${base}/api`;
 };
 
@@ -491,12 +492,6 @@ export const getDashboard = (params = {}) => {
   }
 
   return apiRequest(`/dashboard${buildQuery({ ...params, chatId })}`);
-};
-
-// ===== ACTIVITIES (extended) =====
-export const getActivityHistory = (id, params = {}) => {
-  params.chatId = requireChatId("accéder à l'historique");
-  return apiRequest(`/activities/${id}/history${buildQuery(params)}`);
 };
 
 export const addSubActivity = (activityId, data) =>

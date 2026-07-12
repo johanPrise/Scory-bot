@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ScoreContext, ScoreEventType, ScoreStatus } from '@prisma/client';
+import { GlobalRole, GroupRole, Prisma, ScoreContext, ScoreEventType, ScoreStatus } from '@prisma/client';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { ProjectionsService } from '../projections/projections.service';
 import { RankingsService } from '../rankings/rankings.service';
@@ -155,7 +155,7 @@ export class ScoresService {
     const score = await this.prisma.$transaction(async tx => {
       const existing = await tx.score.findUnique({ where: { id: scoreId } });
       if (!existing) throw new NotFoundException('Score introuvable');
-      await this.assertActorCanAccessGroup(existing.groupId, actorId, tx);
+      await this.assertActorCanManageScore(existing, actorId, tx);
       if (existing.status === ScoreStatus.deleted) return existing;
 
       const deleted = await tx.score.update({
@@ -183,7 +183,7 @@ export class ScoresService {
     const score = await this.prisma.$transaction(async tx => {
       const existing = await tx.score.findUnique({ where: { id: scoreId } });
       if (!existing) throw new NotFoundException('Score introuvable');
-      await this.assertActorCanAccessGroup(existing.groupId, actorId, tx);
+      await this.assertActorCanManageScore(existing, actorId, tx);
       if (existing.status === ScoreStatus.approved) return existing;
 
       const approved = await tx.score.update({
@@ -212,7 +212,7 @@ export class ScoresService {
     const score = await this.prisma.$transaction(async tx => {
       const existing = await tx.score.findUnique({ where: { id: scoreId } });
       if (!existing) throw new NotFoundException('Score introuvable');
-      await this.assertActorCanAccessGroup(existing.groupId, actorId, tx);
+      await this.assertActorCanManageScore(existing, actorId, tx);
 
       const rejected = await tx.score.update({
         where: { id: scoreId },
@@ -266,6 +266,27 @@ export class ScoresService {
       select: { id: true },
     });
     if (!membership) throw new ForbiddenException('Acces refuse pour ce groupe');
+  }
+
+  private async assertActorCanManageScore(
+    score: { groupId: string; awardedById: string },
+    actorId: string,
+    tx: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
+    if (score.awardedById === actorId) return;
+
+    const [actor, membership] = await Promise.all([
+      tx.user.findUnique({ where: { id: actorId }, select: { role: true } }),
+      tx.groupMember.findUnique({
+        where: { groupId_userId: { groupId: score.groupId, userId: actorId } },
+        select: { role: true },
+      }),
+    ]);
+    const allowed = actor?.role === GlobalRole.admin
+      || actor?.role === GlobalRole.superadmin
+      || membership?.role === GroupRole.admin
+      || membership?.role === GroupRole.creator;
+    if (!allowed) throw new ForbiddenException('Permission refusee pour ce score');
   }
 
   private async assertScoreTargetsBelongToGroup(input: {
