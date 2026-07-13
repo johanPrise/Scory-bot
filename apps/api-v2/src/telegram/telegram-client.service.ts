@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { env } from '../runtime-env';
-import { TelegramEditMessageTextOptions, TelegramSendMessageOptions } from './telegram.types';
+import { TelegramChatAction, TelegramSendMessageOptions } from './telegram.types';
 
 @Injectable()
 export class TelegramClientService {
@@ -49,11 +49,31 @@ export class TelegramClientService {
     return response.json();
   }
 
+  // Indicateur "en train d'écrire..." envoyé en fire-and-forget avant un traitement.
+  // Purement cosmétique : n'echoue jamais bruyamment et n'est pas enregistre dans sentMessages.
+  async sendChatAction(chatId: string | number, action: TelegramChatAction = 'typing') {
+    if (this.dryRun) {
+      return { ok: true, dryRun: true };
+    }
+
+    try {
+      await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendChatAction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: String(chatId), action }),
+      });
+    } catch {
+      // Un indicateur de saisie rate ne doit jamais impacter la commande.
+    }
+
+    return { ok: true };
+  }
+
   async editMessageText(
     chatId: string | number,
     messageId: number,
     text: string,
-    options: TelegramEditMessageTextOptions = {},
+    options: TelegramSendMessageOptions = {},
   ) {
     const normalizedChatId = String(chatId);
     this.sentMessages.push({ method: 'editMessageText', chatId: normalizedChatId, text });

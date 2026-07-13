@@ -43,7 +43,7 @@ function stringifyValue(value: unknown) {
       return '';
     }
   }
-  return String(value);
+  return String(value as string | number | boolean | bigint);
 }
 
 function escapeHtml(value: unknown) {
@@ -172,6 +172,8 @@ export class TelegramUpdateService {
     };
 
     const handler = handlers[parsed.command] || this.unknown.bind(this);
+    // Feedback instantane : l'indicateur part en parallele du traitement, sans ajouter de latence.
+    void this.telegram.sendChatAction(message.chat.id, 'typing');
     try {
       await handler(message, parsed.args);
     } catch (error) {

@@ -1,5 +1,5 @@
 import { JOB_NAMES } from '../common/queue/queue.constants';
-import { TelegramEditMessageTextOptions, TelegramSendMessageOptions } from './telegram.types';
+import { TelegramSendMessageOptions } from './telegram.types';
 
 export type TelegramSendMessageJob = {
   chatId: string;
@@ -11,7 +11,7 @@ export type TelegramEditMessageTextJob = {
   chatId: string;
   messageId: number;
   text: string;
-  options?: TelegramEditMessageTextOptions;
+  options?: TelegramSendMessageOptions;
 };
 
 export const TELEGRAM_SEND_JOB_NAMES = {

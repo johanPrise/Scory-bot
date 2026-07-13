@@ -40,7 +40,11 @@ export type TelegramSendMessageOptions = {
   reply_markup?: Record<string, unknown>;
 };
 
-export type TelegramEditMessageTextOptions = TelegramSendMessageOptions;
+export type TelegramChatAction =
+  | 'typing'
+  | 'upload_photo'
+  | 'upload_document'
+  | 'find_location';
 
 export type TelegramCommandResult = {
   ok: boolean;
